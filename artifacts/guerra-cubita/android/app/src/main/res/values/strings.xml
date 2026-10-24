@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Guerra Cubita</string>
+    <string name="title_activity_main">Guerra Cubita</string>
+    <string name="package_name">com.guerracubita.app</string>
+    <string name="custom_url_scheme">com.guerracubita.app</string>
+</resources>

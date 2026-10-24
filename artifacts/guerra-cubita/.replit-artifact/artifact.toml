@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Guerra Cubita"
+description = "Juego táctico de arena 3 contra 3 con cubos, habilidades, dados y cartas. Enfrenta dos equipos de tres en una batalla por turnos."
+version = "1.0.0"
+id = "artifacts/guerra-cubita"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25072
+
+[services.development]
+run = "pnpm --filter @workspace/guerra-cubita run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/guerra-cubita", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/guerra-cubita/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25072"
+BASE_PATH = "/"

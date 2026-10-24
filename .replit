@@ -1,0 +1,31 @@
+modules = ["nodejs-24", "python-base-3.13"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[userenv]
+
+[userenv.development]
+
+[nix]
+channel = "stable-25_05"
+packages = ["jdk17"]
+
+[objectStorage]
+defaultBucketID = "replit-objstore-51e0c57c-4947-4591-9c1e-453aad6c4179"
