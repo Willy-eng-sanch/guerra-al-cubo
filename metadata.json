@@ -1,0 +1,6 @@
+{
+  "name": "Guerra Cubita",
+  "description": "Videojuego táctico de arena digital por turnos de hasta 6 jugadores con dados D6, animaciones 3D de plastilina, cartas y habilidades especiales.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,33 @@
+{
+  "id": "/",
+  "name": "Guerra Cubita",
+  "short_name": "GuerraCubita",
+  "description": "Videojuego táctico de arena por turnos con dados D5 y cubos urbanos.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f1116",
+  "theme_color": "#0f1116",
+  "categories": ["games", "strategy", "arcade"],
+  "icons": [
+    {
+      "src": "/assets/clay_cubita_launcher_icon_1792370607827.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/app_icon_guerra_cubita_1792364082189.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/clay_cubita_launcher_icon_1792370607827.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ]
+}
