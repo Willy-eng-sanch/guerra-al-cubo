@@ -213,13 +213,15 @@
   filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .55));
 }
 
-.gc-intro__character-art canvas {
+.gc-intro__character-art canvas,
+.gc-intro__character-art > div {
   width: 48px !important;
   height: 48px !important;
   flex: 0 0 auto;
 }
 
-.gc-intro--launching .gc-intro__character-art canvas {
+.gc-intro--launching .gc-intro__character-art canvas,
+.gc-intro--launching .gc-intro__character-art > div {
   width: 62px !important;
   height: 62px !important;
 }

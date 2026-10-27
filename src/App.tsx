@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   ActiveDiceRoll,
   CampaignChapter,
+  CardCategory,
   CardType,
+  CATEGORY_INFO,
   CharacterType,
   CombatLogEntry,
   CurrentScreen,
@@ -11,12 +13,15 @@ import {
   GameMode,
   MatchPhase,
   PlayerState,
-  TrickTiming
+  TrickTiming,
+  getMaxHandSize
 } from './types/game';
 import { ALL_CARDS, createShuffledDeck } from './data/cards';
 import { CHARACTER_LIST, CHARACTERS } from './data/characters';
 import { DEFAULT_CHAPTERS } from './data/campaign';
 import { sound } from './audio/soundManager';
+import { music } from './audio/musicManager';
+import { narrator } from './audio/narratorManager';
 
 import { TitleScreen } from './screens/TitleScreen';
 import { SetupScreen } from './screens/SetupScreen';
@@ -26,6 +31,7 @@ import { RosterScreen } from './screens/RosterScreen';
 import { EncyclopediaScreen } from './screens/EncyclopediaScreen';
 import { ArenaScreen } from './screens/ArenaScreen';
 import { DraftScreen } from './screens/DraftScreen';
+import { DiceSpecialChoiceModal } from './components/DiceSpecialChoiceModal';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<CurrentScreen>(CurrentScreen.TITLE);
@@ -49,14 +55,62 @@ export default function App() {
   const [reactionPlayer, setReactionPlayer] = useState<PlayerState | null>(null);
   const [isDeckDrawing, setIsDeckDrawing] = useState<boolean>(false);
   const [isMatchIntroPlaying, setIsMatchIntroPlaying] = useState<boolean>(false);
+  const [specialSixChoice, setSpecialSixChoice] = useState<{
+    playerId: number;
+    actorName: string;
+    isAttacker: boolean;
+  } | null>(null);
   const matchIntroCompletedRef = useRef(true);
 
   const speedMultiplier = isFastSpeed ? 0.5 : 1;
+
+  const triggerMatchIntro = () => {
+    matchIntroCompletedRef.current = false;
+    setIsMatchIntroPlaying(true);
+  };
 
   const completeMatchIntro = () => {
     if (matchIntroCompletedRef.current) return;
     matchIntroCompletedRef.current = true;
     setIsMatchIntroPlaying(false);
+  };
+
+  const handleApplySixChoice = (playerId: number, choice: 'CARD' | 'EXTRA_TURN') => {
+    const actor = players.find(p => p.id === playerId);
+    const actorName = actor ? actor.name : 'Jugador';
+
+    if (choice === 'EXTRA_TURN') {
+      setPlayers(prev => prev.map(p => {
+        if (p.id !== playerId) return p;
+        return { ...p, actionPoints: p.actionPoints + 1 };
+      }));
+      addFloatingText(playerId, "+1 TURNO EXTRA (PA)", "#ffd600");
+      addLog(`¡Cara Especial 6! ${actorName} elige TURNO EXTRA (+1 Punto de Acción).`, true);
+      sound.playStanceActivate();
+      narrator.narrateSpecialFaceSix(actorName, "Turno Extra");
+    } else {
+      // Draw 1 card from deck
+      setDeck(prevDeck => {
+        if (prevDeck.length === 0) return prevDeck;
+        const [drawn, ...rest] = prevDeck;
+        const cardInstance: GameCard = {
+          ...drawn,
+          uid: `${drawn.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        };
+        setPlayers(prev => prev.map(p => {
+          if (p.id !== playerId) return p;
+          return { ...p, hand: [...p.hand, cardInstance] };
+        }));
+        addFloatingText(playerId, "+1 CARTA MAZO", "#00e5ff");
+        addLog(`¡Cara Especial 6! ${actorName} elige ROBAR CARTA y toma 1 del Mazo Global.`, true);
+        triggerDeckAnimation();
+        sound.playCardDraw();
+        narrator.narrateSpecialFaceSix(actorName, "Robar Carta");
+        return rest;
+      });
+    }
+
+    setSpecialSixChoice(null);
   };
 
   const triggerDeckAnimation = () => {
@@ -110,7 +164,12 @@ export default function App() {
 
     if (d.length === 0) {
       if (disc.length > 0) {
-        d = [...disc].sort(() => Math.random() - 0.5);
+        d = [...disc]
+          .map(c => ({
+            ...c,
+            uid: `${c.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+          }))
+          .sort(() => Math.random() - 0.5);
         disc = [];
       } else {
         return { card: null, newDeck: d, newDiscard: disc };
@@ -118,6 +177,9 @@ export default function App() {
     }
 
     const card = d.shift() || null;
+    if (card && !card.uid) {
+      card.uid = `${card.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    }
     return { card, newDeck: d, newDiscard: disc };
   };
 
@@ -153,7 +215,9 @@ export default function App() {
         forcedTargetPlayerId: null,
         abilityCooldownRemaining: 0,
         isEliminated: false,
-        teamId: 1
+        teamId: 1,
+        superBlockMeter: 0,
+        shieldBarrier: 0
       });
 
       // Rival hero
@@ -176,7 +240,9 @@ export default function App() {
         forcedTargetPlayerId: null,
         abilityCooldownRemaining: 0,
         isEliminated: false,
-        teamId: 2
+        teamId: 2,
+        superBlockMeter: 0,
+        shieldBarrier: 0
       });
     }
 
@@ -200,11 +266,13 @@ export default function App() {
     ]);
     setCurrentScreen(CurrentScreen.ARENA);
     sound.playDiceRoll();
+    music.play();
+    narrator.narrateMatchStart("Guerra de Escuadras 3 contra 3");
   };
 
   // Start Quick Battle
   const startQuickMatch = (playerCount: number = 3, chosenHero: CharacterType = CharacterType.TRAMCUBOSO) => {
-    setIsMatchIntroPlaying(false);
+    triggerMatchIntro();
     let currentDeck = createShuffledDeck();
     let currentDiscard: GameCard[] = [];
 
@@ -228,7 +296,9 @@ export default function App() {
       skipNextTurn: false,
       forcedTargetPlayerId: null,
       abilityCooldownRemaining: 0,
-      isEliminated: false
+      isEliminated: false,
+      superBlockMeter: 0,
+      shieldBarrier: 0
     });
 
     // Bots
@@ -251,7 +321,9 @@ export default function App() {
         skipNextTurn: false,
         forcedTargetPlayerId: null,
         abilityCooldownRemaining: 0,
-        isEliminated: false
+        isEliminated: false,
+        superBlockMeter: 0,
+        shieldBarrier: 0
       });
     }
 
@@ -275,11 +347,13 @@ export default function App() {
     ]);
     setCurrentScreen(CurrentScreen.ARENA);
     sound.playDiceRoll();
+    music.play();
+    narrator.narrateMatchStart("Batalla Rápida Callejera");
   };
 
   // Start Campaign Match
   const startCampaignMatch = (chapter: CampaignChapter, chosenHero: CharacterType = CharacterType.TRAMCUBOSO) => {
-    setIsMatchIntroPlaying(false);
+    triggerMatchIntro();
     let currentDeck = createShuffledDeck();
     let currentDiscard: GameCard[] = [];
 
@@ -302,7 +376,9 @@ export default function App() {
       skipNextTurn: false,
       forcedTargetPlayerId: null,
       abilityCooldownRemaining: 0,
-      isEliminated: false
+      isEliminated: false,
+      superBlockMeter: 0,
+      shieldBarrier: 0
     });
 
     // Boss
@@ -323,7 +399,9 @@ export default function App() {
       skipNextTurn: false,
       forcedTargetPlayerId: null,
       abilityCooldownRemaining: 0,
-      isEliminated: false
+      isEliminated: false,
+      superBlockMeter: 0,
+      shieldBarrier: 0
     });
 
     // Minions
@@ -344,7 +422,9 @@ export default function App() {
         skipNextTurn: false,
         forcedTargetPlayerId: null,
         abilityCooldownRemaining: 0,
-        isEliminated: false
+        isEliminated: false,
+        superBlockMeter: 0,
+        shieldBarrier: 0
       });
     });
 
@@ -368,11 +448,13 @@ export default function App() {
     ]);
     setCurrentScreen(CurrentScreen.ARENA);
     sound.playDiceRoll();
+    music.play();
+    narrator.narrateMatchStart(`Campaña: ${chapter.title}`);
   };
 
   // Start Pass and Play
   const startPassAndPlayMatch = (playerCount: number, heroList: CharacterType[]) => {
-    setIsMatchIntroPlaying(false);
+    triggerMatchIntro();
     let currentDeck = createShuffledDeck();
     let currentDiscard: GameCard[] = [];
 
@@ -396,7 +478,9 @@ export default function App() {
         skipNextTurn: false,
         forcedTargetPlayerId: null,
         abilityCooldownRemaining: 0,
-        isEliminated: false
+        isEliminated: false,
+        superBlockMeter: 0,
+        shieldBarrier: 0
       });
     }
 
@@ -420,9 +504,104 @@ export default function App() {
     ]);
     setCurrentScreen(CurrentScreen.ARENA);
     sound.playDiceRoll();
+    music.play();
+    narrator.narrateMatchStart("Pase y Juega Callejero");
   };
 
   const currentTurnPlayer = players[turnIndex] || null;
+
+  // Apply Heroic Class Synergy (Plants vs. Zombies Heroes Style)
+  const applyCardClassSynergy = (actorId: number, card: GameCard, targetId?: number | null) => {
+    const actor = players.find(p => p.id === actorId);
+    if (!actor) return;
+    const heroKey = actor.activeMorphCharacter || actor.characterType;
+    const heroDef = CHARACTERS[heroKey];
+    if (!heroDef) return;
+
+    const hasSynergy = heroDef.classes.includes(card.category);
+    if (!hasSynergy) return;
+
+    const catInfo = CATEGORY_INFO[card.category];
+    addFloatingText(actorId, `¡SINERGIA ${catInfo.badge.split(' ')[1]}!`, catInfo.color);
+    sound.playStanceActivate();
+    narrator.narrateClassSynergy(heroDef.displayName, catInfo.name.split(' ')[0], catInfo.synergyBonus);
+
+    switch (card.category) {
+      case CardCategory.SOLAR: {
+        setPlayers(prev => prev.map(p => {
+          if (p.id !== actorId) return p;
+          const newHp = Math.min(p.maxHp, p.hp + 1);
+          return { ...p, hp: newHp };
+        }));
+        addLog(`🌿 ¡Sinergia Solar de ${heroDef.displayName}! Recupera +1 HP al jugar [${card.name}].`, true, actor.name);
+        addFloatingText(actorId, "+1 HP SOLAR", "#4ade80");
+        break;
+      }
+      case CardCategory.GUARDIAN: {
+        setPlayers(prev => prev.map(p => {
+          if (p.id !== actorId) return p;
+          const currentBarrier = p.shieldBarrier || 0;
+          return { ...p, shieldBarrier: currentBarrier + 1 };
+        }));
+        addLog(`🛡️ ¡Sinergia Guardián de ${heroDef.displayName}! Gana +1 Barrera de Escudo para absorber el siguiente golpe.`, true, actor.name);
+        addFloatingText(actorId, "+1 BARRERA ESCUDO", "#60a5fa");
+        break;
+      }
+      case CardCategory.KABOOM: {
+        const opposingTeam = actor.teamId === 1 ? 2 : actor.teamId === 2 ? 1 : null;
+        const target = (targetId ? players.find(p => p.id === targetId && !p.isEliminated && p.id !== actorId) : null) ||
+                       players.find(p => !p.isEliminated && p.id !== actorId && (!opposingTeam || p.teamId === opposingTeam));
+        if (target) {
+          setPlayers(prev => prev.map(p => {
+            if (p.id !== target.id) return p;
+            const newHp = Math.max(0, p.hp - 1);
+            return { ...p, hp: newHp, isEliminated: newHp <= 0 };
+          }));
+          addLog(`⚡ ¡Sinergia Kaboom de ${heroDef.displayName}! Dispara una chispa explosiva de 1 daño a ${target.name}.`, true, actor.name);
+          addFloatingText(target.id, "-1 DAÑO KABOOM", "#f97316");
+          sound.playPunchHit();
+        }
+        break;
+      }
+      case CardCategory.CEREBRAL: {
+        const getsAp = Math.random() < 0.5;
+        if (getsAp) {
+          setPlayers(prev => prev.map(p => {
+            if (p.id !== actorId) return p;
+            return { ...p, actionPoints: p.actionPoints + 1 };
+          }));
+          addLog(`🧠 ¡Sinergia Cerebral de ${heroDef.displayName}! Reembolsa +1 Punto de Acción con ingenio táctico.`, true, actor.name);
+          addFloatingText(actorId, "+1 PA CEREBRAL", "#c084fc");
+        } else {
+          setDeck(prevDeck => {
+            if (prevDeck.length === 0) return prevDeck;
+            const [drawn, ...rest] = prevDeck;
+            const maxH = getMaxHandSize(actor);
+            const cardInstance: GameCard = {
+              ...drawn,
+              uid: `${drawn.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+            };
+            setPlayers(prev => prev.map(p => {
+              if (p.id !== actorId) return p;
+              if (p.hand.length >= maxH) return p;
+              return { ...p, hand: [...p.hand, cardInstance] };
+            }));
+            triggerDeckAnimation();
+            sound.playCardDraw();
+            addLog(`🧠 ¡Sinergia Cerebral de ${heroDef.displayName}! Roba 1 carta táctica extra del Mazo Global.`, true, actor.name);
+            addFloatingText(actorId, "+1 CARTA CEREBRAL", "#c084fc");
+            return rest;
+          });
+        }
+        break;
+      }
+      case CardCategory.FURTIVO: {
+        addLog(`🥷 ¡Sinergia Furtiva de ${heroDef.displayName}! Despliega una cortina de sombras tácticas sobre los rivales.`, true, actor.name);
+        addFloatingText(actorId, "¡SOMBRA FURTIVA!", "#22d3ee");
+        break;
+      }
+    }
+  };
 
   // Execute Attack
   const handleAttack = (targetId: number) => {
@@ -441,23 +620,37 @@ export default function App() {
       let attackerFinalVal: number;
 
       if (attackerHero === CharacterType.TRAMCUBOSO) {
-        const r1 = Math.floor(Math.random() * 5) + 1;
-        const r2 = Math.floor(Math.random() * 5) + 1;
+        const r1 = Math.floor(Math.random() * 6) + 1;
+        const r2 = Math.floor(Math.random() * 6) + 1;
         attackerRolls.push(r1, r2);
         attackerFinalVal = Math.max(r1, r2);
       } else if (attackerHero === CharacterType.CUBINJA) {
-        const r1 = Math.floor(Math.random() * 5) + 1;
-        const r2 = Math.floor(Math.random() * 5) + 1;
+        const r1 = Math.floor(Math.random() * 6) + 1;
+        const r2 = Math.floor(Math.random() * 6) + 1;
         attackerRolls.push(r1, r2);
         attackerFinalVal = r1 + r2;
       } else if (attackerHero === CharacterType.CUBOGRO) {
-        const r = Math.floor(Math.random() * 5) + 1;
+        const r = Math.floor(Math.random() * 6) + 1;
         attackerRolls.push(r);
         attackerFinalVal = r === 1 ? 2 : r === 2 ? 4 : r === 3 ? 6 : r;
       } else {
-        const r = Math.floor(Math.random() * 5) + 1;
+        const r = Math.floor(Math.random() * 6) + 1;
         attackerRolls.push(r);
         attackerFinalVal = r;
+      }
+
+      // Special Face 6 Effect check for Attacker
+      if (attackerRolls.includes(6)) {
+        if (!attacker.isBot) {
+          setSpecialSixChoice({
+            playerId: attacker.id,
+            actorName: attacker.name,
+            isAttacker: true
+          });
+        } else {
+          const botChoice = attacker.hand.length < 2 ? 'CARD' : 'EXTRA_TURN';
+          handleApplySixChoice(attacker.id, botChoice);
+        }
       }
 
       // Attacker Weapon Modifiers
@@ -482,29 +675,51 @@ export default function App() {
       const hasElComodin = target.preparedStance?.id === 60;
 
       if (hasReflejoFelino || hasElComodin) {
-        defenderFinalVal = Math.min(5, Math.max(1, attackerFinalVal));
+        defenderFinalVal = attackerFinalVal;
         defenderRolls.push(defenderFinalVal);
         isPerfectBlock = true;
         addLog(`${target.name} activa su postura defensiva y bloquea a la perfección!`);
-      } else if (target.isFrozen || defenderHero === CharacterType.CUBINJA) {
-        const r = Math.floor(Math.random() * 5) + 1;
+      } else if (target.isFrozen) {
+        const r = Math.floor(Math.random() * 6) + 1;
         defenderRolls.push(r);
         defenderFinalVal = r;
-        isPerfectBlock = false; // Cubinja or Frozen cannot avoid damage
+        isPerfectBlock = false; // Congelado no puede bloquear
       } else if (defenderHero === CharacterType.TRAMCUBOSO) {
-        const r1 = Math.floor(Math.random() * 5) + 1;
-        const r2 = Math.floor(Math.random() * 5) + 1;
+        const r1 = Math.floor(Math.random() * 6) + 1;
+        const r2 = Math.floor(Math.random() * 6) + 1;
         defenderRolls.push(r1, r2);
-        isPerfectBlock = r1 === attackerFinalVal || r2 === attackerFinalVal;
-        defenderFinalVal = isPerfectBlock ? attackerFinalVal : Math.max(r1, r2);
+        isPerfectBlock =
+          attackerRolls.includes(r1) ||
+          attackerRolls.includes(r2) ||
+          r1 === attackerFinalVal ||
+          r2 === attackerFinalVal;
+        defenderFinalVal = isPerfectBlock
+          ? (attackerRolls.includes(r1) || r1 === attackerFinalVal ? r1 : r2)
+          : Math.max(r1, r2);
       } else {
-        const r = Math.floor(Math.random() * 5) + 1;
+        // Todos los demás héroes Y CUBINJA lanzan SOLO 1 DADO para bloquear
+        const r = Math.floor(Math.random() * 6) + 1;
         defenderRolls.push(r);
         defenderFinalVal = r;
-        isPerfectBlock = r === attackerFinalVal;
+        // El tiro de bloqueo tiene que coincidir con el número del atacante
+        isPerfectBlock = attackerRolls.includes(r) || r === attackerFinalVal;
       }
 
-      // 3. Resolve Damage
+      // Special Face 6 Effect check for Defender
+      if (defenderRolls.includes(6)) {
+        if (!target.isBot) {
+          setSpecialSixChoice({
+            playerId: target.id,
+            actorName: target.name,
+            isAttacker: false
+          });
+        } else {
+          const botChoice = target.hand.length < 2 ? 'CARD' : 'EXTRA_TURN';
+          handleApplySixChoice(target.id, botChoice);
+        }
+      }
+
+      // 3. Resolve Damage & Shield Barrier
       let finalDamage = isPerfectBlock ? 0 : modifiedAttackDamage;
 
       if (!isPerfectBlock && target.preparedStance?.id === 35) {
@@ -524,6 +739,16 @@ export default function App() {
         addLog(`Gladiacubon mitiga el impacto a ${finalDamage} de daño.`);
       }
 
+      // Shield Barrier (Sinergia Guardián) absorbs damage
+      let targetBarrierRemaining = target.shieldBarrier || 0;
+      if (!isPerfectBlock && finalDamage > 0 && targetBarrierRemaining > 0) {
+        const absorbed = Math.min(targetBarrierRemaining, finalDamage);
+        targetBarrierRemaining -= absorbed;
+        finalDamage -= absorbed;
+        addLog(`🛡️ ¡La Barrera de Escudo de ${target.name} absorbió ${absorbed} de daño! (Quedan: ${targetBarrierRemaining})`);
+        addFloatingText(target.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
+      }
+
       // Consume posture
       let updatedTargetStance = target.preparedStance;
       if (target.preparedStance && [35, 53, 55, 57, 59, 60].includes(target.preparedStance.id)) {
@@ -536,7 +761,7 @@ export default function App() {
       // Sound & visuals
       if (isPerfectBlock) {
         sound.playPerfectBlock();
-        addFloatingText(target.id, "¡BLOQUEO!", "#00e5ff");
+        addFloatingText(target.id, "¡SUPER-BLOQUEO HEROICO!", "#00e5ff");
       } else if (finalDamage > 0) {
         sound.playPunchHit();
         addFloatingText(target.id, `-${finalDamage} HP`, "#ff1744");
@@ -582,22 +807,27 @@ export default function App() {
         addLog(`¡El Racubitero saquea ${stealCount} carta(s) del Mazo por daño efectivo!`, true);
       }
 
-      // Perfect Block rewards for defender: draws 1 card from Global Deck + reaction window
+      // Super-Bloqueo Heroico / Bloqueo Perfecto rewards for defender:
+      // Se activa cuando el tiro de bloqueo coincide con el número del atacante
       let defenderCardsToAdd = 0;
       let defenderHpHeal = 0;
       if (isPerfectBlock) {
         defenderCardsToAdd = 1;
+        defenderHpHeal = 2; // Recuperación heroica por Super-Bloqueo
         triggerDeckAnimation();
         sound.playCardDraw();
+        const targetHeroDef = CHARACTERS[defenderHero];
         if (target.equippedWeapons.some(w => w.id === 2)) {
-          defenderHpHeal = 1;
-          addLog(`${target.name} cura 1 HP con su Tapa de Alcantarilla al bloquear.`);
+          defenderHpHeal += 1;
+          addLog(`${target.name} cura +1 HP extra con su Tapa de Alcantarilla al bloquear.`);
         }
         addLog(
-          `¡Bloqueo Perfecto! ${target.name} roba 1 carta del Mazo Global y se activa la ventana de Reacción para equipar o activar de inmediato.`,
+          `🛡️⚡ ¡¡SUPER-BLOQUEO HEROICO!! ${target.name} igualó el número del atacante (${defenderFinalVal})! Anula el 100% del daño y desata su Superpoder [${targetHeroDef.signatureSuperpowerName}]: ${targetHeroDef.signatureSuperpowerDesc}! Recupera +${defenderHpHeal} HP y roba 1 carta del Mazo Global.`,
           true
         );
-        addFloatingText(target.id, "¡BLOQUEO PERFECTO! +1 CARTA", "#00e5ff");
+        narrator.narrateSuperBlock(target.name, defenderFinalVal, targetHeroDef.signatureSuperpowerName);
+      } else if (finalDamage > 0) {
+        narrator.narrateAttack(attacker.name, target.name, finalDamage, attackerFinalVal);
       }
 
       // Update state
@@ -652,6 +882,7 @@ export default function App() {
               hp: Math.min(p.maxHp, newHp + defenderHpHeal),
               hand: newHand,
               preparedStance: updatedTargetStance,
+              shieldBarrier: targetBarrierRemaining,
               isEliminated: newHp <= 0
             };
           }
@@ -665,6 +896,24 @@ export default function App() {
       if (newHp <= 0) {
         sound.playElimination();
         addLog(`¡K.O.! ${target.name} ha sido eliminado de la arena!`, true);
+        narrator.narrateElimination(target.name);
+
+        setTimeout(() => {
+          setPlayers(currPlayers => {
+            const opposingTeam = attacker.teamId === 1 ? 2 : attacker.teamId === 2 ? 1 : null;
+            const liveEnemies = currPlayers.filter(
+              p => !p.isEliminated && p.hp > 0 && p.id !== attacker.id && (!opposingTeam || p.teamId === opposingTeam)
+            );
+            if (liveEnemies.length > 0) {
+              const bestTarget = liveEnemies.reduce((prev, curr) => (curr.hp < prev.hp ? curr : prev));
+              setSelectedTargetId(bestTarget.id);
+            } else {
+              setSelectedTargetId(null);
+            }
+            checkVictory(currPlayers);
+            return currPlayers;
+          });
+        }, 100);
       }
 
       // Perfect Block immediate Reaction Window
@@ -745,6 +994,7 @@ export default function App() {
       )
     );
     addLog(`¡Reacción! ${reactionPlayer.name} equipó [${card.name}] inmediatamente tras su Bloqueo Perfecto!`, true);
+    applyCardClassSynergy(reactionPlayer.id, card);
     setReactionPlayer(null);
   };
 
@@ -771,6 +1021,7 @@ export default function App() {
       )
     );
     addLog(`¡Reacción! ${reactionPlayer.name} activó el truco [${card.name}] tras su Bloqueo Perfecto!`, true);
+    applyCardClassSynergy(reactionPlayer.id, card);
     setReactionPlayer(null);
   };
 
@@ -794,6 +1045,7 @@ export default function App() {
       )
     );
     addLog(`¡Reacción! ${reactionPlayer.name} preparó la postura [${card.name}] tras su Bloqueo Perfecto!`, true);
+    applyCardClassSynergy(reactionPlayer.id, card);
     setReactionPlayer(null);
   };
 
@@ -845,6 +1097,7 @@ export default function App() {
     );
 
     addLog(`${attacker.name} equipó el arma: [${card.name}]`);
+    applyCardClassSynergy(attacker.id, card, selectedTargetId);
   };
 
   // Prepare Stance
@@ -877,6 +1130,7 @@ export default function App() {
     );
 
     addLog(`${attacker.name} preparó la postura: [${card.name}]`, true);
+    applyCardClassSynergy(attacker.id, card, selectedTargetId);
   };
 
   // Play Action Trick
@@ -913,6 +1167,7 @@ export default function App() {
     );
 
     addLog(`${attacker.name} activó el truco: [${card.name}]`);
+    applyCardClassSynergy(attacker.id, card, targetId);
   };
 
   // Hero Ability
@@ -946,9 +1201,21 @@ export default function App() {
       );
       addLog(`¡${actor.name} usó [Abordaje Cúbico] sobre ${target.name}! Anula su próximo turno.`, true);
     } else if (hero === CharacterType.FLAUCUBISTA_DESAFINADO) {
-      const chosenNum = extraOption || Math.floor(Math.random() * 5) + 1;
-      const roll = Math.floor(Math.random() * 5) + 1;
+      const chosenNum = extraOption || Math.floor(Math.random() * 6) + 1;
+      const roll = Math.floor(Math.random() * 6) + 1;
       sound.playDiceRoll();
+
+      if (roll === 6) {
+        if (!actor.isBot) {
+          setSpecialSixChoice({
+            playerId: actor.id,
+            actorName: actor.name,
+            isAttacker: true
+          });
+        } else {
+          handleApplySixChoice(actor.id, actor.hand.length < 2 ? 'CARD' : 'EXTRA_TURN');
+        }
+      }
 
       if (roll === chosenNum) {
         sound.playPunchHit();
@@ -966,10 +1233,11 @@ export default function App() {
       } else {
         const selfDamage = Math.max(1, Math.floor(roll / 2));
         setPlayers(prev =>
-          prev.map(p => (p.id === actor.id ? { ...p, hp: Math.max(0, p.hp - selfDamage) } : p))
+          prev.map(p => (p.id === actor.id ? { ...p, hp: Math.max(0, p.hp - selfDamage), isEliminated: Math.max(0, p.hp - selfDamage) <= 0 } : p))
         );
         addLog(`Flaucubista desafinó (apostó ${chosenNum}, sacó ${roll}) y sufre ${selfDamage} de daño.`);
       }
+      setTimeout(() => checkVictory(), 300);
     } else {
       addLog(`¡${actor.name} activa el efecto de [${CHARACTERS[hero].abilityName}]! ${CHARACTERS[hero].abilityDescription}`, true);
     }
@@ -978,8 +1246,33 @@ export default function App() {
   // End Turn
   const handleEndTurn = () => {
     if (players.length === 0) return;
-    const nextIdx = (turnIndex + 1) % players.length;
-    const nextRound = nextIdx === 0 ? round + 1 : round;
+
+    // 1. Check if only 1 survivor or 1 team remains
+    const alivePlayers = players.filter(p => !p.isEliminated && p.hp > 0);
+    if (alivePlayers.length <= 1) {
+      checkVictory(players);
+      return;
+    }
+
+    // 2. Step forward in a single pass until we find the next non-eliminated player
+    let nextIdx = (turnIndex + 1) % players.length;
+    let cycles = 0;
+    let roundsToAdd = 0;
+
+    while ((players[nextIdx].isEliminated || players[nextIdx].hp <= 0) && cycles < players.length) {
+      if (nextIdx === 0) {
+        roundsToAdd++;
+      }
+      nextIdx = (nextIdx + 1) % players.length;
+      cycles++;
+    }
+
+    if (cycles >= players.length) {
+      checkVictory(players);
+      return;
+    }
+
+    const nextRound = (nextIdx <= turnIndex) ? round + 1 + roundsToAdd : round + roundsToAdd;
 
     const updated = players.map((p, idx) => {
       if (idx === nextIdx) {
@@ -999,61 +1292,73 @@ export default function App() {
     setActiveDiceRoll(null);
 
     const nextP = updated[nextIdx];
-    if (nextP.isEliminated) {
-      handleEndTurn();
-      return;
-    }
-
     addLog(`Turno de ${nextP.name} (Ronda ${nextRound})`, false, "Árbitro");
 
     // Auto-select lowest HP rival as default target (prioritizing opposing team)
     const opposingTeamId = nextP.teamId === 1 ? 2 : nextP.teamId === 2 ? 1 : null;
     const rivals = updated.filter(
-      p => !p.isEliminated && p.id !== nextP.id && (!opposingTeamId || p.teamId === opposingTeamId)
+      p => !p.isEliminated && p.hp > 0 && p.id !== nextP.id && (!opposingTeamId || p.teamId === opposingTeamId)
     );
     if (rivals.length > 0) {
       const best = rivals.reduce((prev, curr) => (curr.hp < prev.hp ? curr : prev));
       setSelectedTargetId(best.id);
+    } else {
+      setSelectedTargetId(null);
     }
   };
 
   // Check Victory (Squad Team vs Team or Free-For-All)
-  const checkVictory = () => {
-    const hasTeams = players.some(p => p.teamId === 1) && players.some(p => p.teamId === 2);
+  const checkVictory = (playersList: PlayerState[] = players) => {
+    const hasTeams = playersList.some(p => p.teamId === 1) && playersList.some(p => p.teamId === 2);
 
     if (hasTeams) {
-      const aliveTeam1 = players.filter(p => p.teamId === 1 && !p.isEliminated && p.hp > 0);
-      const aliveTeam2 = players.filter(p => p.teamId === 2 && !p.isEliminated && p.hp > 0);
+      const aliveTeam1 = playersList.filter(p => p.teamId === 1 && !p.isEliminated && p.hp > 0);
+      const aliveTeam2 = playersList.filter(p => p.teamId === 2 && !p.isEliminated && p.hp > 0);
 
       if (aliveTeam1.length === 0 && aliveTeam2.length > 0) {
         setWinner(aliveTeam2[0]);
         setPhase(MatchPhase.MATCH_OVER);
         addLog(`¡¡EL BANDO RIVAL (ROJO) HA DERROTADO A TODA TU ESCUADRA!!`, true, "Árbitro");
+        narrator.narrateVictory("El Bando Rojo");
         return;
       } else if (aliveTeam2.length === 0 && aliveTeam1.length > 0) {
         setWinner(aliveTeam1[0]);
         setPhase(MatchPhase.MATCH_OVER);
         addLog(`¡¡VICTORIA TOTAL! TU BANDO (AZUL) HA DERROTADO A TODOS LOS RIVALES!!`, true, "Árbitro");
+        narrator.narrateVictory("Tu Escuadra Azul");
         return;
       }
     }
 
-    const alive = players.filter(p => !p.hp || (p.hp > 0 && !p.isEliminated));
-    if (alive.length <= 1 && players.length > 1) {
+    const alive = playersList.filter(p => !p.isEliminated && p.hp > 0);
+    if (alive.length <= 1 && playersList.length > 1) {
       const champ = alive[0] || null;
       setWinner(champ);
       setPhase(MatchPhase.MATCH_OVER);
       if (champ) {
         addLog(`¡¡${champ.name} ES EL CAMPEÓN SUPREMO DE GUERRA CUBITA!!`, true, "Árbitro");
+        narrator.narrateVictory(champ.name);
       }
     }
   };
+
+  // Auto-skip turn if current active player is eliminated or dead (CRITICAL FIX FOR STUCK 'PENSANDO')
+  useEffect(() => {
+    if (currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
+    const currentP = players[turnIndex];
+    if (currentP && (currentP.isEliminated || currentP.hp <= 0)) {
+      const skipTimer = setTimeout(() => {
+        handleEndTurn();
+      }, 300 * speedMultiplier);
+      return () => clearTimeout(skipTimer);
+    }
+  }, [turnIndex, players, currentScreen, winner, isMatchIntroPlaying, speedMultiplier]);
 
   // Bot AI Turn execution
   useEffect(() => {
     if (currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
     const activePlayer = players[turnIndex];
-    if (!activePlayer || !activePlayer.isBot || activePlayer.isEliminated) return;
+    if (!activePlayer || !activePlayer.isBot || activePlayer.isEliminated || activePlayer.hp <= 0) return;
 
     const timer = setTimeout(() => {
       // 1. Try to equip weapon or prepare stance
@@ -1079,10 +1384,10 @@ export default function App() {
       // 2. Pick target & attack
       setTimeout(() => {
         const currentP = players.find(p => p.id === activePlayer.id);
-        if (currentP && currentP.actionPoints > 0 && !currentP.isFrozen) {
+        if (currentP && currentP.actionPoints > 0 && !currentP.isFrozen && !currentP.isEliminated && currentP.hp > 0) {
           const opposingTeamId = activePlayer.teamId === 1 ? 2 : activePlayer.teamId === 2 ? 1 : null;
           const rivals = players.filter(
-            p => !p.isEliminated && p.id !== activePlayer.id && (!opposingTeamId || p.teamId === opposingTeamId)
+            p => !p.isEliminated && p.hp > 0 && p.id !== activePlayer.id && (!opposingTeamId || p.teamId === opposingTeamId)
           );
           if (rivals.length > 0) {
             const target = rivals.reduce(
@@ -1104,7 +1409,7 @@ export default function App() {
     }, 700 * speedMultiplier);
 
     return () => clearTimeout(timer);
-  }, [turnIndex, players, currentScreen, winner, isMatchIntroPlaying]);
+  }, [turnIndex, players, currentScreen, winner, isMatchIntroPlaying, speedMultiplier]);
 
   return (
     <div className="w-full min-h-screen bg-[#0f1116] text-white">
@@ -1202,6 +1507,14 @@ export default function App() {
           onActivateReaction={handleActivateReaction}
           onPrepareReaction={handlePrepareReaction}
           onSkipReaction={handleSkipReaction}
+        />
+      )}
+
+      {specialSixChoice && (
+        <DiceSpecialChoiceModal
+          actorName={specialSixChoice.actorName}
+          isAttacker={specialSixChoice.isAttacker}
+          onChoose={(choice) => handleApplySixChoice(specialSixChoice.playerId, choice)}
         />
       )}
     </div>

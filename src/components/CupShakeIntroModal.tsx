@@ -98,7 +98,12 @@ export const CupShakeIntroModal: React.FC<CupShakeIntroModalProps> = ({
             } ${stage === 'DUMP' ? 'animate-cup-dump' : ''}`}
           >
             {/* Cup Body (Clay / Stitched Leather Shaker) */}
-            <div className="relative w-36 h-48 md:w-44 md:h-56 rounded-t-3xl rounded-b-xl bg-gradient-to-b from-[#8d5b4c] via-[#5d3a30] to-[#3a221a] border-4 border-[#a87463] shadow-[0_20px_50px_rgba(0,0,0,0.9)] flex flex-col items-center justify-between p-3 overflow-hidden">
+            <div
+              className="relative w-36 h-48 md:w-44 md:h-56 rounded-t-3xl rounded-b-xl border-4 border-[#a87463] shadow-[0_20px_50px_rgba(0,0,0,0.9)] flex flex-col items-center justify-between p-3 overflow-hidden bg-cover bg-center"
+              style={{
+                backgroundImage: `radial-gradient(ellipse at 50% 30%, rgba(141,91,76,0.2) 0%, rgba(20,12,8,0.95) 90%), url('/src/assets/images/dice_cup_3d_1793105147820.jpg')`
+              }}
+            >
               {/* Cup Rim highlight */}
               <div className="w-full h-4 rounded-full bg-[#c98e7b] border border-[#ffbca9] shadow-inner" />
 

@@ -149,28 +149,26 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
             <div className="bg-[#151c2b] border-2 border-yellow-500/50 p-4 rounded-xl space-y-2.5">
               <span className="text-xs font-black text-yellow-300 flex items-center gap-1.5">
                 <Dices className="w-4 h-4 text-yellow-400" />
-                <span>Elige tu número de la suerte para el D6 (1 a 6):</span>
+                <span>Elige tu número de la suerte para el D5 (1 a 5):</span>
               </span>
               <p className="text-[11px] text-neutral-300">
-                Si tu tirada del D6 acierta tu número elegido, harás 2 de daño ineludible a todos los rivales y te curarás.
+                Si tu tirada del D5 acierta tu número elegido, harás 2 de daño ineludible a todos los rivales y te curarás.
               </p>
               
-              <div className="grid grid-cols-6 gap-1.5 pt-1">
-                {[1, 2, 3, 4, 5, 6].map(num => (
+              <div className="grid grid-cols-5 gap-2 pt-1">
+                {[1, 2, 3, 4, 5].map(num => (
                   <button
                     key={num}
                     type="button"
                     onClick={() => setFluteBet(num)}
-                    className={`py-2.5 rounded-xl font-mono text-base font-black transition-all flex flex-col items-center justify-center border-2 ${
+                    className={`py-3 rounded-xl font-mono text-base font-black transition-all flex flex-col items-center justify-center border-2 ${
                       fluteBet === num
                         ? 'bg-yellow-400 text-black border-yellow-200 shadow-[0_0_15px_rgba(255,215,0,0.5)] scale-105'
-                        : num === 6
-                        ? 'bg-[#2a2315] text-yellow-300 border-yellow-500/40 hover:bg-[#382f1d]'
                         : 'bg-[#1e2536] text-neutral-300 border-[#2f3a52] hover:bg-[#283348]'
                     }`}
                   >
-                    <span>{num === 6 ? '6★' : num}</span>
-                    <span className="text-[8px] font-sans opacity-70">{num === 6 ? 'ESP' : 'D6'}</span>
+                    <span>{num}</span>
+                    <span className="text-[8px] font-sans opacity-70">D5</span>
                   </button>
                 ))}
               </div>

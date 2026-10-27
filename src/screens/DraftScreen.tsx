@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { CharacterDef, CharacterType, DraftState } from '../types/game';
+import { CharacterDef, CharacterType, DraftState, CATEGORY_INFO } from '../types/game';
 import { CHARACTER_LIST, CHARACTERS } from '../data/characters';
-import { Cube3DCanvas } from '../components/Cube3DCanvas';
-import { DiceD5Canvas } from '../components/DiceD5Canvas';
-import { Model3DViewerModal } from '../components/Model3DViewerModal';
+import { Dice3DVisual } from '../components/Dice3DVisual';
+import { DiceCupShaker } from '../components/DiceCupShaker';
+import { HeroDiceCard } from '../components/HeroDiceCard';
 import { CinematicCutsceneModal } from '../components/CinematicCutsceneModal';
 import { sound } from '../audio/soundManager';
-import { ArrowLeft, Dices, Shield, Swords, Sparkles, Check, Lock, Users, Eye, Video } from 'lucide-react';
+import { ArrowLeft, Dices, Shield, Swords, Sparkles, Check, Lock, Users, Video, Info } from 'lucide-react';
 
 interface DraftScreenProps {
   onStartBattle: (playerTeam: CharacterType[], rivalTeam: CharacterType[]) => void;
@@ -26,24 +26,25 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
     pickHistory: []
   });
 
-  const [inspectingCharType, setInspectingCharType] = useState<CharacterType | null>(null);
+  // Inspected die type for the 1st click
+  const [inspectedCharType, setInspectedCharType] = useState<CharacterType | null>(null);
+
   const [activeCutscene, setActiveCutscene] = useState<{
     character: CharacterDef;
     picker: 'PLAYER' | 'RIVAL';
     actionTitle: string;
   } | null>(null);
-  const [previewVideoChar, setPreviewVideoChar] = useState<CharacterDef | null>(null);
+
   const [recentPickBanner, setRecentPickBanner] = useState<{
     name: string;
     picker: 'PLAYER' | 'RIVAL';
   } | null>(null);
 
   const [initiativeMessage, setInitiativeMessage] = useState<string>(
-    "Lanza el dado D5 para determinar quién tiene la primera elección."
+    "Lanza el dado D6 para determinar quién tiene la primera elección."
   );
 
   useEffect(() => {
-    // Silence any synthetic browser TTS so only the authentic video audio plays
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -117,7 +118,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
     });
   };
 
-  // Bot drafting AI: Only acts when it is legitimately RIVAL's turn and no animation is active!
+  // Bot drafting AI
   useEffect(() => {
     if (draftState.stage !== 'DRAFTING') return;
     if (draftState.turn !== 'RIVAL') return;
@@ -142,7 +143,6 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
         const newRivalTeam = [...prev.rivalTeam, chosen];
         const newHistory = [...prev.pickHistory, { picker: 'RIVAL' as const, character: chosen }];
 
-        // Trigger animation for the bot's pick!
         if (chosenDef.selectionVideo) {
           setTimeout(() => {
             setActiveCutscene({
@@ -170,7 +170,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
     return () => clearTimeout(timer);
   }, [draftState.turn, draftState.stage, draftState.rivalTeam.length, activeCutscene, recentPickBanner]);
 
-  // Player chooses a character
+  // Player picks a character (via drag-and-drop or 2nd click)
   const handlePlayerPick = (charType: CharacterType) => {
     if (draftState.stage !== 'DRAFTING' || draftState.turn !== 'PLAYER') return;
     if (draftState.playerTeam.length >= 3) return;
@@ -180,7 +180,10 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
     if (taken.has(charType)) return;
 
     const pickedDef = CHARACTERS[charType];
-    sound.playPunchHit();
+    sound.playCupShake();
+
+    // Clear inspection
+    setInspectedCharType(null);
 
     setDraftState(prev => {
       const newPlayerTeam = [...prev.playerTeam, charType];
@@ -191,7 +194,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
           setActiveCutscene({
             character: pickedDef,
             picker: 'PLAYER',
-            actionTitle: `¡HAS SELECCIONADO A ${pickedDef.displayName.toUpperCase()}!`
+            actionTitle: `¡HAS METIDO A ${pickedDef.displayName.toUpperCase()} EN EL VASO!`
           });
         }, 60);
       } else {
@@ -210,28 +213,28 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
     });
   };
 
-  const takenSet = new Set([...draftState.playerTeam, ...draftState.rivalTeam]);
   const isDraftComplete = draftState.playerTeam.length === 3 && draftState.rivalTeam.length === 3;
+  const inspectedHero = inspectedCharType ? CHARACTERS[inspectedCharType] : null;
 
   return (
-    <div className="relative w-full min-h-screen bg-[#0d0f14] p-3 md:p-6 text-white flex flex-col justify-between max-w-4xl mx-auto select-none">
+    <div className="relative w-full min-h-screen bg-[#0d0f14] p-3 md:p-6 text-white flex flex-col justify-between max-w-5xl mx-auto select-none">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#232a3b] pb-3">
         <button
           onClick={onBack}
-          className="p-2 rounded-xl bg-[#171c26] hover:bg-[#202736] border border-[#2c374d] text-neutral-300 transition-all flex items-center gap-1.5 text-xs font-bold"
+          className="p-2 rounded-xl bg-[#171c26] hover:bg-[#202736] border border-[#2c374d] text-neutral-300 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Volver al Menú</span>
         </button>
 
         <h2 className="text-sm md:text-lg font-black tracking-wide text-white font-bungee flex items-center gap-2">
-          <span>DRAFT 3 VS 3 · SORTEO D5</span>
+          <span>DRAFT 3 VS 3 · VASO DE DADOS</span>
         </h2>
 
         <div className="text-right">
           <span className="text-[10px] bg-amber-950 text-amber-300 border border-amber-600 px-2.5 py-1 rounded-full font-mono font-bold">
-            13 CUBOS · 3 POR BANDO
+            13 DADOS HÉROE · 3 POR BANDO
           </span>
         </div>
       </div>
@@ -241,12 +244,12 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
 
         {/* Phase 1: Initiative Roll */}
         {draftState.stage === 'ROLL_INITIATIVE' && (
-          <div className="bg-[#141824] border-2 border-[#29354d] rounded-2xl p-5 md:p-8 text-center space-y-6 shadow-2xl">
+          <div className="bg-[#141824] border-2 border-[#29354d] rounded-3xl p-5 md:p-8 text-center space-y-6 shadow-2xl">
             <div className="max-w-md mx-auto space-y-2">
               <span className="text-xs font-black text-yellow-400 uppercase tracking-widest bg-yellow-950/60 px-3 py-1 rounded-full border border-yellow-700">
-                Paso 1: Iniciativa de Elección
+                Paso 1: Iniciativa con Dados 3D
               </span>
-              <h3 className="text-xl md:text-2xl font-black text-white">
+              <h3 className="text-xl md:text-2xl font-black text-white font-bungee">
                 ¿Quién Elige Primero?
               </h3>
               <p className="text-xs text-neutral-300 leading-relaxed">
@@ -254,35 +257,37 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
               </p>
             </div>
 
-            <div className="flex items-center justify-center gap-6 md:gap-14 py-4">
-              {/* Player D5 */}
+            <div className="flex items-center justify-center gap-8 md:gap-16 py-4">
+              {/* Player D6 */}
               <div className="flex flex-col items-center gap-2">
-                <span className="text-xs font-black text-cyan-400">TU DADO (D5)</span>
-                <div className="p-3 bg-[#0d1017] rounded-2xl border-2 border-cyan-500/60 shadow-lg">
-                  <DiceD5Canvas
+                <span className="text-xs font-black text-cyan-400 tracking-wider">TU DADO (D6)</span>
+                <div className="p-3 bg-[#0d1017] rounded-3xl border-2 border-cyan-500/60 shadow-lg">
+                  <Dice3DVisual
                     value={draftState.playerRoll}
                     size={84}
                     isRolling={draftState.isRolling}
+                    glowColor="#06b6d4"
                   />
                 </div>
-                <span className="text-lg font-black text-white font-mono">
+                <span className="text-xl font-black text-white font-mono">
                   {draftState.isRolling ? '?' : draftState.playerRoll}
                 </span>
               </div>
 
-              <div className="text-lg font-black text-neutral-500 font-bungee">VS</div>
+              <div className="text-2xl font-black text-yellow-400 font-bungee">VS</div>
 
-              {/* Rival D5 */}
+              {/* Rival D6 */}
               <div className="flex flex-col items-center gap-2">
-                <span className="text-xs font-black text-red-400">RIVAL (D5)</span>
-                <div className="p-3 bg-[#0d1017] rounded-2xl border-2 border-red-500/60 shadow-lg">
-                  <DiceD5Canvas
+                <span className="text-xs font-black text-red-400 tracking-wider">RIVAL (D6)</span>
+                <div className="p-3 bg-[#0d1017] rounded-3xl border-2 border-red-500/60 shadow-lg">
+                  <Dice3DVisual
                     value={draftState.rivalRoll}
                     size={84}
                     isRolling={draftState.isRolling}
+                    glowColor="#ef4444"
                   />
                 </div>
-                <span className="text-lg font-black text-white font-mono">
+                <span className="text-xl font-black text-white font-mono">
                   {draftState.isRolling ? '?' : draftState.rivalRoll}
                 </span>
               </div>
@@ -291,10 +296,10 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
             <button
               onClick={handleRollInitiative}
               disabled={draftState.isRolling}
-              className="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:brightness-110 active:scale-95 text-black font-black text-sm md:text-base rounded-xl shadow-xl border-2 border-amber-300 transition-all flex items-center gap-2 mx-auto disabled:opacity-50"
+              className="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:brightness-110 active:scale-95 text-black font-black text-sm md:text-base rounded-2xl shadow-xl border-2 border-amber-300 transition-all flex items-center gap-2 mx-auto disabled:opacity-50 cursor-pointer"
             >
-              <Dices className="w-5 h-5" />
-              <span>{draftState.isRolling ? 'Tirando Dados...' : '¡LANZAR DADO D5 PARA ORDEN!'}</span>
+              <Dices className="w-5 h-5 text-black" />
+              <span>{draftState.isRolling ? 'Tirando Dados...' : '¡LANZAR DADOS PARA DECIDIR ORDEN!'}</span>
             </button>
           </div>
         )}
@@ -304,122 +309,67 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
           <div className="space-y-4">
 
             {/* Current Turn Indicator Bar */}
-            <div className={`p-3 rounded-xl border-2 flex items-center justify-between shadow-lg transition-all ${
+            <div className={`p-3 rounded-2xl border-2 flex items-center justify-between shadow-lg transition-all ${
               draftState.stage === 'READY'
                 ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300'
                 : draftState.turn === 'PLAYER'
-                ? 'bg-cyan-950/80 border-cyan-400 text-cyan-300 animate-pulse'
+                ? 'bg-cyan-950/80 border-cyan-400 text-cyan-300'
                 : draftState.turn === 'ANIMATING'
                 ? 'bg-pink-950/80 border-pink-400 text-pink-300 animate-pulse'
                 : 'bg-red-950/80 border-red-500 text-red-300'
             }`}>
               <div className="flex items-center gap-2.5">
-                <div className={`w-3 h-3 rounded-full ${
+                <div className={`w-3.5 h-3.5 rounded-full ${
                   draftState.stage === 'READY'
                     ? 'bg-emerald-400'
                     : draftState.turn === 'PLAYER'
-                    ? 'bg-cyan-400'
+                    ? 'bg-cyan-400 animate-ping'
                     : draftState.turn === 'ANIMATING'
                     ? 'bg-pink-400'
                     : 'bg-red-400'
                 }`} />
                 <span className="text-xs md:text-sm font-black tracking-wide">
                   {draftState.stage === 'READY'
-                    ? '¡EQUIPOS COMPLETOS! LISTOS PARA EL COMBATE 3 VS 3'
+                    ? '¡DADOS COMPLETOS EN EL VASO! AGITA EL VASO PARA LANZAR A LA ARENA'
                     : draftState.turn === 'PLAYER'
-                    ? '👉 TU TURNO: Elige un personaje disponible de la cuadrícula'
+                    ? '👉 TU TURNO: Haz 1er clic para ver habilidad y clase, 2do clic o arrastra al vaso'
                     : draftState.turn === 'ANIMATING'
-                    ? '🎬 ANIMACIÓN DE SELECCIÓN EN CURSO (ESPERA A QUE TERMINE)...'
-                    : '⏳ TURNO DEL RIVAL: El bot está seleccionando su personaje...'}
+                    ? '🎬 METIENDO DADO EN EL VASO...'
+                    : '⏳ TURNO DEL RIVAL: El bot está seleccionando su dado...'}
                 </span>
               </div>
 
-              <span className="text-[10px] font-mono font-bold bg-black/40 px-2.5 py-1 rounded-md">
+              <span className="text-[10px] font-mono font-bold bg-black/50 px-2.5 py-1 rounded-md">
                 {draftState.playerTeam.length + draftState.rivalTeam.length} / 6 Escogidos
               </span>
             </div>
 
-            {/* Squads Showcase (Player vs Rival) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-
-              {/* Player's Squad */}
-              <div className="bg-[#121926] border-2 border-cyan-500/50 rounded-2xl p-3 shadow-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-cyan-400" />
-                    <span>TU BANDO (AZUL)</span>
-                  </span>
-                  <span className="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-700 font-bold">
-                    {draftState.playerTeam.length} / 3 Elegidos
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  {[0, 1, 2].map(slotIdx => {
-                    const heroType = draftState.playerTeam[slotIdx];
-                    const hero = heroType ? CHARACTERS[heroType] : null;
-
-                    return (
-                      <div
-                        key={slotIdx}
-                        className={`h-24 md:h-28 rounded-xl border-2 flex flex-col items-center justify-center p-1 relative text-center transition-all ${
-                          hero
-                            ? 'bg-[#182030] border-cyan-400 shadow-md'
-                            : 'bg-[#0f131a] border-dashed border-[#242d3d]'
-                        }`}
-                      >
-                        {hero ? (
-                          <>
-                            {hero.model3dImage ? (
-                              <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg border border-cyan-400 overflow-hidden relative shadow bg-[#0a0d13]">
-                                <div
-                                  className="w-full h-full"
-                                  style={{
-                                    backgroundImage: `url(${hero.model3dImage})`,
-                                    backgroundSize: '300% 100%',
-                                    backgroundPosition: '50% center',
-                                    backgroundRepeat: 'no-repeat'
-                                  }}
-                                />
-                                <span className="absolute bottom-0 inset-x-0 bg-black/85 text-[6px] text-cyan-300 font-mono text-center font-black">
-                                  3D
-                                </span>
-                              </div>
-                            ) : (
-                              <img
-                                src={hero.avatar}
-                                alt={hero.displayName}
-                                className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover border border-cyan-400 shadow"
-                              />
-                            )}
-                            <span className="text-[10px] md:text-[11px] font-black text-white truncate w-full mt-1">
-                              {hero.displayName}
-                            </span>
-                            <span className="text-[8px] text-cyan-300 truncate w-full">
-                              {hero.title}
-                            </span>
-                          </>
-                        ) : (
-                          <div className="text-neutral-500 flex flex-col items-center">
-                            <Users className="w-5 h-5 mb-1 opacity-40" />
-                            <span className="text-[9px] font-bold">Slot {slotIdx + 1}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+            {/* Central Area: The Interactive Dice Cup (Vaso) and Rival Squad */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+              
+              {/* Player's Interactive Dice Cup (Vaso de Dados) */}
+              <div className="lg:col-span-7">
+                <DiceCupShaker
+                  team={draftState.playerTeam}
+                  maxCapacity={3}
+                  onDropDie={handlePlayerPick}
+                  onLaunch={() => onStartBattle(draftState.playerTeam, draftState.rivalTeam)}
+                  isReadyToLaunch={isDraftComplete}
+                  disabled={draftState.turn !== 'PLAYER' || draftState.stage !== 'DRAFTING'}
+                  cupTitle="TU VASO DE DADOS (BANDO AZUL)"
+                  cupSubtitle="Arrastra aquí tus dados héroe o haz doble clic sobre ellos"
+                />
               </div>
 
-              {/* Rival's Squad */}
-              <div className="bg-[#1b1216] border-2 border-red-500/50 rounded-2xl p-3 shadow-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-black text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+              {/* Rival Squad Card */}
+              <div className="lg:col-span-5 bg-[#1b1216] border-2 border-red-500/50 rounded-3xl p-4 shadow-xl flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-3 border-b border-red-950 pb-2">
+                  <span className="text-xs font-black text-red-400 uppercase tracking-wider flex items-center gap-1.5 font-bungee">
                     <Swords className="w-4 h-4 text-red-400" />
-                    <span>BANDO RIVAL (ROJO)</span>
+                    <span>VASO RIVAL (BANDO ROJO)</span>
                   </span>
-                  <span className="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded-full border border-red-700 font-bold">
-                    {draftState.rivalTeam.length} / 3 Elegidos
+                  <span className="text-[10px] bg-red-950 text-red-300 px-2.5 py-0.5 rounded-full border border-red-700 font-bold">
+                    {draftState.rivalTeam.length} / 3 Dados
                   </span>
                 </div>
 
@@ -431,184 +381,144 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
                     return (
                       <div
                         key={slotIdx}
-                        className={`h-24 md:h-28 rounded-xl border-2 flex flex-col items-center justify-center p-1 relative text-center transition-all ${
+                        className={`h-24 md:h-28 rounded-2xl border-2 flex flex-col items-center justify-center p-1.5 relative text-center transition-all ${
                           hero
-                            ? 'bg-[#29171d] border-red-500 shadow-md'
+                            ? 'bg-[#29171d] border-red-500 shadow-md animate-clay'
                             : 'bg-[#150d11] border-dashed border-[#3d242c]'
                         }`}
                       >
                         {hero ? (
                           <>
-                            {hero.model3dImage ? (
-                              <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg border border-red-500 overflow-hidden relative shadow bg-[#0a0d13]">
-                                <div
-                                  className="w-full h-full"
-                                  style={{
-                                    backgroundImage: `url(${hero.model3dImage})`,
-                                    backgroundSize: '300% 100%',
-                                    backgroundPosition: '50% center',
-                                    backgroundRepeat: 'no-repeat'
-                                  }}
-                                />
-                                <span className="absolute bottom-0 inset-x-0 bg-black/85 text-[6px] text-red-300 font-mono text-center font-black">
-                                  3D
-                                </span>
-                              </div>
-                            ) : (
-                              <img
-                                src={hero.avatar}
-                                alt={hero.displayName}
-                                className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover border border-red-500 shadow"
-                              />
-                            )}
-                            <span className="text-[10px] md:text-[11px] font-black text-white truncate w-full mt-1">
+                            <Dice3DVisual
+                              character={hero.type}
+                              size={44}
+                              glowColor="#ef4444"
+                            />
+                            <span className="text-[10px] font-black text-white truncate w-full mt-1">
                               {hero.displayName}
                             </span>
                             <span className="text-[8px] text-red-300 truncate w-full">
-                              {hero.title}
+                              ★ {hero.abilityName.slice(0, 10)}
                             </span>
                           </>
                         ) : (
-                          <div className="text-neutral-500 flex flex-col items-center">
-                            <Users className="w-5 h-5 mb-1 opacity-40" />
-                            <span className="text-[9px] font-bold">Slot {slotIdx + 1}</span>
+                          <div className="text-neutral-600 flex flex-col items-center">
+                            <span className="text-lg opacity-30">🎲</span>
+                            <span className="text-[9px] font-bold mt-1">Slot #{slotIdx + 1}</span>
                           </div>
                         )}
                       </div>
                     );
                   })}
                 </div>
+
+                <div className="mt-3 p-2 rounded-xl bg-black/40 border border-red-950 text-[10px] text-neutral-400 text-center">
+                  El Rival elige automáticamente en su turno tras cada selección tuya.
+                </div>
               </div>
             </div>
 
-            {/* 13 Available Characters Grid */}
-            <div className="bg-[#121622] border-2 border-[#263148] rounded-2xl p-3 md:p-4 shadow-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-black uppercase text-amber-400 flex items-center gap-1.5">
+            {/* Inspected Hero Die Spotlight Banner (Shown on 1st click) */}
+            {inspectedHero && (
+              <div className="bg-gradient-to-r from-[#172033] via-[#1b253b] to-[#121927] border-2 border-yellow-400 rounded-3xl p-4 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4 animate-fadeIn">
+                <div className="flex items-center gap-3">
+                  <Dice3DVisual
+                    character={inspectedHero.type}
+                    size={58}
+                    glowColor={inspectedHero.primaryColor}
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase text-yellow-400 bg-yellow-950 px-2 py-0.5 rounded-full border border-yellow-600">
+                        DADO INSPECCIONADO
+                      </span>
+                      <h3 className="text-base font-black text-white font-bungee">
+                        {inspectedHero.displayName}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-cyan-300 font-bold mt-0.5">
+                      {inspectedHero.title} · Habilidad: ★ {inspectedHero.abilityName}
+                    </p>
+                    <p className="text-[11px] text-neutral-200 mt-1 max-w-xl leading-relaxed">
+                      {inspectedHero.description}
+                    </p>
+                    
+                    {/* Classes & synergies with cards */}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      <span className="text-[10px] font-bold text-neutral-400">Sinergias con cartas:</span>
+                      {inspectedHero.classes.map(cat => {
+                        const info = CATEGORY_INFO[cat];
+                        return (
+                          <span
+                            key={cat}
+                            className="text-[10px] font-black px-2 py-0.5 rounded-lg border flex items-center gap-1"
+                            style={{
+                              backgroundColor: info.bgGlow,
+                              color: info.color,
+                              borderColor: info.borderColor
+                            }}
+                          >
+                            <span>{info.symbol}</span>
+                            <span>{info.name}:</span>
+                            <span className="font-normal text-white">{info.synergyBonus}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Direct Action Button to put into cup */}
+                <button
+                  onClick={() => handlePlayerPick(inspectedHero.type)}
+                  disabled={draftState.turn !== 'PLAYER' || draftState.playerTeam.length >= 3}
+                  className="w-full md:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-black font-black text-xs md:text-sm shadow-xl flex items-center justify-center gap-2 shrink-0 cursor-pointer active:scale-95 transition-all"
+                >
+                  <Dices className="w-4 h-4 text-black" />
+                  <span>LLEVAR AL VASO (2º CLIC)</span>
+                </button>
+              </div>
+            )}
+
+            {/* 13 Available Hero Dice Pool */}
+            <div className="bg-[#121622] border-2 border-[#263148] rounded-3xl p-3 md:p-4 shadow-xl">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <span className="text-xs font-black uppercase text-amber-400 flex items-center gap-1.5 font-bungee">
                   <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>Pool de Selección (13 Personajes Únicos)</span>
+                  <span>Pool de Selección (13 Dados Cúbicos Únicos)</span>
                 </span>
                 <span className="text-[10px] text-neutral-400">
-                  Los personajes escogidos se bloquean para ambos bandos
+                  Arrastra al vaso o: 1er clic = info & sinergias · 2do clic = al vaso
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
                 {CHARACTER_LIST.map(char => {
                   const isPlayerPicked = draftState.playerTeam.includes(char.type);
                   const isRivalPicked = draftState.rivalTeam.includes(char.type);
-                  const isTaken = isPlayerPicked || isRivalPicked;
-                  const canPick = draftState.stage === 'DRAFTING' && draftState.turn === 'PLAYER' && !isTaken && draftState.playerTeam.length < 3 && !activeCutscene && !recentPickBanner;
+                  const isInspected = inspectedCharType === char.type;
+                  const canPick = draftState.stage === 'DRAFTING' && draftState.turn === 'PLAYER' && !isPlayerPicked && !isRivalPicked && draftState.playerTeam.length < 3 && !activeCutscene && !recentPickBanner;
 
                   return (
-                    <button
+                    <HeroDiceCard
                       key={char.type}
-                      onClick={() => {
-                        if (canPick) handlePlayerPick(char.type);
+                      char={char}
+                      isInspected={isInspected}
+                      isPickedByPlayer={isPlayerPicked}
+                      isPickedByRival={isRivalPicked}
+                      canPick={canPick}
+                      onFirstClickInspect={() => {
+                        setInspectedCharType(char.type);
+                        sound.playCardDraw();
                       }}
-                      disabled={isTaken || !canPick}
-                      className={`relative p-2.5 rounded-xl border text-left transition-all ${
-                        isPlayerPicked
-                          ? 'bg-[#182337] border-cyan-400 ring-1 ring-cyan-400/50 opacity-90'
-                          : isRivalPicked
-                          ? 'bg-[#29171c] border-red-500/80 opacity-60'
-                          : canPick
-                          ? 'bg-[#131722] border-[#29344c] hover:border-yellow-400 hover:scale-[1.02] cursor-pointer'
-                          : 'bg-[#0f1219] border-[#1e2536] opacity-40 cursor-not-allowed'
-                      }`}
-                    >
-                      {/* Badge status */}
-                      {isPlayerPicked && (
-                        <span className="absolute top-1 right-1 bg-cyan-500 text-black text-[8px] font-black px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
-                          <Check className="w-2.5 h-2.5" />
-                          <span>TU BANDO</span>
-                        </span>
-                      )}
-                      {isRivalPicked && (
-                        <span className="absolute top-1 right-1 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
-                          <Lock className="w-2.5 h-2.5" />
-                          <span>RIVAL</span>
-                        </span>
-                      )}
-
-                      <div className="flex items-center gap-2">
-                        {char.model3dImage ? (
-                          <div className="w-10 h-10 rounded-lg border border-amber-400 overflow-hidden relative shrink-0 shadow bg-[#0a0d13]">
-                            <div
-                              className="w-full h-full"
-                              style={{
-                                backgroundImage: `url(${char.model3dImage})`,
-                                backgroundSize: '300% 100%',
-                                backgroundPosition: '50% center',
-                                backgroundRepeat: 'no-repeat'
-                              }}
-                            />
-                            <span className="absolute bottom-0 inset-x-0 bg-black/85 text-[6px] text-amber-300 font-mono text-center font-black">
-                              3D
-                            </span>
-                          </div>
-                        ) : (
-                          <img
-                            src={char.avatar}
-                            alt={char.displayName}
-                            className="w-10 h-10 rounded-lg object-cover border border-neutral-700 shrink-0"
-                          />
-                        )}
-
-                        <div className="overflow-hidden flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <div className="flex items-center gap-1 min-w-0">
-                              <h4 className="text-[11px] font-black text-white truncate">
-                                {char.displayName}
-                              </h4>
-                              {char.hasCustom3DModel && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                              )}
-                            </div>
-
-                            {char.selectionVideo && (
-                              <span
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPreviewVideoChar(char);
-                                }}
-                                className="bg-pink-600 hover:bg-pink-500 text-white px-1.5 py-0.5 rounded text-[8px] font-black flex items-center gap-0.5 shadow shrink-0 cursor-pointer transition-all"
-                                title="Previsualizar video cinemático"
-                              >
-                                <Video className="w-2.5 h-2.5" />
-                                <span>VIDEO</span>
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[9px] text-yellow-400 truncate block">
-                            {char.title}
-                          </span>
-                        </div>
-                      </div>
-
-                      <p className="text-[9px] text-neutral-300 mt-1.5 line-clamp-2 leading-tight">
-                        {char.description}
-                      </p>
-
-                      <div className="mt-1 pt-1 border-t border-neutral-800 text-[8px] text-cyan-300 font-bold truncate">
-                        ★ {char.abilityName}
-                      </div>
-                    </button>
+                      onSecondClickAddToCup={() => {
+                        handlePlayerPick(char.type);
+                      }}
+                    />
                   );
                 })}
               </div>
             </div>
-
-            {/* Action CTA when Ready */}
-            {isDraftComplete && (
-              <button
-                onClick={() => onStartBattle(draftState.playerTeam, draftState.rivalTeam)}
-                className="w-full py-4 bg-gradient-to-r from-[#ff1744] to-[#d50000] hover:brightness-110 active:scale-[0.98] text-white font-black text-base rounded-2xl shadow-2xl border-2 border-yellow-400 flex items-center justify-center gap-2.5 tracking-wider transition-all animate-bounce"
-              >
-                <Swords className="w-5 h-5 text-yellow-300" />
-                <span>¡ENTRAR A LA GUERRA 3 VS 3 CON LOS EQUIPOS!</span>
-              </button>
-            )}
 
           </div>
         )}
@@ -621,32 +531,13 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
           <Sparkles className="w-5 h-5 text-black" />
           <span className="text-sm">
             {recentPickBanner.picker === 'PLAYER'
-              ? `¡Has reclutado a ${recentPickBanner.name}!`
+              ? `¡Has metido al Vaso a ${recentPickBanner.name}!`
               : `¡El Rival ha reclutado a ${recentPickBanner.name}!`}
           </span>
         </div>
       )}
 
-      {/* Model 3D Viewer Modal */}
-      {inspectingCharType && (
-        <Model3DViewerModal
-          character={CHARACTERS[inspectingCharType]}
-          onClose={() => setInspectingCharType(null)}
-        />
-      )}
-
-      {/* Pure Preview Video Modal */}
-      {previewVideoChar && previewVideoChar.selectionVideo && (
-        <CinematicCutsceneModal
-          videoUrl={previewVideoChar.selectionVideo}
-          characterName={previewVideoChar.displayName}
-          actionTitle={`PREVISUALIZACIÓN: ${previewVideoChar.displayName.toUpperCase()}`}
-          quote={previewVideoChar.selectionQuote}
-          onClose={() => setPreviewVideoChar(null)}
-        />
-      )}
-
-      {/* Official Pick Cutscene Video Modal - Advance turn only on close! */}
+      {/* Video Cutscene on Pick if available */}
       {activeCutscene && activeCutscene.character.selectionVideo && (
         <CinematicCutsceneModal
           videoUrl={activeCutscene.character.selectionVideo}

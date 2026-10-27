@@ -69,6 +69,10 @@ class SoundManager {
     this.playImpact(235, 0.07, 0.055, 0.07);
   }
 
+  playCupDump() {
+    this.playImpact(180, 0.15, 0.12, 0.14);
+  }
+
   playIntroCubeLand(index: number) {
     this.playImpact(175 + (index % 6) * 22, 0.12, 0.14, 0.12);
   }

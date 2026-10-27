@@ -54,8 +54,8 @@ export const MatchIntroAnimation: React.FC<MatchIntroAnimationProps> = ({ player
 
   const teamSlots = useMemo(() => {
     const slots = new Map<number, number>();
-    return players.map((player, index) => {
-      const team = player.teamId ?? (index % 2 === 0 ? 1 : 2);
+    return players.map((player) => {
+      const team = player.teamId ?? 1;
       const slot = slots.get(team) ?? 0;
       slots.set(team, slot + 1);
       return slot;
@@ -72,9 +72,9 @@ export const MatchIntroAnimation: React.FC<MatchIntroAnimationProps> = ({ player
       setOffsets(players.map((player, index) => {
         const [sourceX, sourceY] = sourcePoints[index % sourcePoints.length];
         const slot = teamSlots[index];
-        const isTeamOne = player.teamId ? player.teamId === 1 : index % 2 === 0;
-        const targetY = [18, 50, 82][Math.min(slot, 2)];
-        const targetX = isTeamOne ? 19 : 81;
+        const teamCount = players.filter((member) => (member.teamId ?? 1) === (player.teamId ?? 1)).length;
+        const targetY = teamCount <= 1 ? 50 : [18, 50, 82][Math.min(slot, 2)];
+        const targetX = player.teamId === 1 ? 19 : 81;
         return {
           fromX: (sourceX / 100 - 0.5) * width,
           fromY: (sourceY / 100 - 0.53) * height,

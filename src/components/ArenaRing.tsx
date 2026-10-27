@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { FloatingCombatText, PlayerState } from '../types/game';
+import { FloatingCombatText, PlayerState, CATEGORY_INFO } from '../types/game';
 import { CHARACTERS } from '../data/characters';
 import { Cube3DCanvas } from './Cube3DCanvas';
 import { MatchIntroAnimation } from './MatchIntroAnimation';
@@ -29,7 +29,7 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Draw Arena Floor
+  // Draw Arena Floor (Gritty Urban Sidewalk Asphalt & Chalk Arena)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -45,57 +45,73 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
     const rx = Math.max(20, width * 0.44);
     const ry = Math.max(20, height * 0.38);
 
-    // Ground Clay Studio Floor (Warm timber / clay arena)
-    const floorGrad = ctx.createRadialGradient(cx, cy, 5, cx, cy, rx);
-    floorGrad.addColorStop(0, '#2A231F');
-    floorGrad.addColorStop(0.7, '#1E1815');
-    floorGrad.addColorStop(1, '#120F0D');
+    // Gritty Asphalt Pavement Gradient
+    const floorGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, rx);
+    floorGrad.addColorStop(0, '#1E1F26');
+    floorGrad.addColorStop(0.65, '#14151B');
+    floorGrad.addColorStop(1, 'rgba(10, 11, 15, 0.95)');
 
     ctx.fillStyle = floorGrad;
     ctx.beginPath();
     ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Stitched Rope Ring Border
-    ctx.strokeStyle = '#6D4C41';
-    ctx.lineWidth = 4;
+    // Sidewalk Concrete Curb / Painted Ring Border (Bold Urban Street Curbs)
+    ctx.strokeStyle = '#383E4E';
+    ctx.lineWidth = 6;
     ctx.beginPath();
     ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Outer Rope Stitch Marks
+    // Vibrant Yellow Chalk Duel Circle (Street Fight Markings)
     ctx.save();
-    ctx.strokeStyle = '#8D6E63';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([8, 8]);
+    ctx.strokeStyle = '#FACC15';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([12, 10]);
     ctx.beginPath();
-    ctx.ellipse(cx, cy, rx + 4, ry + 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, rx - 6, ry - 5, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
 
-    // Inner Warm Glow Ring
-    ctx.strokeStyle = 'rgba(212, 149, 43, 0.35)';
+    // Neon Magenta / Cyan Street Reflections on Wet Asphalt
+    const neonPink = ctx.createRadialGradient(cx - rx * 0.4, cy, 5, cx - rx * 0.4, cy, 90);
+    neonPink.addColorStop(0, 'rgba(236, 72, 153, 0.16)');
+    neonPink.addColorStop(1, 'rgba(236, 72, 153, 0)');
+    ctx.fillStyle = neonPink;
+    ctx.beginPath();
+    ctx.arc(cx - rx * 0.4, cy, 90, 0, Math.PI * 2);
+    ctx.fill();
+
+    const neonCyan = ctx.createRadialGradient(cx + rx * 0.4, cy, 5, cx + rx * 0.4, cy, 90);
+    neonCyan.addColorStop(0, 'rgba(6, 182, 212, 0.16)');
+    neonCyan.addColorStop(1, 'rgba(6, 182, 212, 0)');
+    ctx.fillStyle = neonCyan;
+    ctx.beginPath();
+    ctx.arc(cx + rx * 0.4, cy, 90, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner Chalk Battle Zone Box (Chalked street dice boundary)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+    ctx.lineWidth = 1.5;
+    const boxW = rx * 0.9;
+    const boxH = ry * 0.85;
+    ctx.strokeRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH);
+
+    // Chalk Crosshair in Center for Dice Throw Pit
+    ctx.strokeStyle = 'rgba(250, 204, 21, 0.4)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.ellipse(cx, cy, rx * 0.72, ry * 0.72, 0, 0, Math.PI * 2);
+    ctx.moveTo(cx - 36, cy);
+    ctx.lineTo(cx + 36, cy);
+    ctx.moveTo(cx, cy - 24);
+    ctx.lineTo(cx, cy + 24);
     ctx.stroke();
 
-    // Neon Red/Cyan Inner Accent
-    ctx.strokeStyle = 'rgba(255, 23, 68, 0.25)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, rx * 0.52, ry * 0.52, 0, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Center Cross Marks (Dice Target Pit)
-    ctx.strokeStyle = 'rgba(0, 229, 255, 0.3)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(cx - 30, cy);
-    ctx.lineTo(cx + 30, cy);
-    ctx.moveTo(cx, cy - 20);
-    ctx.lineTo(cx, cy + 20);
-    ctx.stroke();
+    // Chalk Street Corner Marks
+    ctx.font = '900 10px monospace';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚡ ARENA CALLEJERA // D6 BATTLE ⚡', cx, cy + ry * 0.65);
   }, [players.length]);
 
   const total = Math.max(1, players.length);
@@ -107,7 +123,12 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
       ref={containerRef}
       className={`relative w-full ${isMatchIntroPlaying ? 'z-20' : ''} ${
         isTeamMatch ? 'h-[460px] md:h-[500px]' : 'h-[340px] md:h-[420px]'
-      } rounded-2xl overflow-hidden bg-[#0c0e14] border border-[#2a3040] shadow-inner select-none flex items-center justify-center`}
+      } rounded-3xl overflow-hidden bg-[#0d0f15] border-2 border-[#ff1744]/40 shadow-[0_0_30px_rgba(255,23,68,0.2)] select-none flex items-center justify-center`}
+      style={{
+        backgroundImage: `radial-gradient(ellipse at 50% 50%, rgba(13, 15, 21, 0.65) 0%, rgba(10, 12, 16, 0.92) 85%), url('/assets/street_sidewalk_crowd_bg.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center 40%'
+      }}
     >
       <canvas
         ref={canvasRef}
@@ -226,6 +247,9 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
                 <span className="text-[11px] font-extrabold text-white truncate">
                   {player.name}
                 </span>
+                <span className="text-[10px] tracking-tighter" title={`Clases: ${charDef.classes.map(c => CATEGORY_INFO[c].name).join(', ')}`}>
+                  {charDef.classes.map(c => CATEGORY_INFO[c]?.symbol || '').join('')}
+                </span>
               </div>
 
               {/* Health Bar */}
@@ -242,11 +266,21 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
                 <span className="text-yellow-400 font-bold">{player.actionPoints} AP</span>
               </div>
 
+              {/* Barrier Row if active */}
+              {player.shieldBarrier !== undefined && player.shieldBarrier > 0 && (
+                <div className="flex items-center justify-center text-[8px] mt-0.5 px-0.5">
+                  <span className="text-blue-300 font-extrabold text-[8px] flex items-center gap-0.5 bg-blue-950/80 px-1.5 py-0.2 rounded border border-blue-600/50">
+                    <Shield className="w-2.5 h-2.5 text-blue-400" />
+                    <span>+{player.shieldBarrier} Barrera</span>
+                  </span>
+                </div>
+              )}
+
               {/* Mini Equipment & Stance Indicator */}
               <div className="flex items-center justify-center gap-1 mt-1">
                 {player.equippedWeapons.map((w, idx) => (
                   <span
-                    key={idx}
+                    key={`weapon-${player.id}-${w.id}-${idx}`}
                     title={w.name}
                     className="text-[8px] bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded border border-amber-500/40 truncate max-w-[50px]"
                   >
