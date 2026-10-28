@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { CharacterDef, CATEGORY_INFO, CharacterType } from '../types/game';
 import { DiceCharacterSprite } from './DiceCharacterSprite';
+import { Cube3DCanvas } from './Cube3DCanvas';
+import { createCharacterSpriteOverlayDataUrl } from './characterSpriteLayers';
 import { CartoonCombatClash, CombatClashData } from './CartoonCombatClash';
 import { sound } from '../audio/soundManager';
-import { X, Sparkles, Shield, Zap, Layers, Play, CheckCircle2, Sliders } from 'lucide-react';
+import { X, Sparkles, Shield, Zap, Layers, Play, Sliders, Download, Box, Eye, Check } from 'lucide-react';
 
 interface Model3DViewerModalProps {
   character: CharacterDef;
@@ -12,15 +14,49 @@ interface Model3DViewerModalProps {
 
 export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ character, onClose }) => {
   const [activeTab, setActiveTab] = useState<'DOSSIER' | 'ARCHITECTURE'>('DOSSIER');
+  const [viewMode, setViewMode] = useState<'2D_LAYERS' | '3D_DECAL' | 'PNG_OVERLAY'>('2D_LAYERS');
   const [selectedTeam, setSelectedTeam] = useState<'blue' | 'red'>('blue');
   const [diceVal, setDiceVal] = useState<number>(5);
   const [isStabilized, setIsStabilized] = useState<boolean>(true);
   const [testClash, setTestClash] = useState<CombatClashData | null>(null);
 
+  // Layer toggles for modular inspection
+  const [layers, setLayers] = useState({
+    shadow: true,
+    dieBase: true,
+    teamTint: true,
+    pips: true,
+    papercraft: true,
+    traits: true,
+    accessories: true,
+    tape: true,
+  });
+
+  const toggleLayer = (key: keyof typeof layers) => {
+    setLayers(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const adn = character.adn;
   const primInfo = CATEGORY_INFO[adn.primaria];
   const secInfo = CATEGORY_INFO[adn.secundaria];
   const neuInfo = CATEGORY_INFO[adn.neutra];
+
+  // Export transparent PNG of character's unique traits and accessories overlay
+  const handleDownloadOverlayPng = () => {
+    const dataUrl = createCharacterSpriteOverlayDataUrl({
+      character: character.type,
+      isBlueTeam: selectedTeam === 'blue',
+      diceValue: diceVal
+    }, 512, 512);
+
+    if (!dataUrl) return;
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `overlay_${character.type.toLowerCase()}_${selectedTeam}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   // Test independent Papercraft Tape Slap animation
   const handleTriggerTapeSlap = () => {
@@ -192,21 +228,98 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
            ========================================================================= */}
         {activeTab === 'ARCHITECTURE' && (
           <div className="my-3 space-y-3.5 overflow-y-auto pr-1 flex-1">
-            {/* Live Interactive Die Demo */}
+            {/* View Mode Switcher (2D Layers vs 3D Decal vs PNG Overlay) */}
+            <div className="flex items-center gap-1.5 p-1 bg-[#0a0d13] rounded-xl border border-[#232c40]">
+              <button
+                onClick={() => setViewMode('2D_LAYERS')}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === '2D_LAYERS'
+                    ? 'bg-cyan-500 text-black shadow font-black'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <Layers className="w-3 h-3" />
+                <span>2D Sorting Layers</span>
+              </button>
+
+              <button
+                onClick={() => setViewMode('3D_DECAL')}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === '3D_DECAL'
+                    ? 'bg-amber-400 text-black shadow font-black'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <Box className="w-3 h-3" />
+                <span>3D Decal Interactivo</span>
+              </button>
+
+              <button
+                onClick={() => setViewMode('PNG_OVERLAY')}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === 'PNG_OVERLAY'
+                    ? 'bg-purple-500 text-white shadow font-black'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <Eye className="w-3 h-3" />
+                <span>Sprite Overlay PNG</span>
+              </button>
+            </div>
+
+            {/* Live Interactive Die Demo Box */}
             <div className="p-4 bg-[#0d1017] rounded-2xl border border-cyan-500/50 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden">
-              {/* Die Canvas Display */}
-              <div className="flex flex-col items-center">
-                <div className="relative p-2 rounded-2xl bg-black/40 border border-white/10 shadow-inner">
-                  <DiceCharacterSprite
-                    character={character.type}
-                    teamColor={selectedTeam}
-                    size={112}
-                    diceValue={diceVal}
-                    isStabilized={isStabilized}
-                  />
+              {/* Die Canvas / Decal / Overlay Display */}
+              <div className="flex flex-col items-center shrink-0">
+                <div className="relative p-2 rounded-2xl bg-black/50 border border-white/10 shadow-inner flex items-center justify-center min-w-[140px] min-h-[140px]">
+                  {viewMode === '2D_LAYERS' && (
+                    <DiceCharacterSprite
+                      character={character.type}
+                      teamColor={selectedTeam}
+                      size={120}
+                      diceValue={diceVal}
+                      isStabilized={isStabilized}
+                      layers={layers}
+                    />
+                  )}
+
+                  {viewMode === '3D_DECAL' && (
+                    <Cube3DCanvas
+                      character={character.type}
+                      teamColor={selectedTeam}
+                      size={135}
+                      diceValue={diceVal}
+                      interactive={true}
+                    />
+                  )}
+
+                  {viewMode === 'PNG_OVERLAY' && (
+                    <div
+                      className="w-32 h-32 rounded-xl border border-dashed border-white/30 flex items-center justify-center relative overflow-hidden"
+                      style={{
+                        backgroundImage: `linear-gradient(45deg, #222 25%, transparent 25%), linear-gradient(-45deg, #222 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #222 75%), linear-gradient(-45deg, transparent 75%, #222 75%)`,
+                        backgroundSize: '16px 16px',
+                        backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+                        backgroundColor: '#111'
+                      }}
+                    >
+                      <img
+                        src={createCharacterSpriteOverlayDataUrl({
+                          character: character.type,
+                          isBlueTeam: selectedTeam === 'blue',
+                          diceValue: diceVal
+                        }, 256, 256)}
+                        alt="Sprite Overlay Transparente"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  )}
                 </div>
-                <span className="text-[9px] font-mono text-neutral-400 mt-1">
-                  Dado Neutro + Shader + Collage Papercraft
+
+                <span className="text-[9px] font-mono text-cyan-300 mt-1.5 text-center">
+                  {viewMode === '2D_LAYERS' && 'Dado Neutro + Shader + Capas 2D'}
+                  {viewMode === '3D_DECAL' && 'Cubo 3D + Decal Frontal + Mesh 3D'}
+                  {viewMode === 'PNG_OVERLAY' && 'Fondo Transparente (PNG Decal)'}
                 </span>
               </div>
 
@@ -221,7 +334,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                   <div className="flex items-center gap-2 mt-1">
                     <button
                       onClick={() => setSelectedTeam('blue')}
-                      className={`flex-1 py-1 px-2 rounded-lg text-xs font-black transition-all border ${
+                      className={`flex-1 py-1 px-2 rounded-lg text-xs font-black transition-all border cursor-pointer ${
                         selectedTeam === 'blue'
                           ? 'bg-blue-600 text-white border-cyan-300 shadow-[0_0_10px_rgba(56,189,248,0.6)]'
                           : 'bg-[#151a26] text-neutral-400 border-neutral-700'
@@ -231,7 +344,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                     </button>
                     <button
                       onClick={() => setSelectedTeam('red')}
-                      className={`flex-1 py-1 px-2 rounded-lg text-xs font-black transition-all border ${
+                      className={`flex-1 py-1 px-2 rounded-lg text-xs font-black transition-all border cursor-pointer ${
                         selectedTeam === 'red'
                           ? 'bg-red-600 text-white border-red-300 shadow-[0_0_10px_rgba(239,68,68,0.6)]'
                           : 'bg-[#151a26] text-neutral-400 border-neutral-700'
@@ -252,7 +365,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                       <button
                         key={v}
                         onClick={() => setDiceVal(v)}
-                        className={`flex-1 py-0.5 rounded text-xs font-mono font-bold border transition-all ${
+                        className={`flex-1 py-0.5 rounded text-xs font-mono font-bold border transition-all cursor-pointer ${
                           diceVal === v
                             ? 'bg-yellow-400 text-black border-yellow-300'
                             : 'bg-[#151a26] text-neutral-400 border-neutral-800'
@@ -264,75 +377,153 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                   </div>
                 </div>
 
-                {/* Action Buttons: Tape Slap & Cartoon Clash */}
+                {/* 3. Export PNG Button & Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-2 pt-1">
                   <button
-                    onClick={handleTriggerTapeSlap}
-                    className="flex-1 py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-[11px] uppercase tracking-wider transition-all shadow cursor-pointer flex items-center justify-center gap-1.5"
+                    onClick={handleDownloadOverlayPng}
+                    className="flex-1 py-2 px-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] uppercase tracking-wider transition-all shadow-[0_0_12px_rgba(168,85,247,0.5)] cursor-pointer flex items-center justify-center gap-1.5"
+                    title="Exportar rasgos, ojos, sombreros y accesorios en PNG transparente (512x512)"
                   >
-                    <span>Pegar Recorte (Tape Slap)</span>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Exportar Overlay PNG</span>
+                  </button>
+
+                  <button
+                    onClick={handleTriggerTapeSlap}
+                    className="flex-1 py-2 px-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-[10px] uppercase tracking-wider transition-all shadow cursor-pointer flex items-center justify-center gap-1"
+                  >
+                    <span>Tape Slap</span>
                   </button>
 
                   <button
                     onClick={handleTriggerTestClash}
-                    className="flex-1 py-2 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-black text-[11px] uppercase tracking-wider transition-all shadow-[0_0_12px_rgba(6,182,212,0.5)] cursor-pointer flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 px-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-black text-[10px] uppercase tracking-wider transition-all shadow-[0_0_12px_rgba(6,182,212,0.5)] cursor-pointer flex items-center justify-center gap-1"
                   >
-                    <Play className="w-3.5 h-3.5 fill-black" />
-                    <span>Probar Choque Cómico</span>
+                    <Play className="w-3 h-3 fill-black" />
+                    <span>Choque Cómico</span>
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Breakdown of the 6 Sorting Layers */}
+            {/* Interactive Layer Toggles (Sorting Layers Control) */}
             <div className="p-3 bg-[#0d1017] rounded-2xl border border-[#232c40] space-y-2">
-              <span className="text-[10px] font-black uppercase text-yellow-400 tracking-wider flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5" />
-                DESGLOSE DE LAS 6 SORTING LAYERS
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase text-yellow-400 tracking-wider flex items-center gap-1">
+                  <Layers className="w-3.5 h-3.5" />
+                  CONTROL DE CAPAS INTERACTIVAS (SORTING LAYERS)
+                </span>
+                <span className="text-[9px] text-neutral-400 font-mono">
+                  Haz clic para aislar cada capa
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px]">
+                <button
+                  onClick={() => toggleLayer('shadow')}
+                  className={`p-1.5 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
+                    layers.shadow ? 'bg-neutral-800/90 text-white border-neutral-600' : 'bg-black/30 text-neutral-500 border-neutral-800 line-through'
+                  }`}
+                >
+                  <span>0. Sombra Base</span>
+                  {layers.shadow && <Check className="w-3 h-3 text-cyan-400" />}
+                </button>
+
+                <button
+                  onClick={() => toggleLayer('dieBase')}
+                  className={`p-1.5 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
+                    layers.dieBase ? 'bg-neutral-800/90 text-white border-neutral-600' : 'bg-black/30 text-neutral-500 border-neutral-800 line-through'
+                  }`}
+                >
+                  <span>1. Dado Neutro</span>
+                  {layers.dieBase && <Check className="w-3 h-3 text-cyan-400" />}
+                </button>
+
+                <button
+                  onClick={() => toggleLayer('teamTint')}
+                  className={`p-1.5 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
+                    layers.teamTint ? 'bg-neutral-800/90 text-white border-neutral-600' : 'bg-black/30 text-neutral-500 border-neutral-800 line-through'
+                  }`}
+                >
+                  <span>2. Tinte Shader</span>
+                  {layers.teamTint && <Check className="w-3 h-3 text-cyan-400" />}
+                </button>
+
+                <button
+                  onClick={() => toggleLayer('pips')}
+                  className={`p-1.5 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
+                    layers.pips ? 'bg-neutral-800/90 text-white border-neutral-600' : 'bg-black/30 text-neutral-500 border-neutral-800 line-through'
+                  }`}
+                >
+                  <span>3. Pips D6</span>
+                  {layers.pips && <Check className="w-3 h-3 text-cyan-400" />}
+                </button>
+
+                <button
+                  onClick={() => toggleLayer('papercraft')}
+                  className={`p-1.5 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
+                    layers.papercraft ? 'bg-neutral-800/90 text-white border-neutral-600' : 'bg-black/30 text-neutral-500 border-neutral-800 line-through'
+                  }`}
+                >
+                  <span>4. Troquelado</span>
+                  {layers.papercraft && <Check className="w-3 h-3 text-cyan-400" />}
+                </button>
+
+                <button
+                  onClick={() => toggleLayer('traits')}
+                  className={`p-1.5 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
+                    layers.traits ? 'bg-neutral-800/90 text-white border-neutral-600' : 'bg-black/30 text-neutral-500 border-neutral-800 line-through'
+                  }`}
+                >
+                  <span>5. Rasgos/Ojos</span>
+                  {layers.traits && <Check className="w-3 h-3 text-cyan-400" />}
+                </button>
+
+                <button
+                  onClick={() => toggleLayer('accessories')}
+                  className={`p-1.5 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
+                    layers.accessories ? 'bg-neutral-800/90 text-white border-neutral-600' : 'bg-black/30 text-neutral-500 border-neutral-800 line-through'
+                  }`}
+                >
+                  <span>6. Sombreros/Gear</span>
+                  {layers.accessories && <Check className="w-3 h-3 text-cyan-400" />}
+                </button>
+
+                <button
+                  onClick={() => toggleLayer('tape')}
+                  className={`p-1.5 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
+                    layers.tape ? 'bg-neutral-800/90 text-white border-neutral-600' : 'bg-black/30 text-neutral-500 border-neutral-800 line-through'
+                  }`}
+                >
+                  <span>7. Cinta Adhesiva</span>
+                  {layers.tape && <Check className="w-3 h-3 text-cyan-400" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Character Accessories Highlight Box */}
+            <div className="p-3 bg-[#0d1017] rounded-2xl border border-purple-500/40 space-y-1.5">
+              <span className="text-[10px] font-black uppercase text-purple-300 tracking-wider flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                ACCESORIOS Y RASGOS EXCLUSIVOS DE {character.displayName.toUpperCase()}
               </span>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                <div className="p-2 rounded-lg bg-[#141824] border border-neutral-700 flex items-start gap-2">
-                  <span className="w-4 h-4 rounded-full bg-neutral-800 text-white font-mono text-[9px] flex items-center justify-center shrink-0">0</span>
-                  <div>
-                    <span className="font-bold text-neutral-200 block">Ground Contact Shadow</span>
-                    <span className="text-[10px] text-neutral-400 leading-tight">Sombra elíptica de contacto suave sobre el tablero.</span>
-                  </div>
-                </div>
-
-                <div className="p-2 rounded-lg bg-[#141824] border border-neutral-700 flex items-start gap-2">
-                  <span className="w-4 h-4 rounded-full bg-blue-900 text-cyan-300 font-mono text-[9px] flex items-center justify-center shrink-0">1-2</span>
-                  <div>
-                    <span className="font-bold text-neutral-200 block">Base Neutra + Shader Tint</span>
-                    <span className="text-[10px] text-neutral-400 leading-tight">Dado neutro con tinte dinámico Shader ({selectedTeam === 'blue' ? 'Azul' : 'Rojo'}).</span>
-                  </div>
-                </div>
-
-                <div className="p-2 rounded-lg bg-[#141824] border border-neutral-700 flex items-start gap-2">
-                  <span className="w-4 h-4 rounded-full bg-amber-900 text-amber-300 font-mono text-[9px] flex items-center justify-center shrink-0">3</span>
-                  <div>
-                    <span className="font-bold text-neutral-200 block">Papercraft Cutout Sticker</span>
-                    <span className="text-[10px] text-neutral-400 leading-tight">Troquelado blanco con sombra de papel despegado.</span>
-                  </div>
-                </div>
-
-                <div className="p-2 rounded-lg bg-[#141824] border border-neutral-700 flex items-start gap-2">
-                  <span className="w-4 h-4 rounded-full bg-purple-900 text-purple-300 font-mono text-[9px] flex items-center justify-center shrink-0">4</span>
-                  <div>
-                    <span className="font-bold text-neutral-200 block">Traits & Expressive Overlay</span>
-                    <span className="text-[10px] text-neutral-400 leading-tight">Ojos expresivos, sombreros, alas y rasgos transparentes.</span>
-                  </div>
-                </div>
-
-                <div className="p-2 rounded-lg bg-[#141824] border border-neutral-700 flex items-start gap-2 sm:col-span-2">
-                  <span className="w-4 h-4 rounded-full bg-emerald-900 text-emerald-300 font-mono text-[9px] flex items-center justify-center shrink-0">5</span>
-                  <div>
-                    <span className="font-bold text-neutral-200 block">Adhesive Tape / Washi Tape (Pegado Rápido)</span>
-                    <span className="text-[10px] text-neutral-400 leading-tight">
-                      Cinta adhesiva translúcida en la esquina superior que sujeta el recorte al estabilizarse el dado.
-                    </span>
-                  </div>
-                </div>
+              <p className="text-[11px] text-neutral-300 leading-snug">
+                Identificación visual instantánea mediante Sprite Overlay transparente sobre la cara superior del dado:
+              </p>
+              <div className="p-2 rounded-xl bg-purple-950/30 border border-purple-500/30 text-[11px] text-purple-200">
+                {character.type === CharacterType.CUBINJA && "Bandana shinobi roja con placa metálica plateada grabada con shuriken, cintas ondeantes al viento y máscara ninja de tela negra."}
+                {character.type === CharacterType.TRAMCUBOSO && "Sombrero fedora negro ladeado con carta As de Picas ♠ en la banda, gafas oscuras de aviador con puente dorado y colmillo/palillo de tramposo."}
+                {character.type === CharacterType.CUBOGRO && "Colmillos gigantescos de marfil curvados hacia arriba, ceño fruncido pesado, aro de toro de bronce en la nariz y pintura de guerra carmesí."}
+                {character.type === CharacterType.HADA_AL_CUBO && "Alas translúcidas iridiscentes de mariposa con brillo, diadema floral con tiara de capullos y varita mágica con estrella dorada luminosa."}
+                {character.type === CharacterType.CUBINARCA && "Corona real de oro de 5 puntas engastada con gemas (rubí, zafiro, esmeralda), bigote aristocrático rizado y perilla monárquica."}
+                {character.type === CharacterType.GLADIACUBON && "Casco de centurión romano con penacho curvo rojo carmesí, carrilleras de bronce y cicatriz de batalla cruzada sobre el ojo."}
+                {character.type === CharacterType.DRACUBON && "Cuello alzado de terciopelo de vampiro con broche medallón dorado y colmillos blancos afilados con gota de sangre."}
+                {character.type === CharacterType.FLAUCUBISTA_DESAFINADO && "Boina francesa verde ladeada con pluma de ave, flauta de madera travesera con orificios y notas musicales flotantes (♪ ♫)."}
+                {character.type === CharacterType.RACUBITERO && "Auriculares DJ de asfalto rojos y negros, visera urbana tipo snapback invertida y visor estéreo."}
+                {character.type === CharacterType.CUBITO_DE_HIELO && "Picos de cristal de hielo glaciar sobresalientes, pestañas de escarcha gélida y dientes congelados temblorosos."}
+                {character.type === CharacterType.PIRATA && "Tricornio de capitán corsario con ribete dorado, parche de cuero negro con calavera blanca ☠ y pendiente de aro de oro."}
+                {character.type === CharacterType.CUBICULA && "Tiara gótica de condesa con rubí de sangre colgante, colmillos finos de vampiresa y gargantilla de terciopelo."}
+                {character.type === CharacterType.CAMBIAFORMAS && "Gorro bufonesco de dos cuernos con cascabeles dorados, naipes de póquer (♦ ♥) en mejillas y signo de interrogación místico."}
               </div>
             </div>
           </div>

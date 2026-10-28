@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { CharacterType } from '../types/game';
+import { drawCharacterSpriteOverlay } from './characterSpriteLayers';
 
 interface Cube3DCanvasProps {
   character: CharacterType;
@@ -93,172 +94,15 @@ function createCharacterFaceTexture(
   ctx.strokeRect(-60, -18, 140, 44);
   ctx.restore();
 
-  // 4. Expressive Eyes & Mouth
-  ctx.save();
-
-  if (isHit) {
-    // Hurt / Knocked Out: Big Comic X Eyes
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 14;
-    ctx.lineCap = 'round';
-    // Left X
-    ctx.beginPath();
-    ctx.moveTo(140, 190); ctx.lineTo(210, 260);
-    ctx.moveTo(210, 190); ctx.lineTo(140, 260);
-    ctx.stroke();
-    // Right X
-    ctx.beginPath();
-    ctx.moveTo(300, 190); ctx.lineTo(370, 260);
-    ctx.moveTo(370, 190); ctx.lineTo(300, 260);
-    ctx.stroke();
-
-    // Wavy dizzy grimace mouth
-    ctx.beginPath();
-    ctx.moveTo(180, 360);
-    ctx.quadraticCurveTo(220, 330, 256, 360);
-    ctx.quadraticCurveTo(290, 390, 332, 360);
-    ctx.stroke();
-  } else if (isAttacking) {
-    // Angry Fierce Slanted Eyes
-    ctx.fillStyle = '#000000';
-    // Angry Slanted Eyebrows
-    ctx.lineWidth = 16;
-    ctx.strokeStyle = isBlueTeam ? '#38bdf8' : '#f87171';
-    ctx.beginPath();
-    ctx.moveTo(120, 180); ctx.lineTo(230, 215);
-    ctx.moveTo(392, 180); ctx.lineTo(282, 215);
-    ctx.stroke();
-
-    // Intense glowing eyes
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(175, 240, 34, 0, Math.PI * 2);
-    ctx.arc(337, 240, 34, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = isBlueTeam ? '#0284c7' : '#dc2626';
-    ctx.beginPath();
-    ctx.arc(185, 240, 18, 0, Math.PI * 2);
-    ctx.arc(327, 240, 18, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Open fierce roaring mouth with sharp teeth
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath();
-    ctx.ellipse(256, 360, 75, 45, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 6;
-    ctx.stroke();
-
-    // Sharp teeth
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.moveTo(220, 320); ctx.lineTo(235, 345); ctx.lineTo(250, 320);
-    ctx.moveTo(260, 320); ctx.lineTo(275, 345); ctx.lineTo(290, 320);
-    ctx.fill();
-  } else {
-    // Normal Expressive Streetwise Eyes
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.ellipse(170, 225, 42, 54, 0, 0, Math.PI * 2);
-    ctx.ellipse(342, 225, 42, 54, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 6;
-    ctx.stroke();
-
-    // Pupils looking slightly forward with specular highlights
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(176, 225, 24, 0, Math.PI * 2);
-    ctx.arc(348, 225, 24, 0, Math.PI * 2);
-    ctx.fill();
-
-    // White eye shine glints
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(168, 215, 8, 0, Math.PI * 2);
-    ctx.arc(340, 215, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Confident Street Smirk Mouth
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 10;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(190, 345);
-    ctx.quadraticCurveTo(256, 385, 330, 335);
-    ctx.stroke();
-  }
-
-  // Character specific facial touches on the face canvas
-  if (character === CharacterType.DRACUBON || character === CharacterType.CUBICULA) {
-    // Vampire Fangs
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.moveTo(210, 345); ctx.lineTo(220, 385); ctx.lineTo(230, 345);
-    ctx.moveTo(282, 345); ctx.lineTo(292, 385); ctx.lineTo(302, 345);
-    ctx.fill();
-    // Blood drop
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.arc(220, 390, 4, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  if (character === CharacterType.CUBOGRO) {
-    // Giant bottom tusks pointing up
-    ctx.fillStyle = '#fef08a';
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(175, 370); ctx.lineTo(190, 290); ctx.lineTo(205, 370);
-    ctx.moveTo(305, 370); ctx.lineTo(320, 290); ctx.lineTo(335, 370);
-    ctx.fill();
-    ctx.stroke();
-  }
-
-  if (character === CharacterType.TRAMCUBOSO) {
-    // Dark Aviator sunglasses painted across eyes
-    ctx.fillStyle = 'rgba(10, 10, 12, 0.95)';
-    ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.roundRect(110, 190, 125, 75, 18);
-    ctx.roundRect(275, 190, 125, 75, 18);
-    ctx.fill();
-    ctx.stroke();
-    // Golden bridge
-    ctx.beginPath();
-    ctx.moveTo(235, 215); ctx.lineTo(275, 215);
-    ctx.stroke();
-    // Toothpick
-    ctx.strokeStyle = '#fef08a';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(300, 355); ctx.lineTo(365, 335);
-    ctx.stroke();
-  }
-
-  if (character === CharacterType.PIRATA) {
-    // Eyepatch on right eye
-    ctx.fillStyle = '#0a0a0c';
-    ctx.beginPath();
-    ctx.arc(342, 225, 48, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(270, 180); ctx.lineTo(410, 270);
-    ctx.stroke();
-    // Skull symbol
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '32px sans-serif';
-    ctx.fillText('☠', 342, 235);
-  }
-
-  ctx.restore();
+  // 4. Character Sprite Overlay: Eyes, Expression, Hats & Distinctive Gear
+  drawCharacterSpriteOverlay(ctx, {
+    character,
+    isBlueTeam,
+    isHit,
+    isAttacking,
+    isFrozen,
+    diceValue
+  }, 512, 512);
 
   // Bottom chamfer character name
   ctx.fillStyle = '#000000';
@@ -716,6 +560,166 @@ export const Cube3DCanvas: React.FC<Cube3DCanvasProps> = ({
       s2.position.set(0.35, 1.2, 0.15);
       s2.scale.set(0.8, 0.8, 0.8);
       diceHeroGroup.add(s2);
+    }
+
+    // 9. TRAMCUBOSO: 3D Tilted Fedora Hat with Ace of Spades + Aviator Glasses
+    if (character === CharacterType.TRAMCUBOSO) {
+      const fedoraGroup = new THREE.Group();
+      fedoraGroup.position.set(0.05, 1.05, -0.05);
+      fedoraGroup.rotation.set(-0.1, 0, 0.15);
+
+      // Hat brim
+      const brimGeo = new THREE.CylinderGeometry(1.25, 1.25, 0.08, 24);
+      const feltMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.8 });
+      const brimMesh = new THREE.Mesh(brimGeo, feltMat);
+      fedoraGroup.add(brimMesh);
+
+      // Hat crown
+      const crownGeo = new THREE.CylinderGeometry(0.72, 0.88, 0.55, 20);
+      const crownMesh = new THREE.Mesh(crownGeo, feltMat);
+      crownMesh.position.y = 0.28;
+      fedoraGroup.add(crownMesh);
+
+      // Gold ribbon
+      const ribbonGeo = new THREE.CylinderGeometry(0.89, 0.89, 0.12, 20);
+      const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.6 });
+      const ribbonMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
+      ribbonMesh.position.y = 0.1;
+      fedoraGroup.add(ribbonMesh);
+
+      // Playing card tucked in ribbon
+      const cardGeo = new THREE.BoxGeometry(0.24, 0.38, 0.02);
+      const cardMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+      const cardMesh = new THREE.Mesh(cardGeo, cardMat);
+      cardMesh.position.set(0.7, 0.25, 0.4);
+      cardMesh.rotation.set(0.1, 0.6, -0.2);
+      fedoraGroup.add(cardMesh);
+
+      diceHeroGroup.add(fedoraGroup);
+    }
+
+    // 10. CUBOGRO: 3D Upward Curved Ivory Tusks + Bronze Bull Nose Ring
+    if (character === CharacterType.CUBOGRO) {
+      const tuskGeo = new THREE.ConeGeometry(0.16, 0.85, 8);
+      const tuskMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.3 });
+
+      // Left Tusk
+      const leftTusk = new THREE.Mesh(tuskGeo, tuskMat);
+      leftTusk.position.set(-0.55, -0.25, 0.98);
+      leftTusk.rotation.set(0.35, 0.15, -0.25);
+      diceHeroGroup.add(leftTusk);
+
+      // Right Tusk
+      const rightTusk = new THREE.Mesh(tuskGeo, tuskMat);
+      rightTusk.position.set(0.55, -0.25, 0.98);
+      rightTusk.rotation.set(0.35, -0.15, 0.25);
+      diceHeroGroup.add(rightTusk);
+
+      // Bronze Septum Ring
+      const ringGeo = new THREE.TorusGeometry(0.18, 0.05, 8, 16);
+      const ringMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.2 });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.position.set(0, -0.3, 0.96);
+      ringMesh.rotation.x = Math.PI / 4;
+      diceHeroGroup.add(ringMesh);
+    }
+
+    // 11. PIRATA: 3D Pirate Captain Tricorne Hat + Gold Hoop Earring
+    if (character === CharacterType.PIRATA) {
+      const tricorneGroup = new THREE.Group();
+      tricorneGroup.position.set(0, 1.05, 0);
+
+      // 3 curved corners of tricorne
+      const brimShape = new THREE.Shape();
+      brimShape.moveTo(0, 1.25);
+      brimShape.lineTo(-1.15, -0.7);
+      brimShape.lineTo(1.15, -0.7);
+      brimShape.closePath();
+
+      const brimGeo = new THREE.ExtrudeGeometry(brimShape, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05 });
+      const feltMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.7 });
+      const brimMesh = new THREE.Mesh(brimGeo, feltMat);
+      brimMesh.rotation.x = -Math.PI / 2;
+      tricorneGroup.add(brimMesh);
+
+      // Gold braided trim
+      const trimGeo = new THREE.TorusGeometry(0.85, 0.04, 8, 24);
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.9, roughness: 0.2 });
+      const trimMesh = new THREE.Mesh(trimGeo, goldMat);
+      trimMesh.position.y = 0.15;
+      trimMesh.rotation.x = Math.PI / 2;
+      tricorneGroup.add(trimMesh);
+
+      diceHeroGroup.add(tricorneGroup);
+
+      // Gold pirate hoop earring on left side
+      const earRingGeo = new THREE.TorusGeometry(0.18, 0.04, 8, 16);
+      const earRing = new THREE.Mesh(earRingGeo, goldMat);
+      earRing.position.set(-0.96, -0.1, 0.2);
+      earRing.rotation.y = Math.PI / 2;
+      diceHeroGroup.add(earRing);
+    }
+
+    // 12. CUBICULA: 3D Gothic Countess Tiara with Blood Ruby
+    if (character === CharacterType.CUBICULA) {
+      const tiaraGroup = new THREE.Group();
+      tiaraGroup.position.set(0, 0.98, 0.4);
+      tiaraGroup.rotation.x = 0.1;
+
+      // Silver tiara arc
+      const arcGeo = new THREE.CylinderGeometry(0.75, 0.8, 0.15, 16, 1, true, -Math.PI * 0.4, Math.PI * 0.8);
+      const silverMat = new THREE.MeshStandardMaterial({ color: 0xe4e4e7, metalness: 0.95, roughness: 0.1 });
+      const arcMesh = new THREE.Mesh(arcGeo, silverMat);
+      tiaraGroup.add(arcMesh);
+
+      // Center ruby gem
+      const rubyGeo = new THREE.OctahedronGeometry(0.16);
+      const rubyMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.3, roughness: 0.1, emissive: 0x991b1b, emissiveIntensity: 0.5 });
+      const rubyMesh = new THREE.Mesh(rubyGeo, rubyMat);
+      rubyMesh.position.set(0, 0.25, 0.72);
+      tiaraGroup.add(rubyMesh);
+
+      diceHeroGroup.add(tiaraGroup);
+    }
+
+    // 13. CAMBIAFORMAS: 3D Jester Two-Horn Cap with Golden Bells & Floating Glitch Question Mark
+    if (character === CharacterType.CAMBIAFORMAS) {
+      const jesterGroup = new THREE.Group();
+      jesterGroup.position.set(0, 0.95, 0);
+
+      // Left purple curved horn
+      const hornCurveLeft = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(-0.6, 0.5, 0),
+        new THREE.Vector3(-1.1, 0.2, 0),
+      ]);
+      const leftHornGeo = new THREE.TubeGeometry(hornCurveLeft, 16, 0.14, 8, false);
+      const purpleMat = new THREE.MeshStandardMaterial({ color: 0x7e22ce, roughness: 0.4 });
+      jesterGroup.add(new THREE.Mesh(leftHornGeo, purpleMat));
+
+      // Right cyan curved horn
+      const hornCurveRight = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0.6, 0.5, 0),
+        new THREE.Vector3(1.1, 0.2, 0),
+      ]);
+      const rightHornGeo = new THREE.TubeGeometry(hornCurveRight, 16, 0.14, 8, false);
+      const cyanMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4 });
+      jesterGroup.add(new THREE.Mesh(rightHornGeo, cyanMat));
+
+      // Golden bells on tips
+      const bellGeo = new THREE.SphereGeometry(0.12, 12, 12);
+      const bellMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.9, roughness: 0.15 });
+
+      const bell1 = new THREE.Mesh(bellGeo, bellMat);
+      bell1.position.set(-1.15, 0.15, 0);
+      jesterGroup.add(bell1);
+
+      const bell2 = new THREE.Mesh(bellGeo, bellMat);
+      bell2.position.set(1.15, 0.15, 0);
+      jesterGroup.add(bell2);
+
+      diceHeroGroup.add(jesterGroup);
     }
 
     // Interactive Drag rotation handlers

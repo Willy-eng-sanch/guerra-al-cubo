@@ -1,6 +1,7 @@
 import React from 'react';
 import { CharacterType } from '../types/game';
 import { CHARACTERS } from '../data/characters';
+import { DiceCharacterSprite } from './DiceCharacterSprite';
 
 interface Dice3DVisualProps {
   value?: number;
@@ -135,28 +136,15 @@ export const Dice3DVisual: React.FC<Dice3DVisualProps> = ({
 
           {/* If character is specified and not rolling, show hero face on die with Papercraft collage & Tape strip */}
           {charDef && !isRolling ? (
-            <div className="relative w-full h-full flex flex-col items-center justify-center p-1 overflow-hidden">
-              <div className="relative w-full h-full rounded-lg overflow-hidden border border-white/80 shadow-[0_2px_6px_rgba(0,0,0,0.8)] rotate-[-1deg]">
-                <img
-                  src={charDef.avatar}
-                  alt={charDef.displayName}
-                  className="w-full h-full object-cover"
-                  style={{
-                    filter: `contrast(1.25) saturate(1.15) drop-shadow(1px 0px 0px #000) drop-shadow(-1px 0px 0px #000) drop-shadow(0px 1px 0px #000) drop-shadow(0px -1px 0px #000)`
-                  }}
-                />
-                {/* Translucent adhesive tape strip */}
-                <div
-                  className="absolute -top-1 -left-1 w-6 h-2.5 bg-amber-100/50 backdrop-blur-xs border-y border-white/60 shadow-xs rotate-[-15deg] pointer-events-none z-20"
-                />
-              </div>
-
-              <span
-                className="absolute bottom-0 inset-x-0 bg-black/90 text-[8px] font-mono font-black text-center truncate px-0.5 border-t border-white/10 z-20"
-                style={{ color: accentColor }}
-              >
-                {charDef.displayName.slice(0, 7)}
-              </span>
+            <div className="w-full h-full flex items-center justify-center p-0.5">
+              <DiceCharacterSprite
+                character={charDef.type}
+                teamColor={teamColor}
+                teamId={teamId}
+                size={Math.max(40, size - 4)}
+                diceValue={displayVal}
+                isStabilized={true}
+              />
             </div>
           ) : (
             /* Standard 3D Die Pip Layout */
