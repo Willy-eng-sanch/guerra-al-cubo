@@ -74,17 +74,24 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
 
         <div className="text-center">
           <h2 className="text-base md:text-xl font-black tracking-wide text-white font-bungee">
-            MAZO HEROICO: 60 CARTAS
+            MANUAL TÁCTICO: 50 CARTAS OFICIALES
           </h2>
           <p className="text-[10px] md:text-xs text-yellow-400 font-bold">
-            Sistema de Clases y Sinergias estilo Plants vs. Zombies Heroes
+            5 Clases: Bruta, Protección, Economía, Táctica & Astucia
           </p>
         </div>
 
-        <div className="w-16" />
+        <a
+          href="/assets/aistudio/Manual_T_ctico__Guerra_Cubita_226b4d3f.pdf"
+          target="_blank"
+          rel="noreferrer"
+          className="p-1.5 px-2.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 text-xs font-bold transition-all hidden sm:flex items-center gap-1"
+        >
+          <span>PDF Oficial</span>
+        </a>
       </div>
 
-      {/* Class Category Filter (PvZ Heroes Style) */}
+      {/* Class Category Filter (Manual Táctico) */}
       <div className="my-3 space-y-2">
         {/* Search */}
         <div className="relative">
@@ -108,7 +115,7 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
                 : 'bg-[#151922] text-neutral-400 border-[#2b354b] hover:text-white'
             }`}
           >
-            TODAS (60)
+            TODAS ({ALL_CARDS.length})
           </button>
 
           {Object.entries(CATEGORY_INFO).map(([catKey, info]) => {
@@ -250,7 +257,7 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
       </div>
 
       <div className="text-center text-[11px] text-neutral-400 py-2 border-t border-[#232b3d] flex items-center justify-between px-2">
-        <span>Mostrando <b>{filteredCards.length}</b> de 60 cartas heroicas</span>
+        <span>Mostrando <b>{filteredCards.length}</b> de {ALL_CARDS.length} cartas del Manual Táctico</span>
         <span className="text-yellow-400 font-bold">¡Combina con dados héroes compatibles para activar Sinergias!</span>
       </div>
     </div>

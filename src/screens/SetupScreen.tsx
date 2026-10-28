@@ -81,7 +81,14 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
   const inspectedHero = inspectedCharType ? CHARACTERS[inspectedCharType] : null;
 
   return (
-    <div className="relative w-full min-h-screen bg-[#0d0f14] p-4 md:p-6 text-white flex flex-col justify-between max-w-5xl mx-auto select-none">
+    <div
+      className="relative w-full min-h-screen bg-[#0d0f14] p-4 md:p-6 text-white flex flex-col justify-between max-w-5xl mx-auto select-none rounded-3xl"
+      style={{
+        backgroundImage: `radial-gradient(ellipse at 50% 50%, rgba(13, 15, 20, 0.85) 0%, rgba(10, 12, 16, 0.96) 85%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center 35%'
+      }}
+    >
       {/* Top Bar */}
       <div className="flex items-center justify-between border-b border-[#232b3d] pb-3">
         <button
@@ -96,10 +103,23 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
           <span>VASO DE DADOS HEROICOS (3 VS 3)</span>
         </h2>
 
-        <div className="text-right">
-          <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-700 px-2.5 py-1 rounded-full font-mono font-bold">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-700 px-2.5 py-1 rounded-full font-mono font-bold hidden sm:inline">
             BANDO AZUL ({playerTeam.length}/3 DADOS)
           </span>
+
+          <button
+            onClick={handleLaunchBattle}
+            disabled={playerTeam.length < 3}
+            className={`py-1.5 px-3 rounded-xl font-black text-xs uppercase tracking-wide flex items-center gap-1.5 transition-all shadow-md cursor-pointer ${
+              playerTeam.length === 3
+                ? 'bg-yellow-400 hover:bg-yellow-300 text-black border border-yellow-200 animate-pulse'
+                : 'bg-neutral-800 text-neutral-500 border border-neutral-700 cursor-not-allowed opacity-50'
+            }`}
+          >
+            <Swords className="w-3.5 h-3.5" />
+            <span>INICIAR ({playerTeam.length}/3)</span>
+          </button>
         </div>
       </div>
 
@@ -213,6 +233,56 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* Persistent Bottom Launch Bar */}
+      <div className="sticky bottom-0 z-30 pt-3 pb-1 bg-gradient-to-t from-[#0d0f14] via-[#0d0f14]/95 to-transparent">
+        <div className="p-3.5 rounded-2xl bg-[#141926] border-2 border-yellow-400/80 shadow-[0_0_30px_rgba(0,0,0,0.8)] flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-yellow-400 text-black">
+              <Dices className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-white font-bungee">
+                  VASO DE COMBATE ({playerTeam.length}/3 DADOS)
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  playerTeam.length === 3 ? 'bg-emerald-950 text-emerald-300 border border-emerald-600' : 'bg-amber-950 text-amber-300 border border-amber-600'
+                }`}>
+                  {playerTeam.length === 3 ? '¡Listo para pelear!' : `Elige ${3 - playerTeam.length} más`}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                {playerTeam.map(t => (
+                  <span key={t} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#1f283c] text-neutral-200 border border-[#334263]">
+                    {CHARACTERS[t].displayName}
+                  </span>
+                ))}
+                {playerTeam.length === 0 && (
+                  <span className="text-[11px] text-neutral-400">Haz clic en los dados del pool para agregarlos</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleLaunchBattle}
+            disabled={playerTeam.length < 3}
+            className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-black text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xl ${
+              playerTeam.length === 3
+                ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 hover:brightness-110 active:scale-95 text-black border-2 border-white animate-bounce'
+                : 'bg-neutral-800 text-neutral-500 border border-neutral-700 cursor-not-allowed opacity-60'
+            }`}
+          >
+            <Swords className="w-5 h-5" />
+            <span>
+              {playerTeam.length === 3
+                ? '⚔️ ¡INICIAR PARTIDA EN LA ARENA!'
+                : `METE ${3 - playerTeam.length} DADO(S) MÁS AL VASO`}
+            </span>
+          </button>
         </div>
       </div>
     </div>

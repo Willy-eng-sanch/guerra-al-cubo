@@ -4,9 +4,8 @@ import { CHARACTER_LIST, CHARACTERS } from '../data/characters';
 import { Dice3DVisual } from '../components/Dice3DVisual';
 import { DiceCupShaker } from '../components/DiceCupShaker';
 import { HeroDiceCard } from '../components/HeroDiceCard';
-import { CinematicCutsceneModal } from '../components/CinematicCutsceneModal';
 import { sound } from '../audio/soundManager';
-import { ArrowLeft, Dices, Shield, Swords, Sparkles, Check, Lock, Users, Video, Info } from 'lucide-react';
+import { ArrowLeft, Dices, Shield, Swords, Sparkles, Check, Lock, Users, Info } from 'lucide-react';
 
 interface DraftScreenProps {
   onStartBattle: (playerTeam: CharacterType[], rivalTeam: CharacterType[]) => void;
@@ -143,20 +142,10 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
         const newRivalTeam = [...prev.rivalTeam, chosen];
         const newHistory = [...prev.pickHistory, { picker: 'RIVAL' as const, character: chosen }];
 
-        if (chosenDef.selectionVideo) {
-          setTimeout(() => {
-            setActiveCutscene({
-              character: chosenDef,
-              picker: 'RIVAL',
-              actionTitle: `¡EL RIVAL HA RECLUTADO A ${chosenDef.displayName.toUpperCase()}!`
-            });
-          }, 60);
-        } else {
-          setRecentPickBanner({ name: chosenDef.displayName, picker: 'RIVAL' });
-          setTimeout(() => {
-            handleCutsceneFinished('RIVAL');
-          }, 1800);
-        }
+        setRecentPickBanner({ name: chosenDef.displayName, picker: 'RIVAL' });
+        setTimeout(() => {
+          handleCutsceneFinished('RIVAL');
+        }, 1200);
 
         return {
           ...prev,
@@ -189,20 +178,10 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
       const newPlayerTeam = [...prev.playerTeam, charType];
       const newHistory = [...prev.pickHistory, { picker: 'PLAYER' as const, character: charType }];
 
-      if (pickedDef.selectionVideo) {
-        setTimeout(() => {
-          setActiveCutscene({
-            character: pickedDef,
-            picker: 'PLAYER',
-            actionTitle: `¡HAS METIDO A ${pickedDef.displayName.toUpperCase()} EN EL VASO!`
-          });
-        }, 60);
-      } else {
-        setRecentPickBanner({ name: pickedDef.displayName, picker: 'PLAYER' });
-        setTimeout(() => {
-          handleCutsceneFinished('PLAYER');
-        }, 1800);
-      }
+      setRecentPickBanner({ name: pickedDef.displayName, picker: 'PLAYER' });
+      setTimeout(() => {
+        handleCutsceneFinished('PLAYER');
+      }, 1200);
 
       return {
         ...prev,
@@ -217,7 +196,14 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
   const inspectedHero = inspectedCharType ? CHARACTERS[inspectedCharType] : null;
 
   return (
-    <div className="relative w-full min-h-screen bg-[#0d0f14] p-3 md:p-6 text-white flex flex-col justify-between max-w-5xl mx-auto select-none">
+    <div
+      className="relative w-full min-h-screen bg-[#0d0f14] p-3 md:p-6 text-white flex flex-col justify-between max-w-5xl mx-auto select-none rounded-3xl"
+      style={{
+        backgroundImage: `radial-gradient(ellipse at 50% 50%, rgba(13, 15, 20, 0.84) 0%, rgba(10, 12, 16, 0.96) 85%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center 35%'
+      }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#232a3b] pb-3">
         <button
@@ -232,10 +218,20 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
           <span>DRAFT 3 VS 3 · VASO DE DADOS</span>
         </h2>
 
-        <div className="text-right">
-          <span className="text-[10px] bg-amber-950 text-amber-300 border border-amber-600 px-2.5 py-1 rounded-full font-mono font-bold">
-            13 DADOS HÉROE · 3 POR BANDO
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] bg-amber-950 text-amber-300 border border-amber-600 px-2.5 py-1 rounded-full font-mono font-bold hidden sm:inline">
+            {draftState.playerTeam.length + draftState.rivalTeam.length} / 6 DADOS
           </span>
+
+          {isDraftComplete && (
+            <button
+              onClick={() => onStartBattle(draftState.playerTeam, draftState.rivalTeam)}
+              className="py-1.5 px-3 rounded-xl font-black text-xs uppercase tracking-wide flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-300 text-black border border-yellow-200 animate-bounce shadow-md cursor-pointer transition-all"
+            >
+              <Swords className="w-3.5 h-3.5" />
+              <span>INICIAR PARTIDA</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -244,7 +240,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
 
         {/* Phase 1: Initiative Roll */}
         {draftState.stage === 'ROLL_INITIATIVE' && (
-          <div className="bg-[#141824] border-2 border-[#29354d] rounded-3xl p-5 md:p-8 text-center space-y-6 shadow-2xl">
+          <div className="bg-[#141824]/90 border-2 border-[#29354d] rounded-3xl p-5 md:p-8 text-center space-y-6 shadow-2xl backdrop-blur-md">
             <div className="max-w-md mx-auto space-y-2">
               <span className="text-xs font-black text-yellow-400 uppercase tracking-widest bg-yellow-950/60 px-3 py-1 rounded-full border border-yellow-700">
                 Paso 1: Iniciativa con Dados 3D
@@ -260,13 +256,14 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
             <div className="flex items-center justify-center gap-8 md:gap-16 py-4">
               {/* Player D6 */}
               <div className="flex flex-col items-center gap-2">
-                <span className="text-xs font-black text-cyan-400 tracking-wider">TU DADO (D6)</span>
+                <span className="text-xs font-black text-cyan-400 tracking-wider">TU DADO (AZUL)</span>
                 <div className="p-3 bg-[#0d1017] rounded-3xl border-2 border-cyan-500/60 shadow-lg">
                   <Dice3DVisual
                     value={draftState.playerRoll}
                     size={84}
+                    teamColor="blue"
                     isRolling={draftState.isRolling}
-                    glowColor="#06b6d4"
+                    glowColor="#38bdf8"
                   />
                 </div>
                 <span className="text-xl font-black text-white font-mono">
@@ -278,11 +275,12 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
 
               {/* Rival D6 */}
               <div className="flex flex-col items-center gap-2">
-                <span className="text-xs font-black text-red-400 tracking-wider">RIVAL (D6)</span>
+                <span className="text-xs font-black text-red-400 tracking-wider">RIVAL (ROJO)</span>
                 <div className="p-3 bg-[#0d1017] rounded-3xl border-2 border-red-500/60 shadow-lg">
                   <Dice3DVisual
                     value={draftState.rivalRoll}
                     size={84}
+                    teamColor="red"
                     isRolling={draftState.isRolling}
                     glowColor="#ef4444"
                   />
@@ -355,7 +353,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
                   onDropDie={handlePlayerPick}
                   onLaunch={() => onStartBattle(draftState.playerTeam, draftState.rivalTeam)}
                   isReadyToLaunch={isDraftComplete}
-                  disabled={draftState.turn !== 'PLAYER' || draftState.stage !== 'DRAFTING'}
+                  disabled={!isDraftComplete && (draftState.turn !== 'PLAYER' || draftState.stage !== 'DRAFTING')}
                   cupTitle="TU VASO DE DADOS (BANDO AZUL)"
                   cupSubtitle="Arrastra aquí tus dados héroe o haz doble clic sobre ellos"
                 />
@@ -525,6 +523,33 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
 
       </div>
 
+      {/* Sticky Completion Launch Bar */}
+      {isDraftComplete && (
+        <div className="sticky bottom-0 z-30 pt-3 pb-1 bg-gradient-to-t from-[#0d0f14] via-[#0d0f14]/95 to-transparent animate-fadeIn">
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 text-black border-2 border-white shadow-[0_0_40px_rgba(250,204,21,0.6)] flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-black text-yellow-400 shadow-md">
+                <Swords className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm sm:text-base font-black font-bungee">¡DRAFT COMPLETADO (3 VS 3)!</h4>
+                <p className="text-xs font-bold text-neutral-900">
+                  Tus 3 héroes y los 3 héroes rivales ya están en sus vasos listos para el combate.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => onStartBattle(draftState.playerTeam, draftState.rivalTeam)}
+              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-black hover:bg-neutral-900 active:scale-95 text-yellow-300 font-black text-sm uppercase tracking-wider border-2 border-yellow-300 shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Swords className="w-5 h-5 text-yellow-400" />
+              <span>¡INICIAR PARTIDA EN LA ARENA!</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Pick Banner Toast */}
       {recentPickBanner && (
         <div className="fixed top-16 inset-x-4 max-w-md mx-auto z-40 bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 text-black font-black px-5 py-3 rounded-2xl shadow-2xl border-2 border-white text-center animate-bounce flex items-center justify-center gap-2">
@@ -535,17 +560,6 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
               : `¡El Rival ha reclutado a ${recentPickBanner.name}!`}
           </span>
         </div>
-      )}
-
-      {/* Video Cutscene on Pick if available */}
-      {activeCutscene && activeCutscene.character.selectionVideo && (
-        <CinematicCutsceneModal
-          videoUrl={activeCutscene.character.selectionVideo}
-          characterName={activeCutscene.character.displayName}
-          actionTitle={activeCutscene.actionTitle}
-          quote={activeCutscene.character.selectionQuote}
-          onClose={() => handleCutsceneFinished(activeCutscene.picker)}
-        />
       )}
     </div>
   );

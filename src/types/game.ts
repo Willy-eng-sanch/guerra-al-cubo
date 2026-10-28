@@ -24,13 +24,19 @@ export enum TrickTiming {
   PREPARED_STANCE = "PREPARED_STANCE"
 }
 
-// Categorías de Cartas Heroicas (Inspiradas en las clases de Plants vs Zombies Heroes)
+// Las 5 Clases Oficiales del Manual Táctico (Guerra Cubita)
 export enum CardCategory {
-  SOLAR = "SOLAR",         // 🌿 Vigor, salud radiante, curación y regeneración
-  GUARDIAN = "GUARDIAN",   // 🛡️ Blindaje, armadura pesada, escudos y barricadas
-  KABOOM = "KABOOM",       // ⚡ Furia explosiva, daño directo demoledor y chispas
-  CEREBRAL = "CEREBRAL",   // 🧠 Astucia, robo de cartas, manipulación del dado y trucos
-  FURTIVO = "FURTIVO"      // 🥷 Sombras, sigilo, daño ineludible, veneno y emboscadas
+  BRUTA = "BRUTA",             // 💥 Rojo: Impacto y fuerza física
+  PROTECCION = "PROTECCION",   // 🛡️ Azul: Muros y supervivencia
+  ECONOMIA = "ECONOMIA",       // 💰 Verde: Abasto y robos
+  TACTICA = "TACTICA",         // 🧠 Púrpura: Control y anulación
+  ASTUCIA = "ASTUCIA",         // ⚡ Amarillo: Robo y evasión
+  // Compatibilidad con referencias previas:
+  SOLAR = "ECONOMIA",
+  GUARDIAN = "PROTECCION",
+  KABOOM = "BRUTA",
+  CEREBRAL = "TACTICA",
+  FURTIVO = "ASTUCIA"
 }
 
 export enum CardRarity {
@@ -49,58 +55,64 @@ export interface CategoryInfo {
   bgGlow: string;
   description: string;
   synergyBonus: string;
+  rejectionPenalty: string;
 }
 
-export const CATEGORY_INFO: Record<CardCategory, CategoryInfo> = {
-  [CardCategory.SOLAR]: {
-    name: "Solar / Vigor",
-    badge: "🌿 SOLAR",
-    symbol: "🌿",
-    color: "#10B981",
-    borderColor: "#059669",
-    bgGlow: "rgba(16, 185, 129, 0.25)",
-    description: "Centrado en salud, vigor vital y resistencia duradera.",
-    synergyBonus: "+1 HP Curación inmediata para tu héroe."
+export const CATEGORY_INFO: Record<string, CategoryInfo> = {
+  [CardCategory.BRUTA]: {
+    name: "Bruta (Rojo)",
+    badge: "💥 BRUTA",
+    symbol: "💥",
+    color: "#EF4444",
+    borderColor: "#DC2626",
+    bgGlow: "rgba(239, 68, 68, 0.25)",
+    description: "Impacto y fuerza física demoledora.",
+    synergyBonus: "+1 de Daño extra al impacto.",
+    rejectionPenalty: "Sufres 1 HP de autodaño al usarla/equiparla."
   },
-  [CardCategory.GUARDIAN]: {
-    name: "Guardián / Blindaje",
-    badge: "🛡️ GUARDIÁN",
+  [CardCategory.PROTECCION]: {
+    name: "Protección (Azul)",
+    badge: "🛡️ PROTECCIÓN",
     symbol: "🛡️",
     color: "#3B82F6",
     borderColor: "#2563EB",
     bgGlow: "rgba(59, 130, 246, 0.25)",
-    description: "Centrado en armaduras impenetrables, escudos y reducción de impacto.",
-    synergyBonus: "+1 Escudo de Bloqueo (absorbe el próximo punto de daño recibido)."
+    description: "Muros, armaduras pesadas y supervivencia.",
+    synergyBonus: "Te curas 1 HP al usar/equipar.",
+    rejectionPenalty: "Tu próximo ataque sufre -1 al dado por lentitud."
   },
-  [CardCategory.KABOOM]: {
-    name: "Kaboom / Explosión",
-    badge: "⚡ KABOOM",
-    symbol: "⚡",
-    color: "#EF4444",
-    borderColor: "#DC2626",
-    bgGlow: "rgba(239, 68, 68, 0.25)",
-    description: "Poder de fuego implacable, ataques demoledores y proyectiles desmedidos.",
-    synergyBonus: "+1 Daño Explosivo directo al rival seleccionado."
+  [CardCategory.ECONOMIA]: {
+    name: "Economía (Verde)",
+    badge: "💰 ECONOMÍA",
+    symbol: "💰",
+    color: "#10B981",
+    borderColor: "#059669",
+    bgGlow: "rgba(16, 185, 129, 0.25)",
+    description: "Abasto, administración y robos de cartas.",
+    synergyBonus: "Robas 1 carta adicional de la pila general.",
+    rejectionPenalty: "Debes descartar 1 carta de tu mano."
   },
-  [CardCategory.CEREBRAL]: {
-    name: "Cerebral / Astucia",
-    badge: "🧠 CEREBRAL",
+  [CardCategory.TACTICA]: {
+    name: "Táctica (Púrpura)",
+    badge: "🧠 TÁCTICA",
     symbol: "🧠",
     color: "#8B5CF6",
     borderColor: "#7C3AED",
     bgGlow: "rgba(139, 92, 246, 0.25)",
-    description: "Maestros del ingenio táctico, robo acelerado de mazo y control del azar.",
-    synergyBonus: "50% de probabilidad de reembolsar 1 PA o robar 1 carta extra."
+    description: "Control, anulaciones y trampas calculadas.",
+    synergyBonus: "El rival objetivo pierde su Acción Libre.",
+    rejectionPenalty: "Silenciado (no usas habilidades por 1 turno)."
   },
-  [CardCategory.FURTIVO]: {
-    name: "Furtivo / Sombras",
-    badge: "🥷 FURTIVO",
-    symbol: "🥷",
-    color: "#06B6D4",
-    borderColor: "#0891B2",
-    bgGlow: "rgba(6, 182, 212, 0.25)",
-    description: "Ataques sorpresa, daño ineludible, posturas esquivas y veneno sigiloso.",
-    synergyBonus: "El rival seleccionado sufre -1 a su próxima tirada de dado."
+  [CardCategory.ASTUCIA]: {
+    name: "Astucia (Amarillo)",
+    badge: "⚡ ASTUCIA",
+    symbol: "⚡",
+    color: "#F59E0B",
+    borderColor: "#D97706",
+    bgGlow: "rgba(245, 158, 11, 0.25)",
+    description: "Robo de recursos, juego sucio y evasión letal.",
+    synergyBonus: "El impacto de este turno se vuelve Ineludible (ignora armadura).",
+    rejectionPenalty: "Revelas toda tu mano al rival."
   }
 };
 
@@ -115,6 +127,14 @@ export interface GameCard {
   category: CardCategory;
   rarity: CardRarity;
   synergyEffect: string;
+  isFierro?: boolean; // Para identificar cartas Fierro (Equipamiento de mesa)
+}
+
+export interface CharacterADN {
+  primaria: CardCategory;
+  secundaria: CardCategory;
+  neutra: CardCategory;
+  antiClases: CardCategory[];
 }
 
 export interface CharacterDef {
@@ -124,23 +144,19 @@ export interface CharacterDef {
   description: string;
   abilityName: string;
   abilityDescription: string;
+  passiveName: string;
+  passiveDescription: string;
   abilityCooldownMax: number;
   primaryColor: string;
   secondaryColor: string;
   avatar: string;
-  classes: CardCategory[]; // Las 2 Clases Heroicas (PvZ Heroes Style)
-  signatureSuperpowerName: string;
-  signatureSuperpowerDesc: string;
+  classes: CardCategory[]; // Primaria y Secundaria
+  adn: CharacterADN;
+  signatureSuperpowerName?: string;
+  signatureSuperpowerDesc?: string;
   model3dImage?: string;
   hasCustom3DModel?: boolean;
   selectionQuote?: string;
-  selectionVideo?: string;
-  actionVideos?: {
-    attack?: string;
-    ability?: string;
-    perfectBlock?: string;
-    victory?: string;
-  };
 }
 
 export interface PlayerState {

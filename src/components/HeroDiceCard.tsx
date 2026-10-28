@@ -90,8 +90,9 @@ export const HeroDiceCard: React.FC<HeroDiceCardProps> = ({
         <div className="shrink-0">
           <Dice3DVisual
             character={char.type}
+            teamColor={isPickedByPlayer ? 'blue' : isPickedByRival ? 'red' : undefined}
             size={46}
-            glowColor={char.primaryColor}
+            glowColor={isPickedByPlayer ? '#38bdf8' : isPickedByRival ? '#f87171' : char.primaryColor}
           />
         </div>
 

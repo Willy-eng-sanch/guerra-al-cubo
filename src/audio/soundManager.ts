@@ -130,6 +130,71 @@ class SoundManager {
     node.start(now);
   }
 
+  // Cartoon Fight Brawl Sound Sequence (Whack, Boing, Pow, Slap)
+  playCartoonFightBrawl() {
+    this.vibrate(150);
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    // Series of 6 rapid comical comic impacts over ~1.2s
+    const impacts = [
+      { delay: 0.0, type: 'whack', freq: 480 },
+      { delay: 0.18, type: 'boing', freq: 220 },
+      { delay: 0.38, type: 'punch', freq: 160 },
+      { delay: 0.58, type: 'slap', freq: 620 },
+      { delay: 0.80, type: 'boing', freq: 280 },
+      { delay: 1.05, type: 'pow', freq: 140 }
+    ];
+
+    impacts.forEach(({ delay, type, freq }) => {
+      setTimeout(() => {
+        if (!this.ctx) return;
+        if (type === 'boing') {
+          this.playCartoonBoing(freq);
+        } else if (type === 'whack' || type === 'slap') {
+          this.playCartoonWhack(freq);
+        } else {
+          this.playPunchHit();
+        }
+      }, delay * 1000);
+    });
+  }
+
+  playCartoonBoing(startFreq = 220) {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    // Frequency sweeps upwards like a comic spring
+    osc.frequency.setValueAtTime(startFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(startFreq * 2.8, now + 0.18);
+    gain.gain.setValueAtTime(0.28, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.22);
+  }
+
+  playCartoonWhack(freq = 520) {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(90, now + 0.12);
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  }
+
   playPerfectBlock() {
     this.vibrate(120);
     const ctx = this.getContext();

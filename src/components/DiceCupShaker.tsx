@@ -167,11 +167,12 @@ export const DiceCupShaker: React.FC<DiceCupShakerProps> = ({
                       </button>
                     )}
 
-                    {/* 3D Die Visual with Hero Face */}
+                    {/* 3D Die Visual with Hero Face in Blue Team Resin */}
                     <Dice3DVisual
                       character={charType}
+                      teamColor="blue"
                       size={44}
-                      glowColor={hero.primaryColor}
+                      glowColor="#38bdf8"
                     />
 
                     <span className="text-[10px] font-black text-white truncate w-full text-center mt-1">
@@ -207,9 +208,9 @@ export const DiceCupShaker: React.FC<DiceCupShakerProps> = ({
       {/* Shake & Launch Button */}
       <button
         onClick={handleLaunchClick}
-        disabled={!isReadyToLaunch || isShaking || disabled}
+        disabled={!isReadyToLaunch || isShaking}
         className={`w-full mt-3 py-3.5 px-4 rounded-2xl font-black text-xs md:text-sm tracking-wider flex items-center justify-center gap-2 border-2 transition-all cursor-pointer ${
-          isReadyToLaunch && !disabled
+          isReadyToLaunch && !isShaking
             ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 hover:brightness-110 active:scale-[0.98] text-black border-yellow-200 shadow-[0_0_20px_rgba(250,204,21,0.5)] animate-bounce'
             : 'bg-[#181d28] text-neutral-500 border-[#263044] cursor-not-allowed opacity-60'
         }`}
@@ -219,8 +220,8 @@ export const DiceCupShaker: React.FC<DiceCupShakerProps> = ({
           {isShaking
             ? '¡AGITANDO VASO Y LANZANDO A LA ARENA...!'
             : isReadyToLaunch
-            ? '¡AGITAR VASO Y LANZAR A LA ARENA!'
-            : `METE LOS ${maxCapacity} DADOS AL VASO PARA COMBATIR`}
+            ? '⚔️ ¡INICIAR PARTIDA! LANZAR DADOS A LA ARENA'
+            : `METE LOS ${maxCapacity} DADOS AL VASO PARA COMBATIR (${team.length}/${maxCapacity})`}
         </span>
       </button>
     </div>

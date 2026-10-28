@@ -14,10 +14,11 @@ import {
 } from '../types/game';
 import { CHARACTERS } from '../data/characters';
 import { ArenaRing } from '../components/ArenaRing';
+import { CombatClashData } from '../components/CartoonCombatClash';
 import { DiceRollModal } from '../components/DiceRollModal';
 import { GlobalDeckView } from '../components/GlobalDeckView';
 import { ReactionModal } from '../components/ReactionModal';
-import { CinematicCutsceneModal } from '../components/CinematicCutsceneModal';
+import { InteractiveTacticalTutorial } from '../components/InteractiveTacticalTutorial';
 import { HeroAbilityModal } from '../components/HeroAbilityModal';
 import { AudioControlBar } from '../components/AudioControlBar';
 import {
@@ -31,7 +32,7 @@ import {
   History,
   Info,
   Sparkles,
-  Video
+  BookOpen
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -53,6 +54,7 @@ interface ArenaScreenProps {
   isMatchIntroPlaying: boolean;
   onMatchIntroComplete: () => void;
   reactionPlayer: PlayerState | null;
+  activeClash?: CombatClashData | null;
   onSelectTarget: (playerId: number) => void;
   onAttack: (targetPlayerId: number) => void;
   onEquipWeapon: (cardId: number) => void;
@@ -88,6 +90,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   isMatchIntroPlaying,
   onMatchIntroComplete,
   reactionPlayer,
+  activeClash,
   onSelectTarget,
   onAttack,
   onEquipWeapon,
@@ -107,12 +110,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   const [showLogModal, setShowLogModal] = useState(false);
   const [showAbilityModal, setShowAbilityModal] = useState(false);
   const [selectedHandCard, setSelectedHandCard] = useState<GameCard | null>(null);
-  const [activeCinematic, setActiveCinematic] = useState<{
-    videoUrl: string;
-    characterName: string;
-    actionTitle: string;
-    quote?: string;
-  } | null>(null);
+  const [showTutorialModal, setShowTutorialModal] = useState(false);
 
   // Trigger confetti on victory
   React.useEffect(() => {
@@ -144,7 +142,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
     <div
       className="relative w-full min-h-screen bg-[#0a0c10] text-white flex flex-col justify-between p-3 md:p-5 select-none overflow-x-hidden bg-cover bg-center bg-no-repeat"
       style={{
-        backgroundImage: `linear-gradient(to bottom, rgba(10, 12, 16, 0.86) 0%, rgba(10, 12, 16, 0.68) 40%, rgba(10, 12, 16, 0.94) 85%), url('/assets/street_sidewalk_crowd_bg.jpg')`,
+        backgroundImage: `linear-gradient(to bottom, rgba(10, 12, 16, 0.88) 0%, rgba(10, 12, 16, 0.70) 40%, rgba(10, 12, 16, 0.94) 85%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`,
       }}
     >
       {isMatchIntroPlaying && (
@@ -208,6 +206,15 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           </button>
 
           <button
+            onClick={() => setShowTutorialModal(true)}
+            className="p-1.5 px-2 rounded-xl bg-yellow-400/15 hover:bg-yellow-400/25 border border-yellow-400/50 text-yellow-300 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer"
+            title="Manual Táctico & Tutorial"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Manual</span>
+          </button>
+
+          <button
             onClick={() => setShowLogModal(true)}
             className="p-1.5 rounded-xl bg-[#141822] hover:bg-[#1e2433] border border-[#263044] text-neutral-300"
             title="Historial de Combate"
@@ -237,6 +244,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           isRollingAnimation={isRollingAnimation}
           isMatchIntroPlaying={isMatchIntroPlaying}
           onMatchIntroComplete={onMatchIntroComplete}
+          activeClash={activeClash}
         />
 
         {/* Live Combat Log Ticker */}
@@ -318,24 +326,6 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                     {actorHeroDef?.signatureSuperpowerName}
                   </span>
                 </div>
-
-                {actorHeroDef?.selectionVideo && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveCinematic({
-                        videoUrl: actorHeroDef.actionVideos?.attack || actorHeroDef.selectionVideo!,
-                        characterName: actorHeroDef.displayName,
-                        actionTitle: `¡CINEMÁTICA 3D: ${actorHeroDef.displayName.toUpperCase()}!`,
-                        quote: actorHeroDef.selectionQuote
-                      });
-                    }}
-                    className="px-2.5 py-1 rounded-xl bg-pink-950/80 hover:bg-pink-900 border border-pink-500/60 text-pink-300 font-bold text-[10px] flex items-center gap-1 shadow-sm transition-all animate-pulse"
-                  >
-                    <Video className="w-3 h-3 text-pink-400" />
-                    <span className="hidden sm:inline">Cinemática 3D</span>
-                  </button>
-                )}
               </div>
             </div>
 
@@ -638,14 +628,10 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
         </div>
       )}
 
-      {/* 6. Cinematic Battle Cutscene */}
-      {activeCinematic && (
-        <CinematicCutsceneModal
-          videoUrl={activeCinematic.videoUrl}
-          characterName={activeCinematic.characterName}
-          actionTitle={activeCinematic.actionTitle}
-          quote={activeCinematic.quote}
-          onClose={() => setActiveCinematic(null)}
+      {/* 6. Interactive Tactical Tutorial & Manual Modal */}
+      {showTutorialModal && (
+        <InteractiveTacticalTutorial
+          onDismiss={() => setShowTutorialModal(false)}
         />
       )}
 
@@ -659,17 +645,6 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           onClose={() => setShowAbilityModal(false)}
           onActivate={(targetId, extraOption) => {
             setShowAbilityModal(false);
-
-            // Play cinematic cutscene with real video audio if available
-            if (actorHeroDef.actionVideos?.ability || actorHeroDef.selectionVideo) {
-              setActiveCinematic({
-                videoUrl: actorHeroDef.actionVideos?.ability || actorHeroDef.selectionVideo!,
-                characterName: actorHeroDef.displayName,
-                actionTitle: `¡HABILIDAD: ${actorHeroDef.abilityName.toUpperCase()}!`,
-                quote: actorHeroDef.selectionQuote
-              });
-            }
-
             onUseHeroAbility(targetId, extraOption);
           }}
         />

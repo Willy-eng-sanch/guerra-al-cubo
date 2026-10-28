@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Cube3DCanvas } from '../components/Cube3DCanvas';
-import { TutorialModal } from '../components/TutorialModal';
+import { InteractiveTacticalTutorial } from '../components/InteractiveTacticalTutorial';
 import { DownloadApkModal } from '../components/DownloadApkModal';
 import { AudioControlBar } from '../components/AudioControlBar';
 import { CharacterType } from '../types/game';
@@ -31,11 +31,11 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       {/* Background Banner with Dark Vignette */}
       <div className="absolute inset-0 z-0">
         <img
-          src="/assets/clay_cubes_showcase_1792370579110.jpg"
-          alt="Claymation Street Arena"
-          className="w-full h-full object-cover opacity-35 filter blur-[1px] scale-105"
+          src="/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg"
+          alt="Guerra Cubita Street Dice Arena"
+          className="w-full h-full object-cover opacity-30 filter blur-[0.5px] scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0f1116]/80 via-[#0f1116]/65 to-[#0f1116]/95" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0f1116]/85 via-[#0f1116]/65 to-[#0f1116]/95" />
       </div>
 
       {/* Header Bar with Audio Controls */}
@@ -73,21 +73,22 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           GUERRA CUBITA
         </h1>
         <p className="text-xs md:text-sm font-semibold text-cyan-400 tracking-wide mt-1">
-          Duelo Táctico de Cubos Urbanos y Dados D6
+          Duelo Táctico de Dados D6 Callejeros · Rotoscopia
         </p>
 
-        {/* Mascot 3D Clay Cube */}
+        {/* Mascot 3D Combat Die */}
         <div className="my-5 relative flex items-center justify-center">
-          <div className="absolute w-44 h-44 rounded-full bg-cyan-500/10 blur-2xl pointer-events-none" />
+          <div className="absolute w-44 h-44 rounded-full bg-cyan-500/15 blur-2xl pointer-events-none" />
           <Cube3DCanvas
             character={CharacterType.CUBINJA}
+            teamId={1}
             size={160}
             hasPreparedStance={true}
           />
         </div>
 
         <p className="text-[11px] text-neutral-400 max-w-xs mx-auto">
-          Hasta 6 combatientes · 20 HP · 60 Cartas coleccionables · Bloqueos y dados artesanales de plastilina
+          Dados D6 tácticos · Equipo Azul vs Equipo Rojo · Arte rotoscopia y manual de 50 cartas
         </p>
       </div>
 
@@ -109,6 +110,15 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         >
           <Shield className="w-4 h-4 text-cyan-400" />
           <span>SELECCIONAR TUS 3 PERSONAJES (DIRECTO)</span>
+        </button>
+
+        {/* Tutorial & Manual Táctico Button */}
+        <button
+          onClick={() => setShowTutorial(true)}
+          className="w-full py-3 bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-orange-500/25 hover:brightness-125 active:scale-[0.98] text-yellow-300 font-extrabold text-xs md:text-sm rounded-xl border border-yellow-400/60 flex items-center justify-center gap-2 tracking-wide transition-all shadow-md cursor-pointer"
+        >
+          <BookOpen className="w-4 h-4 text-yellow-400" />
+          <span>TUTORIAL RÁPIDO & MANUAL TÁCTICO (GDD)</span>
         </button>
 
         {/* Campaign & Pass and Play */}
@@ -137,7 +147,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             className="py-2.5 bg-[#151922] hover:bg-[#1d2331] text-cyan-400 border border-[#2b354c] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all"
           >
             <Shield className="w-4 h-4 text-cyan-400" />
-            <span>13 CUBOS</span>
+            <span>13 CUBOS (ADN)</span>
           </button>
 
           <button
@@ -145,12 +155,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             className="py-2.5 bg-[#151922] hover:bg-[#1d2331] text-yellow-400 border border-[#2b354c] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all"
           >
             <BookOpen className="w-4 h-4 text-yellow-400" />
-            <span>60 CARTAS</span>
+            <span>50 CARTAS (GDD)</span>
           </button>
         </div>
       </div>
 
-      {showTutorial && <TutorialModal onDismiss={() => setShowTutorial(false)} />}
+      {showTutorial && <InteractiveTacticalTutorial onDismiss={() => setShowTutorial(false)} />}
       {showDownloadApk && <DownloadApkModal onDismiss={() => setShowDownloadApk(false)} />}
     </div>
   );

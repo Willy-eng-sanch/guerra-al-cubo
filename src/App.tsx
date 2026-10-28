@@ -32,10 +32,12 @@ import { EncyclopediaScreen } from './screens/EncyclopediaScreen';
 import { ArenaScreen } from './screens/ArenaScreen';
 import { DraftScreen } from './screens/DraftScreen';
 import { DiceSpecialChoiceModal } from './components/DiceSpecialChoiceModal';
+import { CombatClashData } from './components/CartoonCombatClash';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<CurrentScreen>(CurrentScreen.TITLE);
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.QUICK_BATTLE);
+  const [activeClash, setActiveClash] = useState<CombatClashData | null>(null);
 
   // Match State
   const [round, setRound] = useState<number>(1);
@@ -610,357 +612,390 @@ export default function App() {
     const target = players.find(p => p.id === targetId);
     if (!target || target.isEliminated || target.id === attacker.id) return;
 
+    // 1. Pre-calculate Attacker Roll
+    const attackerHero = attacker.activeMorphCharacter || attacker.characterType;
+    const attackerRolls: number[] = [];
+    let attackerFinalVal: number;
+
+    if (attackerHero === CharacterType.TRAMCUBOSO) {
+      const r1 = Math.floor(Math.random() * 6) + 1;
+      const r2 = Math.floor(Math.random() * 6) + 1;
+      attackerRolls.push(r1, r2);
+      attackerFinalVal = Math.max(r1, r2);
+    } else if (attackerHero === CharacterType.CUBINJA) {
+      const r1 = Math.floor(Math.random() * 6) + 1;
+      const r2 = Math.floor(Math.random() * 6) + 1;
+      attackerRolls.push(r1, r2);
+      attackerFinalVal = r1 + r2;
+    } else if (attackerHero === CharacterType.CUBOGRO) {
+      const r = Math.floor(Math.random() * 6) + 1;
+      attackerRolls.push(r);
+      attackerFinalVal = r === 1 ? 2 : r === 2 ? 4 : r === 3 ? 6 : r;
+    } else {
+      const r = Math.floor(Math.random() * 6) + 1;
+      attackerRolls.push(r);
+      attackerFinalVal = r;
+    }
+
+    // Special Face 6 Effect check for Attacker
+    if (attackerRolls.includes(6)) {
+      if (!attacker.isBot) {
+        setSpecialSixChoice({
+          playerId: attacker.id,
+          actorName: attacker.name,
+          isAttacker: true
+        });
+      } else {
+        const botChoice = attacker.hand.length < 2 ? 'CARD' : 'EXTRA_TURN';
+        handleApplySixChoice(attacker.id, botChoice);
+      }
+    }
+
+    // Attacker Weapon Modifiers
+    let modifiedAttackDamage = attackerFinalVal;
+    if (attacker.equippedWeapons.some(w => w.id === 1) && modifiedAttackDamage >= 3) {
+      modifiedAttackDamage += 1; // Bate de aluminio
+    }
+    if (attacker.equippedWeapons.some(w => w.id === 6)) {
+      modifiedAttackDamage += 2; // Puño de hierro
+    }
+    if (attacker.equippedWeapons.some(w => w.id === 22)) {
+      modifiedAttackDamage += 1; // Batería de coche
+    }
+
+    // 2. Pre-calculate Defender Roll
+    const defenderHero = target.activeMorphCharacter || target.characterType;
+    const defenderRolls: number[] = [];
+    let defenderFinalVal: number;
+    let isPerfectBlock = false;
+
+    const hasReflejoFelino = target.preparedStance?.id === 53;
+    const hasElComodin = target.preparedStance?.id === 60;
+
+    if (hasReflejoFelino || hasElComodin) {
+      defenderFinalVal = attackerFinalVal;
+      defenderRolls.push(defenderFinalVal);
+      isPerfectBlock = true;
+      addLog(`${target.name} activa su postura defensiva y bloquea a la perfección!`);
+    } else if (target.isFrozen) {
+      const r = Math.floor(Math.random() * 6) + 1;
+      defenderRolls.push(r);
+      defenderFinalVal = r;
+      isPerfectBlock = false; // Congelado no puede bloquear
+    } else if (defenderHero === CharacterType.TRAMCUBOSO) {
+      const r1 = Math.floor(Math.random() * 6) + 1;
+      const r2 = Math.floor(Math.random() * 6) + 1;
+      defenderRolls.push(r1, r2);
+      isPerfectBlock =
+        attackerRolls.includes(r1) ||
+        attackerRolls.includes(r2) ||
+        r1 === attackerFinalVal ||
+        r2 === attackerFinalVal;
+      defenderFinalVal = isPerfectBlock
+        ? (attackerRolls.includes(r1) || r1 === attackerFinalVal ? r1 : r2)
+        : Math.max(r1, r2);
+    } else {
+      const r = Math.floor(Math.random() * 6) + 1;
+      defenderRolls.push(r);
+      defenderFinalVal = r;
+      isPerfectBlock = attackerRolls.includes(r) || r === attackerFinalVal;
+    }
+
+    // Special Face 6 Effect check for Defender
+    if (defenderRolls.includes(6)) {
+      if (!target.isBot) {
+        setSpecialSixChoice({
+          playerId: target.id,
+          actorName: target.name,
+          isAttacker: false
+        });
+      } else {
+        const botChoice = target.hand.length < 2 ? 'CARD' : 'EXTRA_TURN';
+        handleApplySixChoice(target.id, botChoice);
+      }
+    }
+
+    // 3. Resolve Damage & Shield Barrier
+    let finalDamage = isPerfectBlock ? 0 : modifiedAttackDamage;
+
+    if (!isPerfectBlock && target.preparedStance?.id === 35) {
+      finalDamage = 0;
+      addLog(`${target.name} se desvanece en su Humo de Vape preparado!`);
+    }
+
+    if (finalDamage === 1 && target.equippedWeapons.some(w => w.id === 4)) {
+      finalDamage = 0;
+      addLog(`La Chaqueta de Cuero de ${target.name} anuló el daño de 1.`);
+    }
+
+    if (defenderHero === CharacterType.GLADIACUBON && finalDamage >= 3) {
+      finalDamage = Math.max(1, Math.floor(finalDamage / 2));
+      addLog(`Gladiacubon mitiga el impacto a ${finalDamage} de daño.`);
+    }
+
+    // Shield Barrier absorbs damage
+    let targetBarrierRemaining = target.shieldBarrier || 0;
+    if (!isPerfectBlock && finalDamage > 0 && targetBarrierRemaining > 0) {
+      const absorbed = Math.min(targetBarrierRemaining, finalDamage);
+      targetBarrierRemaining -= absorbed;
+      finalDamage -= absorbed;
+      addLog(`🛡️ ¡La Barrera de Escudo de ${target.name} absorbió ${absorbed} de daño! (Quedan: ${targetBarrierRemaining})`);
+      addFloatingText(target.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
+    }
+
+    // Consume posture
+    let updatedTargetStance = target.preparedStance;
+    if (target.preparedStance && [35, 53, 55, 57, 59, 60].includes(target.preparedStance.id)) {
+      updatedTargetStance = null;
+    }
+
+    const oldHp = target.hp;
+    const newHp = Math.max(0, oldHp - finalDamage);
+
+    // =========================================================================
+    // MULTI-STAGE CARTOON CLASH ANIMATION SEQUENCE
+    // 1. RUSH TO CENTER OF TABLE (350ms)
+    // 2. CARTOON FIGHT BRAWL DUST CLOUD + CARTOON SOUNDS (1250ms)
+    // 3. REVEAL DICE RESULTS ON TABLE (1200ms)
+    // 4. RESOLVE STATE & CLOSE
+    // =========================================================================
     setIsRollingAnimation(true);
     sound.playDiceRoll();
 
+    // Stage 1: Both dice rush to center table
+    setActiveClash({
+      attackerId: attacker.id,
+      defenderId: target.id,
+      attackerHero,
+      defenderHero,
+      attackerTeamId: attacker.teamId,
+      defenderTeamId: target.teamId,
+      attackerName: attacker.name,
+      defenderName: target.name,
+      attackerRolls,
+      attackerFinalVal,
+      defenderRolls,
+      defenderFinalVal,
+      isPerfectBlock,
+      damageDealt: finalDamage,
+      phase: 'RUSH_TO_CENTER'
+    });
+
+    // Stage 1 -> 2: Collision into Fight Dust Cloud
     setTimeout(() => {
-      // 1. Attacker Roll
-      const attackerHero = attacker.activeMorphCharacter || attacker.characterType;
-      const attackerRolls: number[] = [];
-      let attackerFinalVal: number;
+      setActiveClash(prev => prev ? { ...prev, phase: 'BRAWL_CLOUD' } : null);
+      sound.playCartoonFightBrawl();
 
-      if (attackerHero === CharacterType.TRAMCUBOSO) {
-        const r1 = Math.floor(Math.random() * 6) + 1;
-        const r2 = Math.floor(Math.random() * 6) + 1;
-        attackerRolls.push(r1, r2);
-        attackerFinalVal = Math.max(r1, r2);
-      } else if (attackerHero === CharacterType.CUBINJA) {
-        const r1 = Math.floor(Math.random() * 6) + 1;
-        const r2 = Math.floor(Math.random() * 6) + 1;
-        attackerRolls.push(r1, r2);
-        attackerFinalVal = r1 + r2;
-      } else if (attackerHero === CharacterType.CUBOGRO) {
-        const r = Math.floor(Math.random() * 6) + 1;
-        attackerRolls.push(r);
-        attackerFinalVal = r === 1 ? 2 : r === 2 ? 4 : r === 3 ? 6 : r;
-      } else {
-        const r = Math.floor(Math.random() * 6) + 1;
-        attackerRolls.push(r);
-        attackerFinalVal = r;
-      }
-
-      // Special Face 6 Effect check for Attacker
-      if (attackerRolls.includes(6)) {
-        if (!attacker.isBot) {
-          setSpecialSixChoice({
-            playerId: attacker.id,
-            actorName: attacker.name,
-            isAttacker: true
-          });
-        } else {
-          const botChoice = attacker.hand.length < 2 ? 'CARD' : 'EXTRA_TURN';
-          handleApplySixChoice(attacker.id, botChoice);
-        }
-      }
-
-      // Attacker Weapon Modifiers
-      let modifiedAttackDamage = attackerFinalVal;
-      if (attacker.equippedWeapons.some(w => w.id === 1) && modifiedAttackDamage >= 3) {
-        modifiedAttackDamage += 1; // Bate de aluminio
-      }
-      if (attacker.equippedWeapons.some(w => w.id === 6)) {
-        modifiedAttackDamage += 2; // Puño de hierro
-      }
-      if (attacker.equippedWeapons.some(w => w.id === 22)) {
-        modifiedAttackDamage += 1; // Batería de coche
-      }
-
-      // 2. Defender Roll
-      const defenderHero = target.activeMorphCharacter || target.characterType;
-      const defenderRolls: number[] = [];
-      let defenderFinalVal: number;
-      let isPerfectBlock = false;
-
-      const hasReflejoFelino = target.preparedStance?.id === 53;
-      const hasElComodin = target.preparedStance?.id === 60;
-
-      if (hasReflejoFelino || hasElComodin) {
-        defenderFinalVal = attackerFinalVal;
-        defenderRolls.push(defenderFinalVal);
-        isPerfectBlock = true;
-        addLog(`${target.name} activa su postura defensiva y bloquea a la perfección!`);
-      } else if (target.isFrozen) {
-        const r = Math.floor(Math.random() * 6) + 1;
-        defenderRolls.push(r);
-        defenderFinalVal = r;
-        isPerfectBlock = false; // Congelado no puede bloquear
-      } else if (defenderHero === CharacterType.TRAMCUBOSO) {
-        const r1 = Math.floor(Math.random() * 6) + 1;
-        const r2 = Math.floor(Math.random() * 6) + 1;
-        defenderRolls.push(r1, r2);
-        isPerfectBlock =
-          attackerRolls.includes(r1) ||
-          attackerRolls.includes(r2) ||
-          r1 === attackerFinalVal ||
-          r2 === attackerFinalVal;
-        defenderFinalVal = isPerfectBlock
-          ? (attackerRolls.includes(r1) || r1 === attackerFinalVal ? r1 : r2)
-          : Math.max(r1, r2);
-      } else {
-        // Todos los demás héroes Y CUBINJA lanzan SOLO 1 DADO para bloquear
-        const r = Math.floor(Math.random() * 6) + 1;
-        defenderRolls.push(r);
-        defenderFinalVal = r;
-        // El tiro de bloqueo tiene que coincidir con el número del atacante
-        isPerfectBlock = attackerRolls.includes(r) || r === attackerFinalVal;
-      }
-
-      // Special Face 6 Effect check for Defender
-      if (defenderRolls.includes(6)) {
-        if (!target.isBot) {
-          setSpecialSixChoice({
-            playerId: target.id,
-            actorName: target.name,
-            isAttacker: false
-          });
-        } else {
-          const botChoice = target.hand.length < 2 ? 'CARD' : 'EXTRA_TURN';
-          handleApplySixChoice(target.id, botChoice);
-        }
-      }
-
-      // 3. Resolve Damage & Shield Barrier
-      let finalDamage = isPerfectBlock ? 0 : modifiedAttackDamage;
-
-      if (!isPerfectBlock && target.preparedStance?.id === 35) {
-        // Humo de Vape
-        finalDamage = 0;
-        addLog(`${target.name} se desvanece en su Humo de Vape preparado!`);
-      }
-
-      if (finalDamage === 1 && target.equippedWeapons.some(w => w.id === 4)) {
-        // Chaqueta de Cuero
-        finalDamage = 0;
-        addLog(`La Chaqueta de Cuero de ${target.name} anuló el daño de 1.`);
-      }
-
-      if (defenderHero === CharacterType.GLADIACUBON && finalDamage >= 3) {
-        finalDamage = Math.max(1, Math.floor(finalDamage / 2));
-        addLog(`Gladiacubon mitiga el impacto a ${finalDamage} de daño.`);
-      }
-
-      // Shield Barrier (Sinergia Guardián) absorbs damage
-      let targetBarrierRemaining = target.shieldBarrier || 0;
-      if (!isPerfectBlock && finalDamage > 0 && targetBarrierRemaining > 0) {
-        const absorbed = Math.min(targetBarrierRemaining, finalDamage);
-        targetBarrierRemaining -= absorbed;
-        finalDamage -= absorbed;
-        addLog(`🛡️ ¡La Barrera de Escudo de ${target.name} absorbió ${absorbed} de daño! (Quedan: ${targetBarrierRemaining})`);
-        addFloatingText(target.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
-      }
-
-      // Consume posture
-      let updatedTargetStance = target.preparedStance;
-      if (target.preparedStance && [35, 53, 55, 57, 59, 60].includes(target.preparedStance.id)) {
-        updatedTargetStance = null;
-      }
-
-      const oldHp = target.hp;
-      const newHp = Math.max(0, oldHp - finalDamage);
-
-      // Sound & visuals
-      if (isPerfectBlock) {
-        sound.playPerfectBlock();
-        addFloatingText(target.id, "¡SUPER-BLOQUEO HEROICO!", "#00e5ff");
-      } else if (finalDamage > 0) {
-        sound.playPunchHit();
-        addFloatingText(target.id, `-${finalDamage} HP`, "#ff1744");
-      } else {
-        addFloatingText(target.id, "¡EVADIDO!", "#7c4dff");
-      }
-
-      setActiveDiceRoll({
-        attackerRolls,
-        attackerFinalVal,
-        defenderRolls,
-        defenderFinalVal,
-        isPerfectBlock,
-        damageDealt: finalDamage,
-        attackerName: attacker.name,
-        defenderName: target.name
-      });
-      setIsRollingAnimation(false);
-
-      // Threshold check: multiples of 5 (20, 15, 10, 5)
-      // When lowering a rival's HP below a multiple of 5, the attacker draws cards from the Global Deck
-      const multiplesOf5 = [20, 15, 10, 5];
-      const crossedMultiples = multiplesOf5.filter(m => oldHp >= m && newHp < m);
-
-      let attackerCardsToAdd = 0;
-      if (crossedMultiples.length > 0 && !attacker.equippedWeapons.some(w => w.id === 6)) {
-        attackerCardsToAdd = crossedMultiples.length;
-        triggerDeckAnimation();
-        sound.playCardDraw();
-        addLog(
-          `¡Umbral de vida quebrado! ${attacker.name} baja la vida de ${target.name} por debajo de múltiplo de 5 (cruzó: ${crossedMultiples.join(', ')} HP) y roba ${attackerCardsToAdd} carta(s) del Mazo Global.`,
-          true
-        );
-        addFloatingText(attacker.id, `+${attackerCardsToAdd} CARTA MAZO`, "#ffd600");
-      }
-
-      // Racubitero passive
-      if (attackerHero === CharacterType.RACUBITERO && finalDamage > 0) {
-        const stealCount = attackerRolls.includes(5) ? 2 : 1;
-        attackerCardsToAdd += stealCount;
-        triggerDeckAnimation();
-        sound.playCardDraw();
-        addLog(`¡El Racubitero saquea ${stealCount} carta(s) del Mazo por daño efectivo!`, true);
-      }
-
-      // Super-Bloqueo Heroico / Bloqueo Perfecto rewards for defender:
-      // Se activa cuando el tiro de bloqueo coincide con el número del atacante
-      let defenderCardsToAdd = 0;
-      let defenderHpHeal = 0;
-      if (isPerfectBlock) {
-        defenderCardsToAdd = 1;
-        defenderHpHeal = 2; // Recuperación heroica por Super-Bloqueo
-        triggerDeckAnimation();
-        sound.playCardDraw();
-        const targetHeroDef = CHARACTERS[defenderHero];
-        if (target.equippedWeapons.some(w => w.id === 2)) {
-          defenderHpHeal += 1;
-          addLog(`${target.name} cura +1 HP extra con su Tapa de Alcantarilla al bloquear.`);
-        }
-        addLog(
-          `🛡️⚡ ¡¡SUPER-BLOQUEO HEROICO!! ${target.name} igualó el número del atacante (${defenderFinalVal})! Anula el 100% del daño y desata su Superpoder [${targetHeroDef.signatureSuperpowerName}]: ${targetHeroDef.signatureSuperpowerDesc}! Recupera +${defenderHpHeal} HP y roba 1 carta del Mazo Global.`,
-          true
-        );
-        narrator.narrateSuperBlock(target.name, defenderFinalVal, targetHeroDef.signatureSuperpowerName);
-      } else if (finalDamage > 0) {
-        narrator.narrateAttack(attacker.name, target.name, finalDamage, attackerFinalVal);
-      }
-
-      // Update state
-      let currentDeckState = [...deck];
-      let currentDiscardState = [...discardPile];
-
-      setPlayers(prevPlayers =>
-        prevPlayers.map(p => {
-          if (p.id === attacker.id) {
-            const newHand = [...p.hand];
-            const maxH =
-              p.characterType === CharacterType.HADA_AL_CUBO
-                ? 4
-                : p.equippedWeapons.some(w => w.id === 13)
-                ? 3
-                : 2;
-
-            for (let i = 0; i < attackerCardsToAdd; i++) {
-              if (newHand.length < maxH) {
-                const drawRes = drawCardFromDeck(currentDeckState, currentDiscardState);
-                currentDeckState = drawRes.newDeck;
-                currentDiscardState = drawRes.newDiscard;
-                if (drawRes.card) newHand.push(drawRes.card);
-              }
-            }
-
-            return {
-              ...p,
-              actionPoints: Math.max(0, p.actionPoints - 1),
-              hand: newHand
-            };
-          } else if (p.id === target.id) {
-            const newHand = [...p.hand];
-            const maxH =
-              p.characterType === CharacterType.HADA_AL_CUBO
-                ? 4
-                : p.equippedWeapons.some(w => w.id === 13)
-                ? 3
-                : 2;
-
-            for (let i = 0; i < defenderCardsToAdd; i++) {
-              if (newHand.length < maxH) {
-                const drawRes = drawCardFromDeck(currentDeckState, currentDiscardState);
-                currentDeckState = drawRes.newDeck;
-                currentDiscardState = drawRes.newDiscard;
-                if (drawRes.card) newHand.push(drawRes.card);
-              }
-            }
-
-            return {
-              ...p,
-              hp: Math.min(p.maxHp, newHp + defenderHpHeal),
-              hand: newHand,
-              preparedStance: updatedTargetStance,
-              shieldBarrier: targetBarrierRemaining,
-              isEliminated: newHp <= 0
-            };
-          }
-          return p;
-        })
-      );
-
-      setDeck(currentDeckState);
-      setDiscardPile(currentDiscardState);
-
-      if (newHp <= 0) {
-        sound.playElimination();
-        addLog(`¡K.O.! ${target.name} ha sido eliminado de la arena!`, true);
-        narrator.narrateElimination(target.name);
-
-        setTimeout(() => {
-          setPlayers(currPlayers => {
-            const opposingTeam = attacker.teamId === 1 ? 2 : attacker.teamId === 2 ? 1 : null;
-            const liveEnemies = currPlayers.filter(
-              p => !p.isEliminated && p.hp > 0 && p.id !== attacker.id && (!opposingTeam || p.teamId === opposingTeam)
-            );
-            if (liveEnemies.length > 0) {
-              const bestTarget = liveEnemies.reduce((prev, curr) => (curr.hp < prev.hp ? curr : prev));
-              setSelectedTargetId(bestTarget.id);
-            } else {
-              setSelectedTargetId(null);
-            }
-            checkVictory(currPlayers);
-            return currPlayers;
-          });
-        }, 100);
-      }
-
-      // Perfect Block immediate Reaction Window
-      if (isPerfectBlock) {
-        setTimeout(() => {
-          setPlayers(latestPlayers => {
-            const defender = latestPlayers.find(p => p.id === target.id);
-            if (!defender || defender.isEliminated || defender.hand.length === 0) return latestPlayers;
-
-            if (!defender.isBot) {
-              // Human defender reaction window
-              setReactionPlayer(defender);
-              return latestPlayers;
-            } else {
-              // Bot reaction immediately on perfect block
-              const weapon = defender.hand.find(c => c.type === CardType.WEAPON);
-              const stance = defender.hand.find(c => c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE);
-              const maxSlots = defender.characterType === CharacterType.CUBINJA ? 99 : 1;
-
-              if (weapon && defender.equippedWeapons.length < maxSlots) {
-                sound.playCardDraw();
-                addLog(`¡Reacción! ${defender.name} aprovecha su Bloqueo Perfecto y equipa [${weapon.name}] de inmediato!`, true);
-                return latestPlayers.map(p => p.id === defender.id ? {
-                  ...p,
-                  hand: p.hand.filter(c => c.id !== weapon.id),
-                  equippedWeapons: [...p.equippedWeapons, weapon]
-                } : p);
-              } else if (stance && !defender.preparedStance) {
-                sound.playStanceActivate();
-                addLog(`¡Reacción! ${defender.name} aprovecha su Bloqueo Perfecto y prepara [${stance.name}] de inmediato!`, true);
-                return latestPlayers.map(p => p.id === defender.id ? {
-                  ...p,
-                  hand: p.hand.filter(c => c.id !== stance.id),
-                  preparedStance: stance
-                } : p);
-              }
-              return latestPlayers;
-            }
-          });
-        }, 350 * speedMultiplier);
-      }
-
-      // Check match victory
+      // Stage 2 -> 3: Cloud poofs away, revealing dice on table
       setTimeout(() => {
-        checkVictory();
-      }, 300);
-    }, 600 * speedMultiplier);
+        setActiveClash(prev => prev ? { ...prev, phase: 'REVEAL_DICE' } : null);
+
+        // Sound & Floating combat text
+        if (isPerfectBlock) {
+          sound.playPerfectBlock();
+          addFloatingText(target.id, "¡SUPER-BLOQUEO HEROICO!", "#00e5ff");
+        } else if (finalDamage > 0) {
+          sound.playPunchHit();
+          addFloatingText(target.id, `-${finalDamage} HP`, "#ff1744");
+        } else {
+          sound.playCartoonBoing(260);
+          addFloatingText(target.id, "¡EVADIDO!", "#7c4dff");
+        }
+
+        // Stage 3 -> 4: Complete clash and commit state
+        setTimeout(() => {
+          setActiveClash(null);
+          setIsRollingAnimation(false);
+
+          setActiveDiceRoll({
+            attackerRolls,
+            attackerFinalVal,
+            defenderRolls,
+            defenderFinalVal,
+            isPerfectBlock,
+            damageDealt: finalDamage,
+            attackerName: attacker.name,
+            defenderName: target.name
+          });
+
+          // Threshold check: multiples of 5 (20, 15, 10, 5)
+          const multiplesOf5 = [20, 15, 10, 5];
+          const crossedMultiples = multiplesOf5.filter(m => oldHp >= m && newHp < m);
+
+          let attackerCardsToAdd = 0;
+          if (crossedMultiples.length > 0 && !attacker.equippedWeapons.some(w => w.id === 6)) {
+            attackerCardsToAdd = crossedMultiples.length;
+            triggerDeckAnimation();
+            sound.playCardDraw();
+            addLog(
+              `¡Umbral de vida quebrado! ${attacker.name} baja la vida de ${target.name} por debajo de múltiplo de 5 (cruzó: ${crossedMultiples.join(', ')} HP) y roba ${attackerCardsToAdd} carta(s) del Mazo Global.`,
+              true
+            );
+            addFloatingText(attacker.id, `+${attackerCardsToAdd} CARTA MAZO`, "#ffd600");
+          }
+
+          // Racubitero passive
+          if (attackerHero === CharacterType.RACUBITERO && finalDamage > 0) {
+            const stealCount = attackerRolls.includes(5) ? 2 : 1;
+            attackerCardsToAdd += stealCount;
+            triggerDeckAnimation();
+            sound.playCardDraw();
+            addLog(`¡El Racubitero saquea ${stealCount} carta(s) del Mazo por daño efectivo!`, true);
+          }
+
+          // Super-Bloqueo Heroico / Bloqueo Perfecto rewards for defender:
+          let defenderCardsToAdd = 0;
+          let defenderHpHeal = 0;
+          if (isPerfectBlock) {
+            defenderCardsToAdd = 1;
+            defenderHpHeal = 2; // Recuperación heroica por Super-Bloqueo
+            triggerDeckAnimation();
+            sound.playCardDraw();
+            const targetHeroDef = CHARACTERS[defenderHero];
+            if (target.equippedWeapons.some(w => w.id === 2)) {
+              defenderHpHeal += 1;
+              addLog(`${target.name} cura +1 HP extra con su Tapa de Alcantarilla al bloquear.`);
+            }
+            addLog(
+              `🛡️⚡ ¡¡SUPER-BLOQUEO HEROICO!! ${target.name} igualó el número del atacante (${defenderFinalVal})! Anula el 100% del daño y desata su Superpoder [${targetHeroDef.signatureSuperpowerName}]: ${targetHeroDef.signatureSuperpowerDesc}! Recupera +${defenderHpHeal} HP y roba 1 carta del Mazo Global.`,
+              true
+            );
+            narrator.narrateSuperBlock(target.name, defenderFinalVal, targetHeroDef.signatureSuperpowerName);
+          } else if (finalDamage > 0) {
+            narrator.narrateAttack(attacker.name, target.name, finalDamage, attackerFinalVal);
+          }
+
+          // Update state
+          let currentDeckState = [...deck];
+          let currentDiscardState = [...discardPile];
+
+          setPlayers(prevPlayers =>
+            prevPlayers.map(p => {
+              if (p.id === attacker.id) {
+                const newHand = [...p.hand];
+                const maxH =
+                  p.characterType === CharacterType.HADA_AL_CUBO
+                    ? 4
+                    : p.equippedWeapons.some(w => w.id === 13)
+                    ? 3
+                    : 2;
+
+                for (let i = 0; i < attackerCardsToAdd; i++) {
+                  if (newHand.length < maxH) {
+                    const drawRes = drawCardFromDeck(currentDeckState, currentDiscardState);
+                    currentDeckState = drawRes.newDeck;
+                    currentDiscardState = drawRes.newDiscard;
+                    if (drawRes.card) newHand.push(drawRes.card);
+                  }
+                }
+
+                return {
+                  ...p,
+                  actionPoints: Math.max(0, p.actionPoints - 1),
+                  hand: newHand
+                };
+              } else if (p.id === target.id) {
+                const newHand = [...p.hand];
+                const maxH =
+                  p.characterType === CharacterType.HADA_AL_CUBO
+                    ? 4
+                    : p.equippedWeapons.some(w => w.id === 13)
+                    ? 3
+                    : 2;
+
+                for (let i = 0; i < defenderCardsToAdd; i++) {
+                  if (newHand.length < maxH) {
+                    const drawRes = drawCardFromDeck(currentDeckState, currentDiscardState);
+                    currentDeckState = drawRes.newDeck;
+                    currentDiscardState = drawRes.newDiscard;
+                    if (drawRes.card) newHand.push(drawRes.card);
+                  }
+                }
+
+                return {
+                  ...p,
+                  hp: Math.min(p.maxHp, newHp + defenderHpHeal),
+                  hand: newHand,
+                  preparedStance: updatedTargetStance,
+                  shieldBarrier: targetBarrierRemaining,
+                  isEliminated: newHp <= 0
+                };
+              }
+              return p;
+            })
+          );
+
+          setDeck(currentDeckState);
+          setDiscardPile(currentDiscardState);
+
+          if (newHp <= 0) {
+            sound.playElimination();
+            addLog(`¡K.O.! ${target.name} ha sido eliminado de la arena!`, true);
+            narrator.narrateElimination(target.name);
+
+            setTimeout(() => {
+              setPlayers(currPlayers => {
+                const opposingTeam = attacker.teamId === 1 ? 2 : attacker.teamId === 2 ? 1 : null;
+                const liveEnemies = currPlayers.filter(
+                  p => !p.isEliminated && p.hp > 0 && p.id !== attacker.id && (!opposingTeam || p.teamId === opposingTeam)
+                );
+                if (liveEnemies.length > 0) {
+                  const bestTarget = liveEnemies.reduce((prev, curr) => (curr.hp < prev.hp ? curr : prev));
+                  setSelectedTargetId(bestTarget.id);
+                } else {
+                  setSelectedTargetId(null);
+                }
+                checkVictory(currPlayers);
+                return currPlayers;
+              });
+            }, 100);
+          }
+
+          // Perfect Block immediate Reaction Window
+          if (isPerfectBlock) {
+            setTimeout(() => {
+              setPlayers(latestPlayers => {
+                const defender = latestPlayers.find(p => p.id === target.id);
+                if (!defender || defender.isEliminated || defender.hand.length === 0) return latestPlayers;
+
+                if (!defender.isBot) {
+                  setReactionPlayer(defender);
+                  return latestPlayers;
+                } else {
+                  const weapon = defender.hand.find(c => c.type === CardType.WEAPON);
+                  const stance = defender.hand.find(c => c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE);
+                  const maxSlots = defender.characterType === CharacterType.CUBINJA ? 99 : 1;
+
+                  if (weapon && defender.equippedWeapons.length < maxSlots) {
+                    sound.playCardDraw();
+                    addLog(`¡Reacción! ${defender.name} aprovecha su Bloqueo Perfecto y equipa [${weapon.name}] de inmediato!`, true);
+                    return latestPlayers.map(p => p.id === defender.id ? {
+                      ...p,
+                      hand: p.hand.filter(c => c.id !== weapon.id),
+                      equippedWeapons: [...p.equippedWeapons, weapon]
+                    } : p);
+                  } else if (stance && !defender.preparedStance) {
+                    sound.playStanceActivate();
+                    addLog(`¡Reacción! ${defender.name} aprovecha su Bloqueo Perfecto y prepara [${stance.name}] de inmediato!`, true);
+                    return latestPlayers.map(p => p.id === defender.id ? {
+                      ...p,
+                      hand: p.hand.filter(c => c.id !== stance.id),
+                      preparedStance: stance
+                    } : p);
+                  }
+                  return latestPlayers;
+                }
+              });
+            }, 350 * speedMultiplier);
+          }
+
+          // Check match victory
+          setTimeout(() => {
+            checkVictory();
+          }, 300);
+        }, 1200 * speedMultiplier);
+      }, 1250 * speedMultiplier);
+    }, 350 * speedMultiplier);
   };
 
   // Reaction handlers for Perfect Block
@@ -1481,6 +1516,7 @@ export default function App() {
           isMatchIntroPlaying={isMatchIntroPlaying}
           onMatchIntroComplete={completeMatchIntro}
           reactionPlayer={reactionPlayer}
+          activeClash={activeClash}
           onSelectTarget={id => setSelectedTargetId(id)}
           onAttack={id => handleAttack(id)}
           onEquipWeapon={id => handleEquipWeapon(id)}

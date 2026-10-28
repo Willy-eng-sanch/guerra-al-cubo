@@ -1,444 +1,122 @@
-import React, { useState, useEffect } from 'react';
-import { CharacterDef } from '../types/game';
-import { 
-  X, 
-  Sparkles, 
-  Volume2, 
-  Eye, 
-  Video, 
-  Layers, 
-  Box, 
-  Play, 
-  ShieldCheck, 
-  Swords, 
-  Zap,
-  CheckCircle2,
-  Upload
-} from 'lucide-react';
+import React from 'react';
+import { CharacterDef, CATEGORY_INFO } from '../types/game';
+import { X, Sparkles, Shield, Swords, Zap, AlertTriangle, BookOpen } from 'lucide-react';
 
 interface Model3DViewerModalProps {
   character: CharacterDef;
   onClose: () => void;
 }
 
-type ViewMode = 'textured' | 'clay' | 'wireframe' | 'full';
-
 export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ character, onClose }) => {
-  const [viewMode, setViewMode] = useState<ViewMode>('textured');
-  const [mainDisplay, setMainDisplay] = useState<'3d' | 'video'>('3d');
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [activeActionTab, setActiveActionTab] = useState<'selection' | 'attack' | 'ability' | 'block'>('selection');
-  const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
-
-  const has3DModel = !!character.model3dImage;
-  const hasOfficialVideo = !!character.selectionVideo || !!character.actionVideos;
-
-  // Resolve which video URL to play for current tab
-  const getVideoForTab = (): string | null => {
-    if (uploadedVideo) return uploadedVideo;
-    if (activeActionTab === 'selection') return character.selectionVideo || character.actionVideos?.ability || null;
-    if (activeActionTab === 'attack') return character.actionVideos?.attack || character.selectionVideo || null;
-    if (activeActionTab === 'ability') return character.actionVideos?.ability || character.selectionVideo || null;
-    if (activeActionTab === 'block') return character.actionVideos?.perfectBlock || character.selectionVideo || null;
-    return character.selectionVideo || null;
-  };
-
-  const currentVideoSrc = getVideoForTab();
-
-  useEffect(() => {
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-  }, []);
-
-  // Switch to video mode to hear the authentic voice from the video
-  const playCharacterVoice = () => {
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    if (currentVideoSrc) {
-      setMainDisplay('video');
-    }
-  };
-
-  // Handle temporary video upload test
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setUploadedVideo(url);
-    }
-  };
-
-  // Compute CSS background-position or clipping for the 3 modes
-  const getViewportStyle = () => {
-    if (!character.model3dImage) return {};
-    switch (viewMode) {
-      case 'clay':
-        // Focus left 33%
-        return {
-          backgroundImage: `url(${character.model3dImage})`,
-          backgroundSize: '300% 100%',
-          backgroundPosition: '0% center',
-          backgroundRepeat: 'no-repeat'
-        };
-      case 'textured':
-        // Focus center 33%
-        return {
-          backgroundImage: `url(${character.model3dImage})`,
-          backgroundSize: '300% 100%',
-          backgroundPosition: '50% center',
-          backgroundRepeat: 'no-repeat'
-        };
-      case 'wireframe':
-        // Focus right 33%
-        return {
-          backgroundImage: `url(${character.model3dImage})`,
-          backgroundSize: '300% 100%',
-          backgroundPosition: '100% center',
-          backgroundRepeat: 'no-repeat'
-        };
-      case 'full':
-      default:
-        return {
-          backgroundImage: `url(${character.model3dImage})`,
-          backgroundSize: 'contain',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        };
-    }
-  };
+  const adn = character.adn;
+  const primInfo = CATEGORY_INFO[adn.primaria];
+  const secInfo = CATEGORY_INFO[adn.secundaria];
+  const neuInfo = CATEGORY_INFO[adn.neutra];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 md:p-6 animate-fadeIn">
-      <div className="relative w-full max-w-4xl max-h-[92vh] bg-[#10131b] border-2 border-[#2b354c] rounded-2xl shadow-2xl overflow-hidden flex flex-col text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
+      <div className="relative w-full max-w-2xl bg-[#11151f] border-2 border-[#2c3850] rounded-3xl p-5 shadow-2xl text-left overflow-hidden">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#21293a] bg-[#141924]">
-          <div className="flex items-center gap-3">
-            <div 
-              className="w-3.5 h-3.5 rounded-full" 
-              style={{ backgroundColor: character.primaryColor }}
-            />
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base md:text-lg font-black text-white">{character.displayName}</h3>
-                {has3DModel ? (
-                  <span className="bg-emerald-950 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-600 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
-                    MODELO 3D APLICADO
-                  </span>
-                ) : (
-                  <span className="bg-amber-950/80 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-600/70">
-                    PENDIENTE DE MODELO 3D
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-neutral-400">{character.title}</p>
-            </div>
+        <div className="flex items-center justify-between pb-3 border-b border-[#212b3e]">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-yellow-400/20 text-yellow-300 border border-yellow-400/40">
+              EXPEDIENTE TÁCTICO DE COMBATE
+            </span>
+            <span className="text-xs text-neutral-400 font-bold">{character.displayName}</span>
           </div>
-
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-[#1f2637] hover:bg-[#2b354d] text-neutral-300 hover:text-white transition-all"
+            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5">
-          {/* Mode Switcher Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-[#141924] p-2.5 rounded-xl border border-[#242d40]">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setMainDisplay('3d')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 ${
-                  mainDisplay === '3d'
-                    ? 'bg-amber-500 text-black shadow-md'
-                    : 'bg-[#1b2230] text-neutral-300 hover:bg-[#252f44]'
-                }`}
-              >
-                <Box className="w-3.5 h-3.5" />
-                <span>Hoja Técnica 3D</span>
-              </button>
-
-              <button
-                onClick={() => setMainDisplay('video')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 ${
-                  mainDisplay === 'video'
-                    ? 'bg-pink-600 text-white shadow-md'
-                    : 'bg-[#1b2230] text-neutral-300 hover:bg-[#252f44]'
-                }`}
-              >
-                <Video className="w-3.5 h-3.5" />
-                <span>Cinemática / Video de Acción</span>
-                {hasOfficialVideo && (
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                )}
-              </button>
-            </div>
-
-            {mainDisplay === '3d' && has3DModel && (
-              <div className="flex flex-wrap gap-1">
-                <button
-                  onClick={() => setViewMode('textured')}
-                  className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
-                    viewMode === 'textured'
-                      ? 'bg-amber-400 text-black'
-                      : 'bg-[#1b2230] text-neutral-400 hover:bg-[#252f44]'
-                  }`}
-                >
-                  Textura
-                </button>
-                <button
-                  onClick={() => setViewMode('clay')}
-                  className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
-                    viewMode === 'clay'
-                      ? 'bg-neutral-300 text-black'
-                      : 'bg-[#1b2230] text-neutral-400 hover:bg-[#252f44]'
-                  }`}
-                >
-                  Clay
-                </button>
-                <button
-                  onClick={() => setViewMode('wireframe')}
-                  className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
-                    viewMode === 'wireframe'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-[#1b2230] text-neutral-400 hover:bg-[#252f44]'
-                  }`}
-                >
-                  Wireframe
-                </button>
-                <button
-                  onClick={() => setViewMode('full')}
-                  className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
-                    viewMode === 'full'
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-[#1b2230] text-neutral-400 hover:bg-[#252f44]'
-                  }`}
-                >
-                  Completa
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Main Stage (3D Viewport OR Video Cinema) */}
-          <div className="relative w-full h-64 md:h-84 rounded-xl overflow-hidden border border-[#2b354c] bg-[#090b10] flex items-center justify-center shadow-inner group">
-            {mainDisplay === 'video' ? (
-              currentVideoSrc ? (
-                <div className="w-full h-full relative bg-black flex items-center justify-center">
-                  <video
-                    key={currentVideoSrc + activeActionTab}
-                    src={currentVideoSrc}
-                    controls
-                    autoPlay
-                    loop
-                    playsInline
-                    className="w-full h-full object-contain"
-                  />
-                  <div className="absolute top-3 left-3 bg-black/75 backdrop-blur-md px-3 py-1 rounded-lg border border-pink-500/40 text-xs font-mono text-pink-300 flex items-center gap-1.5">
-                    <Video className="w-3.5 h-3.5 text-pink-400" />
-                    <span>CINEMÁTICA HD EN VIVO · CON AUDIO ORIGINAL</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center p-6 space-y-3">
-                  <Video className="w-12 h-12 text-pink-600/60 mx-auto animate-pulse" />
-                  <p className="text-sm font-bold text-neutral-300">
-                    Video para {character.displayName} pendiente
-                  </p>
-                  <p className="text-xs text-neutral-500 max-w-md">
-                    Puedes adjuntarme el video MP4 o subirlo temporalmente abajo para probarlo.
-                  </p>
-                </div>
-              )
-            ) : has3DModel ? (
-              <div 
-                className="w-full h-full transition-all duration-300 transform group-hover:scale-[1.02]"
-                style={getViewportStyle()}
+        {/* Content */}
+        <div className="my-4 space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div 
+              className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl border-2 overflow-hidden shrink-0 shadow-lg bg-[#0a0d13]"
+              style={{ borderColor: character.primaryColor }}
+            >
+              <img
+                src={character.avatar}
+                alt={character.displayName}
+                className="w-full h-full object-cover"
               />
-            ) : (
-              <div className="text-center p-6 space-y-3">
-                <Box className="w-12 h-12 text-neutral-600 mx-auto animate-bounce" />
-                <p className="text-sm font-bold text-neutral-300">
-                  Esperando archivo de modelo 3D para {character.displayName}
-                </p>
-                <p className="text-xs text-neutral-500 max-w-md">
-                  Pásame la imagen con las 3 vistas (Clay, Texturado y Wireframe) como las de Cubogro y Flaucubista para activarlo inmediatamente.
-                </p>
-              </div>
-            )}
+            </div>
 
-            {/* View Mode Tag overlay in 3D */}
-            {mainDisplay === '3d' && has3DModel && (
-              <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md px-3 py-1 rounded-lg border border-white/20 text-xs font-mono text-cyan-300">
-                {viewMode === 'textured' && 'VISTA: TEXTURIZADO COMPLETO 3D'}
-                {viewMode === 'clay' && 'VISTA: ESCULPIDO ARCILLA (CLAY)'}
-                {viewMode === 'wireframe' && 'VISTA: MALLA POLIGONAL (WIREFRAME)'}
-                {viewMode === 'full' && 'HOJA TÉCNICA 3D COMPLETA'}
-              </div>
-            )}
+            <div className="space-y-1.5">
+              <h3 className="text-xl font-black text-white font-bungee">{character.displayName}</h3>
+              <p className="text-xs text-yellow-400 font-bold">{character.title}</p>
+              <p className="text-xs text-neutral-300 leading-relaxed">{character.description}</p>
+              <p className="text-xs italic text-amber-300 mt-1">"{character.selectionQuote}"</p>
+            </div>
           </div>
 
-          {/* Character Quote / Frase de Entrada */}
-          <div className="bg-[#151a26] border border-[#252f43] p-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                Frase de Selección / Batalla
+          {/* ADN Grid */}
+          <div className="p-3 bg-[#0d1017] rounded-2xl border border-[#232c40] space-y-2">
+            <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
+              <Zap className="w-3.5 h-3.5" />
+              ADN DEL BARRIO (SISTEMA DE 5 CLASES)
+            </span>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div className="p-2 rounded-xl bg-[#151a26] border border-amber-500/40">
+                <span className="text-[9px] text-amber-400 font-bold block">⭐ Primaria</span>
+                <span className="font-black text-amber-300">{primInfo.symbol} {primInfo.name.split(' ')[0]}</span>
+                <span className="text-[8px] text-neutral-400 block mt-0.5">Sinergia Activa</span>
+              </div>
+
+              <div className="p-2 rounded-xl bg-[#151a26] border border-cyan-500/40">
+                <span className="text-[9px] text-cyan-400 font-bold block">🛡️ Secundaria</span>
+                <span className="font-black text-cyan-300">{secInfo.symbol} {secInfo.name.split(' ')[0]}</span>
+                <span className="text-[8px] text-neutral-400 block mt-0.5">Sinergia Pasiva</span>
+              </div>
+
+              <div className="p-2 rounded-xl bg-[#151a26] border border-neutral-700">
+                <span className="text-[9px] text-neutral-400 font-bold block">⚪ Neutra</span>
+                <span className="font-black text-neutral-200">{neuInfo.symbol} {neuInfo.name.split(' ')[0]}</span>
+                <span className="text-[8px] text-neutral-400 block mt-0.5">Sin efecto extra</span>
+              </div>
+
+              <div className="p-2 rounded-xl bg-red-950/30 border border-red-500/60">
+                <span className="text-[9px] text-red-400 font-bold block">⚠️ Anti-Clases</span>
+                <span className="font-black text-red-300 text-[10px]">
+                  {adn.antiClases.map(ac => CATEGORY_INFO[ac].name.split(' ')[0]).join(', ')}
+                </span>
+                <span className="text-[8px] text-red-300/80 block mt-0.5">¡Rechazo!</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Active and Passive Abilities */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div className="p-3 bg-[#131724] rounded-xl border border-yellow-500/40 space-y-1">
+              <span className="font-black text-yellow-400 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                Habilidad Activa: {character.abilityName}
               </span>
-              <p className="text-sm font-extrabold italic text-white">
-                "{character.selectionQuote || '¡Listo para el combate urbano en la cuadrícula!'}"
-              </p>
+              <p className="text-neutral-300 text-[11px] leading-snug">{character.abilityDescription}</p>
             </div>
 
-            {currentVideoSrc ? (
-              <button
-                onClick={playCharacterVoice}
-                className="px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all shrink-0 bg-pink-950 hover:bg-pink-900 text-pink-300 border border-pink-700/70 shadow-md"
-              >
-                <Video className="w-4 h-4 text-pink-400" />
-                <span>Ver y Escuchar Video Oficial</span>
-              </button>
-            ) : null}
-          </div>
-
-          {/* Videos de Acciones y Selección Preview Section */}
-          <div className="bg-[#121620] border border-[#222b3d] p-4 rounded-xl space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1f2738] pb-2.5">
-              <div className="flex items-center gap-2">
-                <Video className="w-4 h-4 text-pink-400" />
-                <h4 className="text-xs font-black uppercase tracking-wide text-white">
-                  Módulo de Cinemáticas y Videos
-                </h4>
-                {hasOfficialVideo && (
-                  <span className="bg-emerald-950 text-emerald-300 border border-emerald-500 text-[9px] font-bold px-2 py-0.5 rounded-full">
-                    Video Oficial Aplicado
-                  </span>
-                )}
-              </div>
-
-              {/* Action Video Tabs */}
-              <div className="flex gap-1">
-                <button
-                  onClick={() => {
-                    setActiveActionTab('selection');
-                    setMainDisplay('video');
-                  }}
-                  className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all ${
-                    activeActionTab === 'selection' ? 'bg-pink-600 text-white' : 'bg-[#1b2230] text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  Selección
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveActionTab('attack');
-                    setMainDisplay('video');
-                  }}
-                  className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all ${
-                    activeActionTab === 'attack' ? 'bg-red-600 text-white' : 'bg-[#1b2230] text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  Ataque
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveActionTab('ability');
-                    setMainDisplay('video');
-                  }}
-                  className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all ${
-                    activeActionTab === 'ability' ? 'bg-amber-600 text-white' : 'bg-[#1b2230] text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  Habilidad
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveActionTab('block');
-                    setMainDisplay('video');
-                  }}
-                  className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all ${
-                    activeActionTab === 'block' ? 'bg-cyan-600 text-white' : 'bg-[#1b2230] text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  Bloqueo
-                </button>
-              </div>
-            </div>
-
-            {/* Video Viewport / Simulator */}
-            <div className="relative w-full h-52 rounded-lg bg-[#0a0d13] border border-[#1e2534] flex flex-col items-center justify-center overflow-hidden">
-              {currentVideoSrc ? (
-                <div className="w-full h-full relative group">
-                  <video
-                    key={currentVideoSrc + activeActionTab}
-                    src={currentVideoSrc}
-                    controls
-                    autoPlay
-                    loop
-                    playsInline
-                    className="w-full h-full object-contain"
-                  />
-                  <div className="absolute bottom-2 left-2 pointer-events-none bg-black/80 px-2 py-0.5 rounded text-[10px] font-mono text-emerald-300 border border-emerald-500/50">
-                    {activeActionTab.toUpperCase()} · {character.displayName}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center p-4 space-y-2">
-                  <div className="inline-flex p-2.5 rounded-full bg-pink-950/40 border border-pink-700/50 text-pink-400">
-                    {activeActionTab === 'selection' && <Play className="w-5 h-5" />}
-                    {activeActionTab === 'attack' && <Swords className="w-5 h-5" />}
-                    {activeActionTab === 'ability' && <Zap className="w-5 h-5" />}
-                    {activeActionTab === 'block' && <ShieldCheck className="w-5 h-5" />}
-                  </div>
-
-                  <p className="text-xs font-bold text-neutral-200">
-                    {activeActionTab === 'selection' && `Video de Selección para ${character.displayName}`}
-                    {activeActionTab === 'attack' && `Cinemática de Ataque Impactante`}
-                    {activeActionTab === 'ability' && `Animación Especial: ${character.abilityName}`}
-                    {activeActionTab === 'block' && `Cinemática de Bloqueo Perfecto`}
-                  </p>
-
-                  <p className="text-[11px] text-neutral-500 max-w-sm">
-                    Listo para vincular clips en MP4 o WebM cuando los crees. También puedes probar un video local aquí:
-                  </p>
-
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1f2738] hover:bg-[#2b354c] text-[11px] font-bold text-cyan-300 cursor-pointer border border-[#374461] transition-all">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Probar video MP4/WebM ahora</span>
-                    <input
-                      type="file"
-                      accept="video/mp4,video/webm"
-                      className="hidden"
-                      onChange={handleVideoUpload}
-                    />
-                  </label>
-                </div>
-              )}
+            <div className="p-3 bg-[#131724] rounded-xl border border-cyan-500/40 space-y-1">
+              <span className="font-black text-cyan-400 flex items-center gap-1">
+                <Shield className="w-3.5 h-3.5" />
+                Habilidad Pasiva: {character.passiveName}
+              </span>
+              <p className="text-neutral-300 text-[11px] leading-snug">{character.passiveDescription}</p>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-5 py-3 border-t border-[#21293a] bg-[#141924] flex items-center justify-between">
-          <span className="text-[11px] text-neutral-400">
-            {has3DModel
-              ? 'Modelo 3D integrado con soporte de render de alta fidelidad'
-              : 'Envía los archivos de los 11 personajes restantes para activarlos'}
-          </span>
-
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:brightness-110 text-black font-black text-xs transition-all"
-          >
-            Aceptar
-          </button>
-        </div>
-
+        <button
+          onClick={onClose}
+          className="w-full mt-2 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-black font-black text-xs uppercase tracking-wider transition-all cursor-pointer"
+        >
+          Cerrar Expediente
+        </button>
       </div>
     </div>
   );

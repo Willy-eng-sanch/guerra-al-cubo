@@ -3,6 +3,7 @@ import { FloatingCombatText, PlayerState, CATEGORY_INFO } from '../types/game';
 import { CHARACTERS } from '../data/characters';
 import { Cube3DCanvas } from './Cube3DCanvas';
 import { MatchIntroAnimation } from './MatchIntroAnimation';
+import { CartoonCombatClash, CombatClashData } from './CartoonCombatClash';
 import { Shield, Sword, Snowflake, Zap, Skull } from 'lucide-react';
 
 interface ArenaRingProps {
@@ -14,6 +15,7 @@ interface ArenaRingProps {
   isRollingAnimation: boolean;
   isMatchIntroPlaying: boolean;
   onMatchIntroComplete: () => void;
+  activeClash?: CombatClashData | null;
 }
 
 export const ArenaRing: React.FC<ArenaRingProps> = ({
@@ -24,7 +26,8 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
   onSelectTarget,
   isRollingAnimation,
   isMatchIntroPlaying,
-  onMatchIntroComplete
+  onMatchIntroComplete,
+  activeClash
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -125,7 +128,7 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
         isTeamMatch ? 'h-[460px] md:h-[500px]' : 'h-[340px] md:h-[420px]'
       } rounded-3xl overflow-hidden bg-[#0d0f15] border-2 border-[#ff1744]/40 shadow-[0_0_30px_rgba(255,23,68,0.2)] select-none flex items-center justify-center`}
       style={{
-        backgroundImage: `radial-gradient(ellipse at 50% 50%, rgba(13, 15, 21, 0.65) 0%, rgba(10, 12, 16, 0.92) 85%), url('/assets/street_sidewalk_crowd_bg.jpg')`,
+        backgroundImage: `radial-gradient(ellipse at 50% 50%, rgba(13, 15, 21, 0.45) 0%, rgba(10, 12, 16, 0.90) 80%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center 40%'
       }}
@@ -134,8 +137,32 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
         ref={canvasRef}
         width={700}
         height={420}
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-50"
       />
+
+      {/* Central Street Battle Table Mat (Tablero Callejero Real) */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+        <div className="relative w-[260px] h-[260px] sm:w-[310px] sm:h-[310px] md:w-[350px] md:h-[350px] rounded-3xl overflow-hidden border-2 border-amber-500/60 shadow-[0_15px_40px_rgba(0,0,0,0.95),0_0_25px_rgba(245,158,11,0.25)] transition-all">
+          <img
+            src="/assets/aistudio/tablero_0937dc37.jpeg"
+            alt="Tablero de Guerra Cubita"
+            className="w-full h-full object-cover brightness-95 contrast-110"
+          />
+          {/* Ambient vignette over the table edges to blend into the asphalt */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 pointer-events-none" />
+
+          {/* D6 Center Pit Ring with Yellow Chalk Highlight */}
+          <div className="absolute inset-6 rounded-2xl border-2 border-dashed border-yellow-400/50 pointer-events-none" />
+          <div className="absolute bottom-2 inset-x-0 text-center">
+            <span className="text-[9px] font-black font-mono tracking-wider text-yellow-300/80 bg-black/75 px-2 py-0.5 rounded-full border border-yellow-400/30">
+              TABLERO CENTRAL // FOSO D6
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Active Cartoon Combat Clash (Rush to table, dust brawl cloud, onomatopoeias & dice reveal) */}
+      {activeClash && <CartoonCombatClash clash={activeClash} />}
 
       {/* Team rows leave a clear center lane; free-for-all retains its radial formation. */}
       {!isMatchIntroPlaying && players.map((player, index) => {
@@ -163,6 +190,11 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
         const isOpponent = !activePlayer?.teamId || !player.teamId || activePlayer.teamId !== player.teamId;
         const isTargetable = !player.isEliminated && player.id !== activePlayerId && isOpponent;
 
+        const isCurrentlyClashing =
+          activeClash &&
+          (player.id === activeClash.attackerId || player.id === activeClash.defenderId) &&
+          activeClash.phase !== 'REVEAL_DICE';
+
         const playerFloatingTexts = floatingTexts.filter(t => t.playerId === player.id);
 
         return (
@@ -176,20 +208,22 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
             onClick={() => {
               if (isTargetable) onSelectTarget(player.id);
             }}
-            className={`absolute flex flex-col items-center z-10 transition-transform duration-200 ${
+            className={`absolute flex flex-col items-center z-10 transition-all duration-300 ${
               isTargetable ? 'cursor-pointer hover:scale-105 active:scale-95' : 'cursor-default'
-            } ${player.isEliminated ? 'opacity-40 grayscale' : ''}`}
+            } ${player.isEliminated ? 'opacity-40 grayscale' : ''} ${
+              isCurrentlyClashing ? 'opacity-0 scale-50 pointer-events-none' : ''
+            }`}
           >
             {/* Team Affiliation Badge */}
             {player.teamId && (
               <span
-                className={`text-[8px] font-black px-1.5 py-0.2 rounded-full mb-0.5 border ${
+                className={`text-[8px] font-black px-1.5 py-0.2 rounded-full mb-0.5 border shadow ${
                   player.teamId === 1
-                    ? 'bg-cyan-950 text-cyan-300 border-cyan-500'
+                    ? 'bg-blue-950 text-cyan-300 border-cyan-400'
                     : 'bg-red-950 text-red-300 border-red-500'
                 }`}
               >
-                {player.teamId === 1 ? 'AZUL' : 'ROJO'}
+                {player.teamId === 1 ? 'MI EQUIPO (AZUL)' : 'RIVAL (ROJO)'}
               </span>
             )}
             {/* Target Reticle Indicator */}
@@ -205,11 +239,12 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
               <div className="absolute -inset-3 rounded-full border-2 border-yellow-400 animate-pulse pointer-events-none shadow-[0_0_15px_rgba(255,214,0,0.6)]" />
             )}
 
-            {/* Cube Clay Avatar */}
+            {/* Cube Dice Combatant Avatar */}
             <div className={`relative ${isTurn ? 'scale-110' : ''}`}>
               <Cube3DCanvas
                 character={player.activeMorphCharacter || player.characterType}
-                size={isTeamPositioned ? 68 : 84}
+                teamId={player.teamId}
+                size={isTeamPositioned ? 72 : 86}
                 hasPreparedStance={!!player.preparedStance}
                 isFrozen={player.isFrozen}
                 isAttacking={isTurn && isRollingAnimation}

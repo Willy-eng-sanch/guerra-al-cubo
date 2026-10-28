@@ -190,6 +190,7 @@ export const MatchIntroAnimation: React.FC<MatchIntroAnimationProps> = ({ player
             <div className="gc-intro__character-art">
               <Cube3DCanvas
                 character={character}
+                teamId={player.teamId}
                 size={phase === 'launching' ? 62 : 48}
                 hasPreparedStance={!!player.preparedStance}
                 isFrozen={player.isFrozen}
