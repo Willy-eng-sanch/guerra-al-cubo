@@ -36,11 +36,14 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ onDismiss }) => {
           {/* Rule 2 */}
           <div className="bg-[#1b2130] p-3 rounded-xl border border-[#2b354c]">
             <h4 className="font-extrabold text-sm text-red-400 mb-1 flex items-center gap-1.5">
-              <span>2. El Dado D5 y Bloqueo Perfecto</span>
+              <span>2. El Dado D6 y Bloqueo Perfecto</span>
             </h4>
             <p>
-              Los ataques y defensas se resuelven con dados de 5 caras (D5, valores del 1 al 5).
+              Los ataques y defensas se resuelven con un dado de 6 caras (D6).
               Si el defensor saca <b>exactamente el mismo número</b> que el atacante, logra un <b className="text-cyan-300">¡Bloqueo Perfecto!</b> (0 daño recibido y roba 1 carta del mazo).
+            </p>
+            <p className="mt-1">
+              <b className="text-yellow-300">Regla del 6:</b> si al lanzar tu D6 sale un 6, <b>robas 1 carta del Mazo Global y vuelves a lanzar el dado</b>. El resultado que cuenta es el del relanzamiento.
             </p>
           </div>
 

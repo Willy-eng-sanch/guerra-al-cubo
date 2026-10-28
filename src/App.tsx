@@ -12,13 +12,24 @@ import {
   GameCard,
   GameMode,
   MatchPhase,
+  MatchResultSummary,
   PlayerState,
   TrickTiming,
-  getMaxHandSize
+  getMaxHandSize,
+  rollBattleDie,
+  rollD6,
 } from './types/game';
 import { ALL_CARDS, createShuffledDeck } from './data/cards';
 import { CHARACTER_LIST, CHARACTERS } from './data/characters';
 import { DEFAULT_CHAPTERS } from './data/campaign';
+import {
+  CampaignProgress,
+  GameStats,
+  loadCampaignProgress,
+  loadStats,
+  recordMatchResult,
+  saveCampaignProgress
+} from './lib/persistence';
 import { sound } from './audio/soundManager';
 import { music } from './audio/musicManager';
 import { narrator } from './audio/narratorManager';
@@ -31,7 +42,7 @@ import { RosterScreen } from './screens/RosterScreen';
 import { EncyclopediaScreen } from './screens/EncyclopediaScreen';
 import { ArenaScreen } from './screens/ArenaScreen';
 import { DraftScreen } from './screens/DraftScreen';
-import { DiceSpecialChoiceModal } from './components/DiceSpecialChoiceModal';
+import { DifficultySelector } from './components/DifficultySelector';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<CurrentScreen>(CurrentScreen.TITLE);
@@ -51,15 +62,24 @@ export default function App() {
   const [selectedTargetId, setSelectedTargetId] = useState<number | null>(null);
   const [isFastSpeed, setIsFastSpeed] = useState<boolean>(false);
   const [floatingTexts, setFloatingTexts] = useState<FloatingCombatText[]>([]);
-  const [campaignChapters, setCampaignChapters] = useState<CampaignChapter[]>(DEFAULT_CHAPTERS);
+  const [campaignChapters, setCampaignChapters] = useState<CampaignChapter[]>(() => {
+    const progress = loadCampaignProgress();
+    return DEFAULT_CHAPTERS.map(chap => ({
+      ...chap,
+      isUnlocked: chap.id <= progress.unlockedChapterId,
+      isCompleted: progress.completedChapterIds.includes(chap.id)
+    }));
+  });
+  const [playerStats, setPlayerStats] = useState<GameStats>(() => loadStats());
+  // Tracking de estadísticas del combate actual (para el Jugador 1 / humano)
+  const battleTrackRef = useRef({ damageDealt: 0, perfectBlocks: 0 });
+  const resultRecordedRef = useRef(false);
+  const activeChapterIdRef = useRef<number | null>(null);
+  // MEJORA: resumen de resultado para pantalla de victoria enriquecida
+  const [lastMatchResult, setLastMatchResult] = useState<MatchResultSummary | null>(null);
   const [reactionPlayer, setReactionPlayer] = useState<PlayerState | null>(null);
   const [isDeckDrawing, setIsDeckDrawing] = useState<boolean>(false);
   const [isMatchIntroPlaying, setIsMatchIntroPlaying] = useState<boolean>(false);
-  const [specialSixChoice, setSpecialSixChoice] = useState<{
-    playerId: number;
-    actorName: string;
-    isAttacker: boolean;
-  } | null>(null);
   const matchIntroCompletedRef = useRef(true);
 
   const speedMultiplier = isFastSpeed ? 0.5 : 1;
@@ -75,42 +95,57 @@ export default function App() {
     setIsMatchIntroPlaying(false);
   };
 
-  const handleApplySixChoice = (playerId: number, choice: 'CARD' | 'EXTRA_TURN') => {
-    const actor = players.find(p => p.id === playerId);
-    const actorName = actor ? actor.name : 'Jugador';
-
-    if (choice === 'EXTRA_TURN') {
-      setPlayers(prev => prev.map(p => {
-        if (p.id !== playerId) return p;
-        return { ...p, actionPoints: p.actionPoints + 1 };
-      }));
-      addFloatingText(playerId, "+1 TURNO EXTRA (PA)", "#ffd600");
-      addLog(`¡Cara Especial 6! ${actorName} elige TURNO EXTRA (+1 Punto de Acción).`, true);
-      sound.playStanceActivate();
-      narrator.narrateSpecialFaceSix(actorName, "Turno Extra");
-    } else {
-      // Draw 1 card from deck
+  // REGLA OFICIAL DEL D6: si sale 6, se ROBA 1 carta del Mazo Global
+  // y se VUELVE A LANZAR el dado. El resultado que cuenta es el del
+  // relanzamiento (y la cadena se repite si vuelve a salir 6).
+  const applySixReroll = (
+    playerId: number,
+    actorName: string,
+    res: { finalValue: number; sixCount: number; rolls: number[] }
+  ): number => {
+    if (res.sixCount <= 0) return res.finalValue;
+    for (let i = 0; i < res.sixCount; i++) {
       setDeck(prevDeck => {
-        if (prevDeck.length === 0) return prevDeck;
-        const [drawn, ...rest] = prevDeck;
-        const cardInstance: GameCard = {
-          ...drawn,
-          uid: `${drawn.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-        };
-        setPlayers(prev => prev.map(p => {
-          if (p.id !== playerId) return p;
-          return { ...p, hand: [...p.hand, cardInstance] };
-        }));
-        addFloatingText(playerId, "+1 CARTA MAZO", "#00e5ff");
-        addLog(`¡Cara Especial 6! ${actorName} elige ROBAR CARTA y toma 1 del Mazo Global.`, true);
-        triggerDeckAnimation();
-        sound.playCardDraw();
-        narrator.narrateSpecialFaceSix(actorName, "Robar Carta");
-        return rest;
+        let d = [...prevDeck];
+        let disc: GameCard[] = [];
+        if (d.length === 0) {
+          // Si el mazo está vacío, rebaraja el descarte antes de robar
+          setDiscardPile(prevDiscard => {
+            disc = prevDiscard;
+            return [];
+          });
+          d = disc
+            .map(c => ({ ...c, uid: `${c.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` }))
+            .sort(() => Math.random() - 0.5);
+        }
+        const drawn = d.shift();
+        if (drawn) {
+          const cardInstance: GameCard = {
+            ...drawn,
+            uid: `${drawn.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+          };
+          setPlayers(prev =>
+            prev.map(p => {
+              if (p.id !== playerId) return p;
+              const maxH = getMaxHandSize(p);
+              if (p.hand.length >= maxH) {
+                setDiscardPile(pd => [...pd, cardInstance]);
+                addLog(`¡CARA 6! ${actorName} roba carta por el 6, pero su mano está llena: [${cardInstance.name}] va al descarte.`);
+              } else {
+                setPlayers(pp => pp.map(q => (q.id === playerId ? { ...q, hand: [...q.hand, cardInstance] } : q)));
+                addFloatingText(playerId, "+1 CARTA (por el 6)", "#00e5ff");
+                addLog(`¡CARA 6! ${actorName} roba [${cardInstance.name}] del Mazo Global y RELANZA el dado.`, true);
+              }
+              return p;
+            })
+          );
+          triggerDeckAnimation();
+          sound.playCardDraw();
+        }
+        return d;
       });
     }
-
-    setSpecialSixChoice(null);
+    return res.finalValue;
   };
 
   const triggerDeckAnimation = () => {
@@ -183,8 +218,17 @@ export default function App() {
     return { card, newDeck: d, newDiscard: disc };
   };
 
+  const resetBattleTrackers = (chapterId: number | null = null) => {
+    battleTrackRef.current = { damageDealt: 0, perfectBlocks: 0 };
+    resultRecordedRef.current = false;
+    activeChapterIdRef.current = chapterId;
+    setLastMatchResult(null);
+  };
+
   // Start 3 vs 3 Draft Battle
   const startDraftMatch = (playerTeam: CharacterType[], rivalTeam: CharacterType[]) => {
+    resetBattleTrackers();
+    botSkillLevelRef.current = 'HARD'; // Batallas de escuadras: siempre al máximo desafío
     matchIntroCompletedRef.current = false;
     setIsMatchIntroPlaying(true);
     let currentDeck = createShuffledDeck();
@@ -272,6 +316,8 @@ export default function App() {
 
   // Start Quick Battle
   const startQuickMatch = (playerCount: number = 3, chosenHero: CharacterType = CharacterType.TRAMCUBOSO) => {
+    resetBattleTrackers();
+    botSkillLevelRef.current = 'HARD';
     triggerMatchIntro();
     let currentDeck = createShuffledDeck();
     let currentDiscard: GameCard[] = [];
@@ -353,6 +399,11 @@ export default function App() {
 
   // Start Campaign Match
   const startCampaignMatch = (chapter: CampaignChapter, chosenHero: CharacterType = CharacterType.TRAMCUBOSO) => {
+    resetBattleTrackers(chapter.id);
+    // Aplica la dificultad elegida + bonificación por capítulo avanzado
+    const chapterBoost = Math.floor((chapter.id - 1) / 2); // cap 1-2: +0, cap 3-4: +1
+    const effectiveLevel = Math.min(3, campaignDifficulty + chapterBoost);
+    botSkillLevelRef.current = effectiveLevel >= 3 ? 'HARD' : effectiveLevel === 2 ? 'NORMAL' : 'EASY';
     triggerMatchIntro();
     let currentDeck = createShuffledDeck();
     let currentDiscard: GameCard[] = [];
@@ -454,6 +505,8 @@ export default function App() {
 
   // Start Pass and Play
   const startPassAndPlayMatch = (playerCount: number, heroList: CharacterType[]) => {
+    resetBattleTrackers();
+    botSkillLevelRef.current = 'NORMAL'; // Local: la IA solo interviene si queda algún bot
     triggerMatchIntro();
     let currentDeck = createShuffledDeck();
     let currentDiscard: GameCard[] = [];
@@ -509,6 +562,222 @@ export default function App() {
   };
 
   const currentTurnPlayer = players[turnIndex] || null;
+
+  // ============================================================
+  // MEJORA: IA de bots con niveles (FÁCIL / NORMAL / DIFÍCIL)
+  // - Fácil: decisiones aleatorias, a veces ni usa cartas.
+  // - Normal: equilibra equipar/postura/ataque según su situación.
+  // - Difícil: prioriza rematar enemigos débiles, se cura, prepara
+  //   posturas defensivas y usa trucos ofensivos/iniciativa.
+  // ============================================================
+  const botSkillLevelRef = useRef<BotSkillLevel>('HARD');
+
+  const applyBotSkillLevel = (level: number, chapterBoost = 0) => {
+    const effective = Math.min(3, Math.max(1, level + chapterBoost));
+    botSkillLevelRef.current = effective >= 3 ? 'HARD' : effective === 2 ? 'NORMAL' : 'EASY';
+  };
+
+  const getBotMaxWeaponSlots = (p: PlayerState): number => {
+    const hero = p.activeMorphCharacter || p.characterType;
+    if (hero === CharacterType.CUBINJA) return 99;
+    if (hero === CharacterType.HADA_AL_CUBO || hero === CharacterType.GLADIACUBON) return 2;
+    return 1;
+  };
+
+  const pickBotTarget = (bot: PlayerState, roster: PlayerState[]): PlayerState | null => {
+    const opposingTeamId = bot.teamId === 1 ? 2 : bot.teamId === 2 ? 1 : null;
+    const rivals = roster.filter(
+      p => !p.isEliminated && p.hp > 0 && p.id !== bot.id && (!opposingTeamId || p.teamId === opposingTeamId)
+    );
+    if (rivals.length === 0) return null;
+
+    if (botSkillLevelRef.current === 'EASY') {
+      return rivals[Math.floor(Math.random() * rivals.length)];
+    }
+
+    if (botSkillLevelRef.current === 'HARD') {
+      // 1) Buscar un golpe letal (daño esperado >= HP del rival)
+      const lethal = rivals.find(r => r.hp <= 3);
+      if (lethal && Math.random() < 0.85) return lethal;
+      // 2) Sino, atacar al más débil, dando prioridad a objetivos congelados
+      const frozenWeak = rivals.filter(r => r.isFrozen).sort((a, b) => a.hp - b.hp);
+      if (frozenWeak.length > 0) return frozenWeak[0];
+    }
+
+    // NORMAL (y fallback): el de menor vida
+    return rivals.reduce((prev, curr) => (curr.hp < prev.hp ? curr : prev), rivals[0]);
+  };
+
+  const runBotTurn = (bot: PlayerState, roster: PlayerState[]) => {
+    const fresh = roster.find(p => p.id === bot.id);
+    if (!fresh || fresh.isEliminated || fresh.hp <= 0) return;
+
+    const weapon = fresh.hand.find(c => c.type === CardType.WEAPON);
+    const stance = fresh.hand.find(
+      c => c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
+    );
+    const healTrick = fresh.hand.find(
+      c => c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION && [33, 38, 49].includes(c.id)
+    );
+    // MEJORA: trucos ofensivos directos (Pedrada Volada / Golpe Bajo) para IA difícil
+    const damageTrick = fresh.hand.find(
+      c => c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION && [41, 60].includes(c.id)
+    );
+    // MEJORA: truco de iniciativa/acción extra (La Chicha Energética)
+    const tempoTrick = fresh.hand.find(
+      c => c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION && c.id === 36
+    );
+    const maxSlots = getBotMaxWeaponSlots(fresh);
+
+    if (botSkillLevelRef.current === 'EASY') {
+      // Decisiones simples y algo caóticas
+      if (weapon && fresh.equippedWeapons.length < maxSlots && fresh.actionPoints > 0 && Math.random() < 0.6) {
+        handleEquipWeapon(weapon.id);
+      } else if (stance && !fresh.preparedStance && fresh.actionPoints > 0 && Math.random() < 0.4) {
+        handlePrepareStance(stance.id);
+      }
+      return;
+    }
+
+    // NORMAL / HARD: uso inteligente de cartas
+    const lowHp = fresh.hp <= fresh.maxHp * 0.4;
+
+    // Curarse primero si está en peligro (Difícil siempre, Normal a veces)
+    if (healTrick && lowHp && fresh.actionPoints > 0 && (botSkillLevelRef.current === 'HARD' || Math.random() < 0.7)) {
+      handlePlayActionTrick(healTrick.id);
+      return;
+    }
+
+    // MEJORA (DIFÍCIL): rematar con truco de daño directo si hay un rival a ≤2 HP
+    if (botSkillLevelRef.current === 'HARD' && damageTrick && fresh.actionPoints > 0) {
+      const myTeam = fresh.teamId ?? 0;
+      const killable = roster.find(
+        p => !p.isEliminated && p.hp > 0 && p.hp <= 2 && (myTeam === 0 || p.teamId !== myTeam) && p.id !== fresh.id
+      );
+      if (killable) {
+        handlePlayActionTrick(damageTrick.id, killable.id);
+        return;
+      }
+    }
+
+    // MEJORA (DIFÍCIL): asegurar equipar arma usando truco de acción extra si le falta PA
+    if (botSkillLevelRef.current === 'HARD' && weapon && fresh.equippedWeapons.length < maxSlots && fresh.actionPoints <= 0 && tempoTrick) {
+      handlePlayActionTrick(tempoTrick.id);
+      return;
+    }
+
+    // Preparar postura defensiva si está en peligro o ya tiene arma equipada
+    if (stance && !fresh.preparedStance && fresh.actionPoints > 0 && (lowHp || fresh.equippedWeapons.length > 0)) {
+      handlePrepareStance(stance.id);
+      return;
+    }
+
+    // Equipar arma (priorizar en difícil las que más daño dan: id 6 Puño hierro, 1 Bate, 22 Batería)
+    if (weapon && fresh.equippedWeapons.length < maxSlots && fresh.actionPoints > 0) {
+      handleEquipWeapon(weapon.id);
+      return;
+    }
+
+    // MEJORA (DIFÍCIL): usar truco de daño restante contra el rival más débil
+    if (botSkillLevelRef.current === 'HARD' && damageTrick && fresh.actionPoints > 0) {
+      const myTeam = fresh.teamId ?? 0;
+      const rivals = roster.filter(
+        p => !p.isEliminated && p.hp > 0 && (myTeam === 0 || p.teamId !== myTeam) && p.id !== fresh.id
+      );
+      if (rivals.length > 0) {
+        const weakest = rivals.reduce((prev, curr) => (curr.hp < prev.hp ? curr : prev), rivals[0]);
+        handlePlayActionTrick(damageTrick.id, weakest.id);
+        return;
+      }
+    }
+
+    // En difícil, si aún le quedan PA y no hay amenaza, preparar postura igualmente
+    if (botSkillLevelRef.current === 'HARD' && stance && !fresh.preparedStance && fresh.actionPoints > 1) {
+      handlePrepareStance(stance.id);
+    }
+  };
+
+  // MEJORA: Dificultad de campaña seleccionable (los bots rivales se vuelven más agresivos)
+  const [campaignDifficulty, setCampaignDifficulty] = useState<number>(() => {
+    try {
+      return Math.min(3, Math.max(1, Number(localStorage.getItem('guerra_cubita_campaign_difficulty')) || 1));
+    } catch {
+      return 1;
+    }
+  });
+
+  // Bosses de capítulos avanzados suben la IA global del combate
+  useEffect(() => {
+    if (gameMode === GameMode.STREET_CAMPAIGN) {
+      botSkillLevelRef.current = campaignDifficulty >= 3 ? 'HARD' : campaignDifficulty === 2 ? 'NORMAL' : 'EASY';
+    }
+  }, [gameMode, campaignDifficulty]);
+
+  const handleSetCampaignDifficulty = (level: number) => {
+    setCampaignDifficulty(level);
+    try {
+      localStorage.setItem('guerra_cubita_campaign_difficulty', String(level));
+    } catch {
+      /* noop */
+    }
+    sound.playStanceActivate();
+  };
+
+  // ============================================================
+  // MEJORA: registro persistente de estadísticas y progreso
+  // ============================================================
+  const finalizeMatchResult = (wonByHuman: boolean | null, winnerName: string) => {
+    if (resultRecordedRef.current) return;
+    resultRecordedRef.current = true;
+    // Solo contar partidas donde el jugador humano participa (no modo pase-y-juega puro)
+    const human = players.find(p => !p.isBot);
+    const isCampaign = gameMode === GameMode.STREET_CAMPAIGN;
+    const won = wonByHuman ?? false;
+
+    // MEJORA: resumen visible en la pantalla de fin de batalla
+    setLastMatchResult({
+      won,
+      winnerName,
+      isHumanWinner: wonByHuman ?? false,
+      roundsPlayed: round,
+      damageDealt: battleTrackRef.current.damageDealt,
+      perfectBlocks: battleTrackRef.current.perfectBlocks,
+      isCampaign,
+      chapterTitle: isCampaign ? campaignChapters.find(c => c.id === activeChapterIdRef.current)?.title : undefined
+    });
+
+    if (!human) return;
+    const updated = recordMatchResult({
+      won,
+      damageDealt: battleTrackRef.current.damageDealt,
+      perfectBlocks: battleTrackRef.current.perfectBlocks,
+      roundsPlayed: round,
+      isCampaign,
+      difficultyLevel: campaignDifficulty
+    });
+    setPlayerStats(updated);
+
+    if (isCampaign && won) {
+      const progress = loadCampaignProgress();
+      const chapId = activeChapterIdRef.current;
+      if (chapId && !progress.completedChapterIds.includes(chapId)) {
+        const newCompleted = [...progress.completedChapterIds, chapId];
+        const newProgress: CampaignProgress = {
+          completedChapterIds: newCompleted,
+          unlockedChapterId: Math.min(DEFAULT_CHAPTERS.length, Math.max(progress.unlockedChapterId, chapId + 1))
+        };
+        saveCampaignProgress(newProgress);
+        setCampaignChapters(prev =>
+          prev.map(ch => ({
+            ...ch,
+            isCompleted: newCompleted.includes(ch.id),
+            isUnlocked: ch.id <= newProgress.unlockedChapterId
+          }))
+        );
+        addLog(`🏆 ¡Progreso guardado! Capítulo ${chapId} completado y desbloqueado el siguiente.`, true, "Árbitro");
+      }
+    }
+  };
 
   // Apply Heroic Class Synergy (Plants vs. Zombies Heroes Style)
   const applyCardClassSynergy = (actorId: number, card: GameCard, targetId?: number | null) => {
@@ -614,109 +883,102 @@ export default function App() {
     sound.playDiceRoll();
 
     setTimeout(() => {
-      // 1. Attacker Roll
+      // 1. Attacker Roll (D6 con regla oficial: cada 6 = robar carta + relanzar)
       const attackerHero = attacker.activeMorphCharacter || attacker.characterType;
       const attackerRolls: number[] = [];
       let attackerFinalVal: number;
 
       if (attackerHero === CharacterType.TRAMCUBOSO) {
-        const r1 = Math.floor(Math.random() * 6) + 1;
-        const r2 = Math.floor(Math.random() * 6) + 1;
-        attackerRolls.push(r1, r2);
-        attackerFinalVal = Math.max(r1, r2);
+        // Dados Trucados: lanza dos D6 y elige el que más le favorezca
+        const a = rollBattleDie();
+        const b = rollBattleDie();
+        applySixReroll(attacker.id, attacker.name, a);
+        applySixReroll(attacker.id, attacker.name, b);
+        const chosen = a.finalValue >= b.finalValue ? a : b;
+        attackerRolls.push(...chosen.rolls);
+        attackerFinalVal = chosen.finalValue;
       } else if (attackerHero === CharacterType.CUBINJA) {
-        const r1 = Math.floor(Math.random() * 6) + 1;
-        const r2 = Math.floor(Math.random() * 6) + 1;
-        attackerRolls.push(r1, r2);
-        attackerFinalVal = r1 + r2;
+        // Danza de Hojas: lanza el D6 DOS veces y suma ambos dados
+        const a = rollBattleDie();
+        const b = rollBattleDie();
+        applySixReroll(attacker.id, attacker.name, a);
+        applySixReroll(attacker.id, attacker.name, b);
+        attackerRolls.push(...a.rolls, ...b.rolls);
+        attackerFinalVal = a.finalValue + b.finalValue;
       } else if (attackerHero === CharacterType.CUBOGRO) {
-        const r = Math.floor(Math.random() * 6) + 1;
-        attackerRolls.push(r);
-        attackerFinalVal = r === 1 ? 2 : r === 2 ? 4 : r === 3 ? 6 : r;
+        // Aplastamiento: tiradas base ≤ 3 se duplican al impactar
+        const res = rollBattleDie();
+        applySixReroll(attacker.id, attacker.name, res);
+        attackerRolls.push(...res.rolls);
+        const r = res.finalValue;
+        attackerFinalVal = r <= 3 ? r * 2 : r;
       } else {
-        const r = Math.floor(Math.random() * 6) + 1;
-        attackerRolls.push(r);
-        attackerFinalVal = r;
+        const res = rollBattleDie();
+        applySixReroll(attacker.id, attacker.name, res);
+        attackerRolls.push(...res.rolls);
+        attackerFinalVal = res.finalValue;
       }
 
-      // Special Face 6 Effect check for Attacker
-      if (attackerRolls.includes(6)) {
-        if (!attacker.isBot) {
-          setSpecialSixChoice({
-            playerId: attacker.id,
-            actorName: attacker.name,
-            isAttacker: true
-          });
-        } else {
-          const botChoice = attacker.hand.length < 2 ? 'CARD' : 'EXTRA_TURN';
-          handleApplySixChoice(attacker.id, botChoice);
-        }
+      // Flaucubista (Acorde Violento): +1 daño base tras sufrir daño
+      if ((attacker.nextAttackBonus || 0) > 0) {
+        attackerFinalVal += attacker.nextAttackBonus || 0;
+        addLog(`¡Acorde Violento! ${attacker.name} canaliza el dolor: +${attacker.nextAttackBonus} al golpe.`);
+      }
+      // Antisinergia Protección: penalización al dado del próximo ataque
+      if ((attacker.attackPenaltyNext || 0) < 0) {
+        attackerFinalVal = Math.max(1, attackerFinalVal + (attacker.attackPenaltyNext || 0));
+        addLog(`${attacker.name} ataca lento por el Rechazo Azul (${attacker.attackPenaltyNext} al dado).`);
       }
 
       // Attacker Weapon Modifiers
       let modifiedAttackDamage = attackerFinalVal;
       if (attacker.equippedWeapons.some(w => w.id === 1) && modifiedAttackDamage >= 3) {
-        modifiedAttackDamage += 1; // Bate de aluminio
+        modifiedAttackDamage += 1; // El Dado-Garrote
       }
-      if (attacker.equippedWeapons.some(w => w.id === 6)) {
-        modifiedAttackDamage += 2; // Puño de hierro
+      if (attacker.equippedWeapons.some(w => w.id === 2)) {
+        modifiedAttackDamage += 2; // La Manopla Dado-Pescueza
       }
-      if (attacker.equippedWeapons.some(w => w.id === 22)) {
-        modifiedAttackDamage += 1; // Batería de coche
+      if (attacker.equippedWeapons.some(w => w.id === 3) && attackerFinalVal <= 2) {
+        modifiedAttackDamage += 1; // La Chuzadora Dadomada: las tiradas bajas pegan más
       }
 
-      // 2. Defender Roll
+      // 2. Defender Roll (D6 con regla del 6: robar + relanzar)
       const defenderHero = target.activeMorphCharacter || target.characterType;
       const defenderRolls: number[] = [];
       let defenderFinalVal: number;
       let isPerfectBlock = false;
 
-      const hasReflejoFelino = target.preparedStance?.id === 53;
-      const hasElComodin = target.preparedStance?.id === 60;
+      const hasEsquiveCallejon = target.preparedStance?.id === 19 || target.preparedStance?.id === 53 || target.preparedStance?.id === 60;
 
-      if (hasReflejoFelino || hasElComodin) {
+      if (hasEsquiveCallejon) {
         defenderFinalVal = attackerFinalVal;
         defenderRolls.push(defenderFinalVal);
         isPerfectBlock = true;
         addLog(`${target.name} activa su postura defensiva y bloquea a la perfección!`);
-      } else if (target.isFrozen) {
-        const r = Math.floor(Math.random() * 6) + 1;
-        defenderRolls.push(r);
-        defenderFinalVal = r;
-        isPerfectBlock = false; // Congelado no puede bloquear
+      } else if (target.isFrozen || target.cannotRollBlocks) {
+        // Congelado / Discordia de Cubinarca: no puede lanzar dados de bloqueo
+        defenderFinalVal = 0;
+        isPerfectBlock = false;
+        addLog(`${target.name} está congelado/maldito y NO puede lanzar su dado de bloqueo!`);
       } else if (defenderHero === CharacterType.TRAMCUBOSO) {
-        const r1 = Math.floor(Math.random() * 6) + 1;
-        const r2 = Math.floor(Math.random() * 6) + 1;
-        defenderRolls.push(r1, r2);
-        isPerfectBlock =
-          attackerRolls.includes(r1) ||
-          attackerRolls.includes(r2) ||
-          r1 === attackerFinalVal ||
-          r2 === attackerFinalVal;
-        defenderFinalVal = isPerfectBlock
-          ? (attackerRolls.includes(r1) || r1 === attackerFinalVal ? r1 : r2)
-          : Math.max(r1, r2);
+        // Dados Trucados también en defensa
+        const a = rollBattleDie();
+        const b = rollBattleDie();
+        applySixReroll(target.id, target.name, a);
+        applySixReroll(target.id, target.name, b);
+        defenderRolls.push(...a.rolls, ...b.rolls);
+        const matchA = a.finalValue === attackerFinalVal;
+        const matchB = b.finalValue === attackerFinalVal;
+        isPerfectBlock = matchA || matchB;
+        defenderFinalVal = isPerfectBlock ? (matchA ? a.finalValue : b.finalValue) : Math.max(a.finalValue, b.finalValue);
       } else {
         // Todos los demás héroes Y CUBINJA lanzan SOLO 1 DADO para bloquear
-        const r = Math.floor(Math.random() * 6) + 1;
-        defenderRolls.push(r);
-        defenderFinalVal = r;
-        // El tiro de bloqueo tiene que coincidir con el número del atacante
-        isPerfectBlock = attackerRolls.includes(r) || r === attackerFinalVal;
-      }
-
-      // Special Face 6 Effect check for Defender
-      if (defenderRolls.includes(6)) {
-        if (!target.isBot) {
-          setSpecialSixChoice({
-            playerId: target.id,
-            actorName: target.name,
-            isAttacker: false
-          });
-        } else {
-          const botChoice = target.hand.length < 2 ? 'CARD' : 'EXTRA_TURN';
-          handleApplySixChoice(target.id, botChoice);
-        }
+        const res = rollBattleDie();
+        applySixReroll(target.id, target.name, res);
+        defenderRolls.push(...res.rolls);
+        defenderFinalVal = res.finalValue;
+        // El tiro de bloqueo tiene que coincidir con el número final del atacante
+        isPerfectBlock = res.finalValue === attackerFinalVal;
       }
 
       // 3. Resolve Damage & Shield Barrier
@@ -805,6 +1067,14 @@ export default function App() {
         triggerDeckAnimation();
         sound.playCardDraw();
         addLog(`¡El Racubitero saquea ${stealCount} carta(s) del Mazo por daño efectivo!`, true);
+      }
+
+      // MEJORA: Tracking de estadísticas del jugador humano (id 1)
+      if (!attacker.isBot && attacker.id === 1 && finalDamage > 0) {
+        battleTrackRef.current.damageDealt += finalDamage;
+      }
+      if (isPerfectBlock && !target.isBot && target.id === 1) {
+        battleTrackRef.current.perfectBlocks += 1;
       }
 
       // Super-Bloqueo Heroico / Bloqueo Perfecto rewards for defender:
@@ -1201,27 +1471,21 @@ export default function App() {
       );
       addLog(`¡${actor.name} usó [Abordaje Cúbico] sobre ${target.name}! Anula su próximo turno.`, true);
     } else if (hero === CharacterType.FLAUCUBISTA_DESAFINADO) {
-      const chosenNum = extraOption || Math.floor(Math.random() * 6) + 1;
-      const roll = Math.floor(Math.random() * 6) + 1;
+      // Apuesta Ineludible: apuesta un número del 1 al 5. El D6 se lanza con la
+      // regla oficial: cada 6 = roba 1 carta del Mazo Global y relanza el dado.
+      const chosenNum = extraOption || rollD6();
+      const bet = ((chosenNum - 1) % 5) + 1; // 1..5
+      const res = rollBattleDie();
+      applySixReroll(actor.id, actor.name, res);
+      const roll = res.finalValue;
       sound.playDiceRoll();
 
-      if (roll === 6) {
-        if (!actor.isBot) {
-          setSpecialSixChoice({
-            playerId: actor.id,
-            actorName: actor.name,
-            isAttacker: true
-          });
-        } else {
-          handleApplySixChoice(actor.id, actor.hand.length < 2 ? 'CARD' : 'EXTRA_TURN');
-        }
-      }
-
-      if (roll === chosenNum) {
+      if (roll === bet) {
         sound.playPunchHit();
+        const healAmt = Math.max(1, Math.floor(bet / 2));
         setPlayers(prev =>
           prev.map(p => {
-            if (p.id === actor.id) return { ...p, hp: Math.min(p.maxHp, p.hp + 2) };
+            if (p.id === actor.id) return { ...p, hp: Math.min(p.maxHp, p.hp + healAmt) };
             if (!p.isEliminated) {
               const nhp = Math.max(0, p.hp - 2);
               return { ...p, hp: nhp, isEliminated: nhp <= 0 };
@@ -1229,13 +1493,13 @@ export default function App() {
             return p;
           })
         );
-        addLog(`¡Flaucubista acertó su número apostado (${chosenNum}) con un ${roll}! 2 de daño ineludible a todos y se cura 2 HP.`, true);
+        addLog(`¡Flaucubista acertó su número apostado (${bet}) con un ${roll}! 2 de daño ineludible a toda la mesa y se cura ${healAmt} HP.`, true);
       } else {
-        const selfDamage = Math.max(1, Math.floor(roll / 2));
+        const selfDamage = Math.max(1, Math.floor(bet / 2));
         setPlayers(prev =>
           prev.map(p => (p.id === actor.id ? { ...p, hp: Math.max(0, p.hp - selfDamage), isEliminated: Math.max(0, p.hp - selfDamage) <= 0 } : p))
         );
-        addLog(`Flaucubista desafinó (apostó ${chosenNum}, sacó ${roll}) y sufre ${selfDamage} de daño.`);
+        addLog(`Flaucubista desafinó (apostó ${bet}, sacó ${roll}) y sufre ${selfDamage} de autodaño.`);
       }
       setTimeout(() => checkVictory(), 300);
     } else {
@@ -1320,12 +1584,14 @@ export default function App() {
         setPhase(MatchPhase.MATCH_OVER);
         addLog(`¡¡EL BANDO RIVAL (ROJO) HA DERROTADO A TODA TU ESCUADRA!!`, true, "Árbitro");
         narrator.narrateVictory("El Bando Rojo");
+        finalizeMatchResult(false, aliveTeam2[0]?.name || 'El Bando Rojo');
         return;
       } else if (aliveTeam2.length === 0 && aliveTeam1.length > 0) {
         setWinner(aliveTeam1[0]);
         setPhase(MatchPhase.MATCH_OVER);
         addLog(`¡¡VICTORIA TOTAL! TU BANDO (AZUL) HA DERROTADO A TODOS LOS RIVALES!!`, true, "Árbitro");
         narrator.narrateVictory("Tu Escuadra Azul");
+        finalizeMatchResult(true, aliveTeam1[0]?.name || 'Tu Escuadra Azul');
         return;
       }
     }
@@ -1339,6 +1605,7 @@ export default function App() {
         addLog(`¡¡${champ.name} ES EL CAMPEÓN SUPREMO DE GUERRA CUBITA!!`, true, "Árbitro");
         narrator.narrateVictory(champ.name);
       }
+      finalizeMatchResult(champ ? !champ.isBot : false, champ ? champ.name : 'La Arena');
     }
   };
 
@@ -1354,49 +1621,37 @@ export default function App() {
     }
   }, [turnIndex, players, currentScreen, winner, isMatchIntroPlaying, speedMultiplier]);
 
-  // Bot AI Turn execution
+  // Bot AI Turn execution (MEJORA: IA táctica con niveles de dificultad)
   useEffect(() => {
     if (currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
     const activePlayer = players[turnIndex];
     if (!activePlayer || !activePlayer.isBot || activePlayer.isEliminated || activePlayer.hp <= 0) return;
 
     const timer = setTimeout(() => {
-      // 1. Try to equip weapon or prepare stance
-      const weapon = activePlayer.hand.find(c => c.type === CardType.WEAPON);
-      const stance = activePlayer.hand.find(
-        c => c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
-      );
+      // 1. Decisiones tácticas de cartas según nivel de IA
+      runBotTurn(activePlayer, players);
 
-      const maxSlots =
-        activePlayer.characterType === CharacterType.CUBINJA
-          ? 99
-          : activePlayer.characterType === CharacterType.HADA_AL_CUBO ||
-            activePlayer.characterType === CharacterType.GLADIACUBON
-          ? 2
-          : 1;
-
-      if (weapon && activePlayer.equippedWeapons.length < maxSlots && activePlayer.actionPoints > 0) {
-        handleEquipWeapon(weapon.id);
-      } else if (stance && !activePlayer.preparedStance && activePlayer.actionPoints > 0) {
-        handlePrepareStance(stance.id);
-      }
-
-      // 2. Pick target & attack
+      // 2. Pick target & attack (objetivo inteligente)
       setTimeout(() => {
         const currentP = players.find(p => p.id === activePlayer.id);
         if (currentP && currentP.actionPoints > 0 && !currentP.isFrozen && !currentP.isEliminated && currentP.hp > 0) {
-          const opposingTeamId = activePlayer.teamId === 1 ? 2 : activePlayer.teamId === 2 ? 1 : null;
-          const rivals = players.filter(
-            p => !p.isEliminated && p.hp > 0 && p.id !== activePlayer.id && (!opposingTeamId || p.teamId === opposingTeamId)
-          );
-          if (rivals.length > 0) {
-            const target = rivals.reduce(
-              (prev, curr) => (curr.hp < prev.hp ? curr : prev),
-              rivals[0]
-            );
-            if (target) {
-              setSelectedTargetId(target.id);
-              handleAttack(target.id);
+          const target = pickBotTarget(activePlayer, players);
+          if (target) {
+            setSelectedTargetId(target.id);
+            handleAttack(target.id);
+          }
+        }
+
+        // MEJORA: los bots DIFÍCILES usan su habilidad de héroe si está disponible
+        if (botSkillLevelRef.current === 'HARD') {
+          const afterAttack = players.find(p => p.id === activePlayer.id);
+          if (afterAttack && afterAttack.abilityCooldownRemaining === 0 && !afterAttack.isEliminated) {
+            const hero = afterAttack.activeMorphCharacter || afterAttack.characterType;
+            if (hero === CharacterType.CUBITO_DE_HIELO || hero === CharacterType.PIRATA) {
+              const abilityTarget = pickBotTarget(afterAttack, players);
+              if (abilityTarget && afterAttack.hp <= 12) {
+                handleUseHeroAbility(abilityTarget.id);
+              }
             }
           }
         }
@@ -1507,14 +1762,6 @@ export default function App() {
           onActivateReaction={handleActivateReaction}
           onPrepareReaction={handlePrepareReaction}
           onSkipReaction={handleSkipReaction}
-        />
-      )}
-
-      {specialSixChoice && (
-        <DiceSpecialChoiceModal
-          actorName={specialSixChoice.actorName}
-          isAttacker={specialSixChoice.isAttacker}
-          onChoose={(choice) => handleApplySixChoice(specialSixChoice.playerId, choice)}
         />
       )}
     </div>

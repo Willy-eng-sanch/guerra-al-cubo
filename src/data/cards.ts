@@ -1,674 +1,146 @@
 import { CardCategory, CardRarity, CardType, GameCard, TrickTiming } from '../types/game';
 
-export const ALL_CARDS: GameCard[] = [
-  // ==========================================
-  // ARMAS / EQUIPAMIENTO (1 - 30)
-  // ==========================================
-  {
-    id: 1,
-    name: "Bate de Aluminio",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "+1 Daño a tiradas de ataque de 3 o más.",
-    iconKey: "baseball_bat",
-    category: CardCategory.KABOOM,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Furia Kaboom! Al atacar con tirada de 5 o 6, el impacto gana +1 daño extra."
-  },
-  {
-    id: 2,
-    name: "Tapa de Alcantarilla",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Bloqueos perfectos curan 1 HP en lugar de robar carta.",
-    iconKey: "shield",
-    category: CardCategory.SOLAR,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Vigor Solar! Al equipar, recuperas 1 HP de inmediato."
-  },
-  {
-    id: 3,
-    name: "Cuchillo Mariposa",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Si sacas 5 al atacar, haces 1 de daño extra ineludible.",
-    iconKey: "knife",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Filo Furtivo! El rival seleccionado tiene -1 en su próximo dado de bloqueo."
-  },
-  {
-    id: 4,
-    name: "Chaqueta de Cuero",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Todo daño recibido de 1 se reduce a 0.",
-    iconKey: "jacket",
-    category: CardCategory.GUARDIAN,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Blindaje Guardián! Otorga una barrera que absorbe 1 punto de daño."
-  },
-  {
-    id: 5,
-    name: "Botas Punta de Acero",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Si el enemigo saca 1 al defender, sumas +1 a tu daño final.",
-    iconKey: "boot",
-    category: CardCategory.KABOOM,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Pisotón Kaboom! Inflige 1 de daño de chispa directo al rival al equipar."
-  },
-  {
-    id: 6,
-    name: "Puño de Hierro",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "+2 de Daño, pero no puedes ganar cartas por múltiplos de 5.",
-    iconKey: "fist",
-    category: CardCategory.KABOOM,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Impacto Titánico! +1 Daño demoledor adicional a tiradas con cara 6."
-  },
-  {
-    id: 7,
-    name: "Escudo de Tránsito",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Aumenta tu rango de bloqueo a tu número +/- 1 (sin robo en adyacente).",
-    iconKey: "traffic_sign",
-    category: CardCategory.GUARDIAN,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Señal Firme! Otorga 1 barrera de escudo inmediato a tu héroe."
-  },
-  {
-    id: 8,
-    name: "Gafas de Sol de Espejo",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Inmune a fijación obligatoria de objetivos y al Mal de Ojo.",
-    iconKey: "sunglasses",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Despiste! El rival pierde su blanco forzado actual."
-  },
-  {
-    id: 9,
-    name: "Tirachinas Mejorado",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Al atacar, si sacas 2 cuenta como 4.",
-    iconKey: "slingshot",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Tiro Calculado! 50% de probabilidad de reembolsar el PA gastado."
-  },
-  {
-    id: 10,
-    name: "Cadena de Moto",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Tu daño no se puede reducir por pasivas del rival.",
-    iconKey: "chain",
-    category: CardCategory.KABOOM,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Golpe de Cadena! Hace 1 daño ineludible al objetivo al equipar."
-  },
-  {
-    id: 11,
-    name: "Casco de Obrero",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "El primer ataque de la ronda que recibas se reduce en 1.",
-    iconKey: "helmet",
-    category: CardCategory.GUARDIAN,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Protección Civil! Genera 1 punto de barrera de absorción."
-  },
-  {
-    id: 12,
-    name: "Bóxer de Púas",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Ataques efectivos reducen el HP máximo del rival en 1 (incurable).",
-    iconKey: "knuckle",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Herida Abierta! El rival pierde 1 HP adicional por sangrado."
-  },
-  {
-    id: 13,
-    name: "Mochila de Repartidor",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Aumenta tu límite de cartas en mano a 3.",
-    iconKey: "backpack",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Entrega Express! Roba 1 carta adicional del Mazo Global de inmediato."
-  },
-  {
-    id: 14,
-    name: "Reloj Falso",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Si te roban o descartan esta carta, el culpable pierde 2 HP.",
-    iconKey: "watch",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Tiempo Comprado! Al equipar, otorga 1 tirada de suerte."
-  },
-  {
-    id: 15,
-    name: "Guantes de Boxeo",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Tu D6 de ataque nunca puede sacar 1 (se convierte en 2).",
-    iconKey: "boxing_glove",
-    category: CardCategory.KABOOM,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Gancho al Hígado! +1 Daño cuando tires la cara 6."
-  },
-  {
-    id: 16,
-    name: "Chaleco Casero",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Inmune a habilidades de daño directo que no tiren dados.",
-    iconKey: "vest",
-    category: CardCategory.GUARDIAN,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Refuerzo de Tela! Suma +1 a la barra de Super-Bloqueo."
-  },
-  {
-    id: 17,
-    name: "Zapatillas Robadas",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Si fallas bloqueo, puedes descartar 1 carta para reducir daño a la mitad.",
-    iconKey: "sneakers",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Evasión Ágil! El rival tiene -1 en su próximo ataque hacia ti."
-  },
-  {
-    id: 18,
-    name: "Palo de Escoba",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "+1 Daño contra personajes que tengan más de 10 HP.",
-    iconKey: "broom",
-    category: CardCategory.SOLAR,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Barrido Limpio! Si el rival tiene más HP que tú, te cura 1 HP."
-  },
-  {
-    id: 19,
-    name: "Láser de Bolsillo",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "El objetivo debe declarar su tirada de bloqueo ANTES de que tú tires el ataque.",
-    iconKey: "laser",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Cegera Mental! El defensor tiene -1 al dado de bloqueo."
-  },
-  {
-    id: 20,
-    name: "Spray de Pimienta",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Si haces daño, el rival tira su próximo ataque con -1 al dado.",
-    iconKey: "spray",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Ardor en los Ojos! El rival pierde 1 HP inmediato por irritación."
-  },
-  {
-    id: 21,
-    name: "Patineta Rota",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Inmunidad absoluta al estado Congelado.",
-    iconKey: "skateboard",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Impulso Urbano! Si estabas congelado, te descongela y otorga 1 PA."
-  },
-  {
-    id: 22,
-    name: "Batería de Coche",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Tus ataques hacen +1 de daño, pero pierdes 1 HP por turno.",
-    iconKey: "battery",
-    category: CardCategory.KABOOM,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Sobrecarga de Voltios! +2 de daño de chispa directo al objetivo."
-  },
-  {
-    id: 23,
-    name: "Linterna Cegadora",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "El D6 defensivo de tus atacantes no puede superar el 4.",
-    iconKey: "flashlight",
-    category: CardCategory.SOLAR,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Destello Solar! Cura 1 HP a tu héroe al equipar."
-  },
-  {
-    id: 24,
-    name: "Destornillador",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Al hacer daño, descartas la carta equipada del rival.",
-    iconKey: "screwdriver",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Desarmar! Desactiva 1 postura enemiga si está activa."
-  },
-  {
-    id: 25,
-    name: "Navaja Suiza",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Permite equiparse sin gastar tu acción de cartas del turno.",
-    iconKey: "swiss_knife",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Multiherramienta! Reembolsa 1 PA inmediatamente al jugarla."
-  },
-  {
-    id: 26,
-    name: "Hombreras de Neumático",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Daño recibido de 4, 5 y 6 se reduce en 1.",
-    iconKey: "shoulderpad",
-    category: CardCategory.GUARDIAN,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Blindaje de Caucho! Genera 2 puntos de barrera protectora."
-  },
-  {
-    id: 27,
-    name: "Machete Oxidado",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Si sacas 1 atacas a ti mismo (1 daño); si sacas 6, haces 8 de daño brutal.",
-    iconKey: "machete",
-    category: CardCategory.KABOOM,
-    rarity: CardRarity.LEGENDARIA,
-    synergyEffect: "¡Filo Temerario! Al atacar, inflige 1 daño colateral a todos los enemigos."
-  },
-  {
-    id: 28,
-    name: "Megáfono Viejo",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Anula las pasivas defensivas de tus rivales directos.",
-    iconKey: "megaphone",
-    category: CardCategory.SOLAR,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Cántico de Ánimo! Te cura 2 HP al equipar."
-  },
-  {
-    id: 29,
-    name: "Cinta Aislante",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Las armas de tus rivales no aplican bonificadores de daño contra ti.",
-    iconKey: "tape",
-    category: CardCategory.GUARDIAN,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Reparación de Emergencia! Absorbe el próximo golpe recibido."
-  },
-  {
-    id: 30,
-    name: "Dardo Tranquilizante",
-    type: CardType.WEAPON,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Tu daño tiene -1, pero el rival no puede activar habilidades si recibe impacto.",
-    iconKey: "dart",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Veneno Lento! El rival no puede ganar PA extras en su turno."
-  },
+// ============================================================
+// BASE DE CARTAS OFICIAL — GDD "Guerra Cubita" (Páginas 4-6)
+// Mazo Global de 50 cartas: Fierros (Equipamientos, máx 1 por cubo)
+// y Vueltas/Trucos (Magias de un solo uso).
+// Clases del Barrio: 🔴 Bruta · 🔵 Protección · 🟢 Economía · 🟣 Táctica · 🟡 Astucia
+// ============================================================
 
-  // ==========================================
-  // TRUCOS / MISCELÁNEOS (31 - 60)
-  // ==========================================
-  {
-    id: 31,
-    name: "Empujón Callejero",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Desequipa el arma o postura activa de un rival.",
-    iconKey: "push",
-    category: CardCategory.GUARDIAN,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Fuerza Bruta! Inflige 1 de daño de empuje al rival."
-  },
-  {
-    id: 32,
-    name: "Bolsillo Roto",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Elige un rival; debe descartar 1 carta al azar de su mano.",
-    iconKey: "pocket",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Hurto Sombrío! Si el rival descartó, tú robas 1 carta del Mazo."
-  },
-  {
-    id: 33,
-    name: "Recarga de Adrenalina",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Recuperas 3 HP inmediatamente.",
-    iconKey: "syringe",
-    category: CardCategory.SOLAR,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Inyección Solar! Te cura +1 HP extra (total 4 HP)."
-  },
-  {
-    id: 34,
-    name: "Soborno en la Esquina",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Roba 2 cartas de la pila y descarta 1 de tu mano.",
-    iconKey: "money",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Trato Dulce! No necesitas descartar carta si tienes sinergia Cerebral."
-  },
-  {
-    id: 35,
-    name: "Humo de Vape",
-    type: CardType.TRICK,
-    timing: TrickTiming.PREPARED_STANCE,
-    description: "Postura Preventiva: Cancela y evade por completo el próximo ataque dirigido hacia ti.",
-    iconKey: "smoke",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Niebla Venenosa! El atacante evadido sufre 1 de daño por asfixia."
-  },
-  {
-    id: 36,
-    name: "Finta Rápida",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Relanza tu dado de ataque en este turno si no te gustó el resultado.",
-    iconKey: "feint",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Segunda Oportunidad! Suma +1 al nuevo resultado del dado."
-  },
-  {
-    id: 37,
-    name: "Espejismo Urbano",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Cambia tu objetivo después de que el defensor lance su dado de bloqueo.",
-    iconKey: "mirage",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Ilusión Perfecta! El nuevo objetivo no puede lanzar dado de bloqueo."
-  },
-  {
-    id: 38,
-    name: "Botiquín Robado",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Cura 5 HP, pero no puedes atacar este turno.",
-    iconKey: "medkit",
-    category: CardCategory.SOLAR,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Milagro Solar! También otorga 1 punto de barrera protectora."
-  },
-  {
-    id: 39,
-    name: "Interferencia Móvil",
-    type: CardType.TRICK,
-    timing: TrickTiming.PREPARED_STANCE,
-    description: "Postura Preventiva: Anula el truco que active un rival.",
-    iconKey: "phone_static",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Hackeo Táctico! Robas la carta anulada para tu propia mano."
-  },
-  {
-    id: 40,
-    name: "Cortina de Basura",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Todos los bloqueos de tu equipo en esta ronda tienen +1 automático.",
-    iconKey: "trashcan",
-    category: CardCategory.GUARDIAN,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Barrera Sólida! Otorga 1 punto de escudo al aliado con menor vida."
-  },
-  {
-    id: 41,
-    name: "Café Alterado",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Ganas una acción extra (+1 PA) en este turno.",
-    iconKey: "coffee",
-    category: CardCategory.SOLAR,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Subidón de Cafeína! También te cura 1 HP."
-  },
-  {
-    id: 42,
-    name: "Apagón Zonal",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Nadie puede usar habilidades de personaje en la próxima ronda.",
-    iconKey: "blackout",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Sobrecarga! Tú eres el único inmune al apagón."
-  },
-  {
-    id: 43,
-    name: "Chisme de Barrio",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Mira la mano de todos los jugadores de la mesa y roba 1 carta del mazo.",
-    iconKey: "gossip",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Información Privilegiada! Elige qué carta descartar de un rival."
-  },
-  {
-    id: 44,
-    name: "Trampa de Ratones",
-    type: CardType.TRICK,
-    timing: TrickTiming.PREPARED_STANCE,
-    description: "Postura Preventiva: El próximo jugador que robe una carta sufre 2 de daño ineludible.",
-    iconKey: "mousetrap",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Cepillo Oxidado! La trampa hace +1 daño extra (3 de daño total)."
-  },
-  {
-    id: 45,
-    name: "Cambio de Turno",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Intercambia tu lugar en la iniciativa con otro jugador.",
-    iconKey: "turn_swap",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Sorpasso! Ganas +1 PA tras realizar el intercambio."
-  },
-  {
-    id: 46,
-    name: "Extorsión",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Un rival a elección te da una carta de su mano o pierde 3 HP.",
-    iconKey: "extortion",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Chantaje Implacable! Si elige perder 3 HP, tú te curas 1 HP."
-  },
-  {
-    id: 47,
-    name: "Grito de Guerra",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "En esta ronda, todos los ataques base de tu bando hacen +1 daño.",
-    iconKey: "battlecry",
-    category: CardCategory.KABOOM,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Furia Colectiva! Inflige 1 daño de impacto directo al rival líder."
-  },
-  {
-    id: 48,
-    name: "Zancadilla",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "El objetivo pierde su próxima acción de ataque.",
-    iconKey: "trip",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.BASICA,
-    synergyEffect: "¡Caída Humillante! El objetivo sufre 1 de daño de golpe contra el suelo."
-  },
-  {
-    id: 49,
-    name: "Bebida Energética",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Si tienes 6 HP o menos, recuperas 4 HP de inmediato.",
-    iconKey: "energy_drink",
-    category: CardCategory.SOLAR,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Segunda Vitalidad! Te otorga 1 punto de escudo adicional."
-  },
-  {
-    id: 50,
-    name: "Robo Armado",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Roba la carta equipada de un rival y equípatela en tu mesa de inmediato.",
-    iconKey: "armed_robbery",
-    category: CardCategory.KABOOM,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Atraco Violento! Inflige 1 de daño al rival despojado."
-  },
-  {
-    id: 51,
-    name: "Sabotaje",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "El próximo dado que lance un rival cuenta obligatoriamente como un 1.",
-    iconKey: "sabotage",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Fallo Crítico! El rival no puede activar posturas ese turno."
-  },
-  {
-    id: 52,
-    name: "Falsa Alarma",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Obliga a todos los rivales a devolver 1 carta de su mano al mazo.",
-    iconKey: "alarm",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Pánico en la Calle! Tú robas 1 carta adicional del Mazo Global."
-  },
-  {
-    id: 53,
-    name: "Reflejo Felino",
-    type: CardType.TRICK,
-    timing: TrickTiming.PREPARED_STANCE,
-    description: "Postura Preventiva: Tu próximo bloqueo cuenta como perfecto automáticamente.",
-    iconKey: "cat_reflex",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Contragolpe de Sombra! El atacante sufre 1 de daño reflejado."
-  },
-  {
-    id: 54,
-    name: "Contrato Sombrío",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Pierdes 2 HP, pero robas 3 cartas directas del Mazo Global.",
-    iconKey: "dark_contract",
-    category: CardCategory.FURTIVO,
-    rarity: CardRarity.LEGENDARIA,
-    synergyEffect: "¡Pacto Oscuro! Si tu HP es menor a 8, la pérdida de vida se anula."
-  },
-  {
-    id: 55,
-    name: "Pararrayos",
-    type: CardType.TRICK,
-    timing: TrickTiming.PREPARED_STANCE,
-    description: "Postura Preventiva: Redirige el ataque que recibas hacia otro rival de tu elección.",
-    iconKey: "lightning_rod",
-    category: CardCategory.GUARDIAN,
-    rarity: CardRarity.SUPER_RARA,
-    synergyEffect: "¡Conducción Eléctrica! El rival que recibe el desvío sufre +1 daño extra."
-  },
-  {
-    id: 56,
-    name: "Impuestos del Asfalto",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Todos los jugadores con 2 o más cartas en mano descartan 1.",
-    iconKey: "tax",
-    category: CardCategory.GUARDIAN,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Cobro Justo! Recuperas 1 HP por cada carta descartada por rivales."
-  },
-  {
-    id: 57,
-    name: "Venganza Fría",
-    type: CardType.TRICK,
-    timing: TrickTiming.PREPARED_STANCE,
-    description: "Postura Preventiva: Devuelve el 100% del daño que acabes de recibir al atacante.",
-    iconKey: "revenge",
-    category: CardCategory.KABOOM,
-    rarity: CardRarity.LEGENDARIA,
-    synergyEffect: "¡Retribución Ígnea! Inflige +1 de daño adicional al atacante vengado."
-  },
-  {
-    id: 58,
-    name: "Sorteo Caótico",
-    type: CardType.TRICK,
-    timing: TrickTiming.RITUAL_ACTION,
-    description: "Todos descartan su mano entera y roban la misma cantidad de la pila.",
-    iconKey: "chaos",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.RARA,
-    synergyEffect: "¡Mano Bendecida! Tú robas +1 carta adicional por encima de tu descarte."
-  },
-  {
-    id: 59,
-    name: "Último Aliento",
-    type: CardType.TRICK,
-    timing: TrickTiming.PREPARED_STANCE,
-    description: "Postura Preventiva: Si un ataque te dejaría en 0 HP, quedas con 1 HP milagroso.",
-    iconKey: "last_breath",
-    category: CardCategory.GUARDIAN,
-    rarity: CardRarity.LEGENDARIA,
-    synergyEffect: "¡Voluntad de Hierro! Al activarse, te cura de inmediato 3 HP adicionales."
-  },
-  {
-    id: 60,
-    name: "El Comodín",
-    type: CardType.TRICK,
-    timing: TrickTiming.PREPARED_STANCE,
-    description: "Postura Preventiva: Cuenta como cualquier número del 1 al 6 para tu próximo bloqueo perfecto.",
-    iconKey: "joker",
-    category: CardCategory.CEREBRAL,
-    rarity: CardRarity.LEGENDARIA,
-    synergyEffect: "¡Jugada Maestra! Al bloquear con El Comodín, ganas +1 PA para tu próximo turno."
-  }
+const W = CardType.WEAPON;
+const T = CardType.TRICK;
+const R = TrickTiming.RITUAL_ACTION;      // Uso inmediato (Acción 2)
+const P = TrickTiming.PREPARED_STANCE;    // Postura preventiva en mesa
+
+const BRUTA = CardCategory.BRUTA;
+const PROT = CardCategory.PROTECCION;
+const ECO = CardCategory.ECONOMIA;
+const TAC = CardCategory.TACTICA;
+const AST = CardCategory.ASTUCIA;
+
+type C = [number, string, CardType, TrickTiming, CardCategory, string];
+
+const RAW: C[] = [
+  // ---------------------------------------------------------
+  // CLASE BRUTA (Rojo) | Impacto y Fuerza Física (1-10)
+  // Sinergia: +1 Daño extra al impacto. Rechazo: 1 HP de autodaño.
+  // ---------------------------------------------------------
+  [1, "El Dado-Garrote", W, R, BRUTA, "+1 al daño en tiradas de ataque ≥ 3."],
+  [2, "La Manopla Dado-Pescueza", W, R, BRUTA, "+2 de daño. Desactiva robos por múltiplos de 5."],
+  [3, "La Chuzadora Dadomada", W, R, BRUTA, "Tus tiradas base de 1 se convierten en 2."],
+  [4, "El Cadenazo Dadolado", W, R, BRUTA, "+1 de daño si el rival objetivo tiene más HP que tú."],
+  [5, "El Picahielo Muescado", W, R, BRUTA, "Al hacer daño, desequipa el arma del rival."],
+  [6, "La Paliza de Esquina", T, R, BRUTA, "Ejecutas un segundo ataque básico inmediatamente en este turno (sin mods)."],
+  [7, "La Pedrada Volada", T, R, BRUTA, "Inflige 2 de daño ineludible a un objetivo directo."],
+  [8, "El Rompe-Suelo", T, R, BRUTA, "Destruye todas las cartas de Mesa activas en tu línea frontal enemiga."],
+  [9, "El Chutazo de Adrenalina", T, R, BRUTA, "+3 de daño en tu próximo ataque, pero sufres 1 HP de autodaño al fin de turno."],
+  [10, "El Susto de la Cuadra", T, R, BRUTA, "Todos tus aliados en mesa ganan +1 al D5 durante este turno."],
+
+  // ---------------------------------------------------------
+  // CLASE PROTECCIÓN (Azul) | Muros y Supervivencia (11-20)
+  // Sinergia: Te curas 1 HP al usar/equipar. Rechazo: -1 al dado en tu próximo ataque.
+  // ---------------------------------------------------------
+  [11, "El Escudo Tapa-Alcantarilla", W, R, PROT, "Bloqueos Perfectos curan 1 HP en vez de robar carta."],
+  [12, "Las Pisotón-Evasoras", W, R, PROT, "Descarta 1 carta para reducir a la mitad cualquier ataque entrante."],
+  [13, "El Cubre-Cerebro", W, R, PROT, "Inmunidad total al daño ineludible y efectos de fuego amigo."],
+  [14, "La Coraza de Cuaderno", W, R, PROT, "Reduce en 1 todo daño recibido proveniente de tiradas ≥ 4."],
+  [15, "El Freno de Taxi", W, R, PROT, "Atacantes cuerpo a cuerpo reciben 1 de daño de retroceso al golpearte."],
+  [16, "El Parapetazo", T, R, PROT, "Otorga un escudo temporal de 3 HP a un aliado durante esta ronda."],
+  [17, "La Cortina de Mugre (Vape)", T, P, PROT, "Postura: Evades y cancelas por completo el próximo ataque entrante."],
+  [18, "El Trago Remedio", T, R, PROT, "Cura inmediatamente 3 HP a cualquier personaje en el tablero."],
+  [19, "El Esquive de Callejón", T, R, PROT, "Tu próxima defensa es considerada un Bloqueo Perfecto automático."],
+  [20, "El Muro de Vóxel", T, P, PROT, "Postura: obstáculo de 4 HP frente a ti que absorbe el daño entrante."],
+
+  // ---------------------------------------------------------
+  // CLASE ECONOMÍA (Verde) | Abasto y Robos (21-30)
+  // Sinergia: Robas 1 carta adicional. Rechazo: descarta 1 carta de tu mano.
+  // ---------------------------------------------------------
+  [21, "El Morral Vendedado", W, R, ECO, "Tu límite de mano sube de 2 a 3 cartas."],
+  [22, "El Biberón Rascado", W, R, ECO, "Robas 2 cartas al cruzar umbrales de vida (múltiplos de 5) en lugar de 1."],
+  [23, "El Trago del Azar", W, R, ECO, "Permite relanzar 1 dado tuyo al inicio de tu turno."],
+  [24, "El Soplador de Chispas", W, R, ECO, "Recuperas 1 HP cada vez que descartes cartas de tu mano."],
+  [25, "El Raspa-Bolsillos", W, R, ECO, "Robas 1 carta cada vez que un enemigo active un Truco."],
+  [26, "La Chicha Energética", T, R, ECO, "Tienes 1 Acción Principal extra en este turno."],
+  [27, "La Apuesta del Callejón", T, R, ECO, "Pierdes 2 HP voluntariamente para robar 3 cartas de la pila."],
+  [28, "La Mezclada de Mazo", T, R, ECO, "Todos descartan su mano y roban la misma cantidad de vuelta."],
+  [29, "El Hallazgo Rascado", T, R, ECO, "Rescata 1 carta del cementerio (descarte) y ponla en tu mano."],
+  [30, "El Paga-Diario", T, R, ECO, "Robas 2 cartas ahora, pero no puedes robar nada el próximo turno."],
+
+  // ---------------------------------------------------------
+  // CLASE TÁCTICA (Púrpura) | Control y Anulación (31-40)
+  // Sinergia: el rival objetivo pierde su Acción Libre. Rechazo: Silenciado 1 turno.
+  // ---------------------------------------------------------
+  [31, "El Apaga-Luz (Dardo)", W, R, TAC, "Al hacer daño, silencia las Habilidades del rival por 2 rondas."],
+  [32, "El Traba-Turnos (Candado)", W, R, TAC, "Si el rival saca un 1 atacándote, pierde su Acción 2 de carta."],
+  [33, "El Grito Ñero", W, R, TAC, "Reduce forzadamente en 1 todas las tiradas de ataque enemigas hacia ti."],
+  [34, "El Enlace Maldito", W, R, TAC, "Si recibes daño, el atacante sufre 1 de daño directo garantizado."],
+  [35, "El Resbalón", W, R, TAC, "Invalida mecánicamente el primer Bloqueo Perfecto del enemigo cada ronda."],
+  [36, "El Tropiezo (Zancadilla)", T, R, TAC, "Cancela inmediatamente la Acción 1 (Ataque) de un rival."],
+  [37, "El Madrugón", T, R, TAC, "Cambias tu posición en la cola de iniciativa con cualquier otro cubo."],
+  [38, "La Desviación (Pararrayos)", T, P, TAC, "Postura: rediriges un ataque recibido hacia cualquier otro objetivo (incluso rivales)."],
+  [39, "El Vencedor a Ciegas", T, R, TAC, "Nadie en la mesa puede usar cartas de Trucos durante la próxima ronda."],
+  [40, "La Discordia (Chisme)", T, R, TAC, "Obliga a un enemigo a atacar a su propio aliado en su siguiente turno."],
+
+  // ---------------------------------------------------------
+  // CLASE ASTUCIA (Amarillo) | Robo y Evasión (41-50)
+  // Sinergia: tu impacto de este turno es ineludible. Rechazo: revelas toda tu mano.
+  // ---------------------------------------------------------
+  [41, "La Navaja Dadomada", W, R, AST, "+1 Daño. Ignora habilidades de reducción de daño o armaduras pasivas."],
+  [42, "El Pica-Bolsillos", W, R, AST, "Al hacer daño, robas 1 carta de la mano del rival."],
+  [43, "La Carnada de Cartón", W, R, AST, "Quien te ataque debe quemar/descartar la primera carta de su mazo."],
+  [44, "El Asusta-Novatos", W, R, AST, "Rivales con menos de 10 HP sufren un -1 al atacarte."],
+  [45, "El Amuleto Tramposo", W, R, AST, "Tu margen de Bloqueo Perfecto se amplía a ±1 del dado rival."],
+  [46, "El Despalomo Directo", T, R, AST, "Robas el arma equipada en la mesa del rival y te la pones tú mismo."],
+  [47, "El Pega y Corre", T, R, AST, "Cambias de objetivo DESPUÉS de que el defensor original tire su dado de bloqueo."],
+  [48, "La Desaparición", T, P, AST, "Postura: te vuelves intocable a los ataques directos por 1 ronda entera."],
+  [49, "El Cambiazo", T, R, AST, "Cambia una carta de tu mano por una del cementerio rival."],
+  [50, "El Despecho (Golpe Bajo)", T, R, AST, "2 de Daño e invalida todas las pasivas del rival por esta ronda."]
 ];
+
+// Nombres cortos de icono (se usan como clave visual en la UI)
+const ICON_KEYS: Record<number, string> = {
+  1: "baseball_bat", 2: "fist", 3: "knife", 4: "chain", 5: "ice_pick",
+  6: "boot", 7: "rock", 8: "hammer", 9: "sneakers", 10: "megaphone",
+  11: "shield", 12: "sneakers", 13: "helmet", 14: "jacket", 15: "traffic_sign",
+  16: "barrier", 17: "smoke", 18: "medkit", 19: "feint", 20: "voxel_wall",
+  21: "backpack", 22: "baby_bottle", 23: "dart", 24: "battery", 25: "pocket",
+  26: "energy_drink", 27: "money", 28: "chaos", 29: "trash", 30: "watch",
+  31: "flashlight", 32: "lock", 33: "megaphone", 34: "link", 35: "banana",
+  36: "trip", 37: "turn_swap", 38: "lightning_rod", 39: "blackout", 40: "gossip",
+  41: "knife", 42: "pocket", 43: "cardboard", 44: "sunglasses", 45: "amulet",
+  46: "armed_robbery", 47: "feint", 48: "vanish", 49: "exchange", 50: "low_blow"
+};
+
+// Rarezas según potencia mecánica (Fierros potentes / Trucos legendarios puntuales)
+const RARITY_OVERRIDES: Partial<Record<number, CardRarity>> = {
+  2: CardRarity.SUPER_RARA,   // Manopla Dado-Pescueza
+  5: CardRarity.RARA,         // Picahielo Muescado
+  8: CardRarity.RARA,         // Rompe-Suelo
+  13: CardRarity.RARA,        // Cubre-Cerebro
+  15: CardRarity.RARA,        // Freno de Taxi
+  19: CardRarity.SUPER_RARA,  // Esquive de Callejón
+  22: CardRarity.SUPER_RARA,  // Biberón Rascado
+  25: CardRarity.RARA,        // Raspa-Bolsillos
+  31: CardRarity.SUPER_RARA,  // Apaga-Luz
+  35: CardRarity.RARA,        // Resbalón
+  39: CardRarity.SUPER_RARA,  // Vencedor a Ciegas
+  41: CardRarity.RARA,        // Navaja Dadomada
+  45: CardRarity.SUPER_RARA,  // Amuleto Tramposo
+  46: CardRarity.SUPER_RARA,  // Despalomo Directo
+  50: CardRarity.LEGENDARIA   // Despecho (Golpe Bajo)
+};
+
+export const ALL_CARDS: GameCard[] = RAW.map(([id, name, type, timing, category, description]) => ({
+  id,
+  name,
+  type,
+  timing,
+  description,
+  iconKey: ICON_KEYS[id] || "card",
+  category,
+  rarity: RARITY_OVERRIDES[id] ?? CardRarity.BASICA,
+  synergyEffect: description
+}));
 
 export function createShuffledDeck(): GameCard[] {
   return [...ALL_CARDS]
