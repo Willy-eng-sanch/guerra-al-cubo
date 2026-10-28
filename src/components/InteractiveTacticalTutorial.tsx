@@ -716,11 +716,11 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
 
               {/* Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-[55vh] overflow-y-auto pr-1">
-                {filteredManualCards.map(card => {
+                {filteredManualCards.map((card, cardIdx) => {
                   const catInfo = CATEGORY_INFO[card.category];
                   return (
                     <div
-                      key={card.id}
+                      key={`manual-card-${card.id}-${cardIdx}`}
                       style={{
                         borderColor: `${catInfo.borderColor}60`,
                         backgroundColor: '#121622'

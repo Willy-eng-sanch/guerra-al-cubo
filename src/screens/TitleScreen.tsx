@@ -13,6 +13,7 @@ interface TitleScreenProps {
   onPassAndPlayClick: () => void;
   onRosterClick: () => void;
   onCardsClick: () => void;
+  onOnlineClick: () => void;
 }
 
 export const TitleScreen: React.FC<TitleScreenProps> = ({
@@ -21,7 +22,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   onCampaignClick,
   onPassAndPlayClick,
   onRosterClick,
-  onCardsClick
+  onCardsClick,
+  onOnlineClick
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showDownloadApk, setShowDownloadApk] = useState(false);
@@ -101,6 +103,15 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         >
           <Swords className="w-5 h-5 text-yellow-300" />
           <span>DRAFT 3 VS 3 (INICIATIVA D6)</span>
+        </button>
+
+        {/* Online Multiplayer Lobby Button */}
+        <button
+          onClick={onOnlineClick}
+          className="w-full py-3 bg-gradient-to-r from-blue-600/40 via-cyan-600/30 to-blue-700/40 hover:brightness-125 active:scale-[0.98] text-cyan-300 font-black text-xs md:text-sm rounded-xl border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.35)] flex items-center justify-center gap-2 tracking-wide transition-all cursor-pointer"
+        >
+          <Users className="w-4 h-4 text-cyan-300" />
+          <span>🌐 MULTIJUGADOR ONLINE (SALAS & EMPAREJAMIENTO)</span>
         </button>
 
         {/* Direct Squad Selection (Choose all 3 characters) */}

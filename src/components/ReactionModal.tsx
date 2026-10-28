@@ -71,7 +71,7 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
 
                 return (
                   <div
-                    key={card.uid || `reaction-card-${card.id}-${idx}`}
+                    key={`reaction-card-${card.uid || card.id}-${idx}`}
                     className={`p-3 rounded-xl border flex flex-col justify-between transition-all ${
                       isWeapon
                         ? 'bg-[#1a1711] border-amber-600/60'

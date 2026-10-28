@@ -603,8 +603,19 @@ export const ALL_CARDS: GameCard[] = [
   }
 ];
 
+let cardUidCounter = 0;
+
+export function generateUniqueCardUid(cardId: number): string {
+  cardUidCounter += 1;
+  return `${cardId}-${Date.now()}-${cardUidCounter}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
 export function createShuffledDeck(): GameCard[] {
-  const deck = [...ALL_CARDS];
+  // Deep clone all cards and ensure every card has an unconditionally unique uid
+  const deck: GameCard[] = ALL_CARDS.map(c => ({
+    ...c,
+    uid: generateUniqueCardUid(c.id)
+  }));
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];

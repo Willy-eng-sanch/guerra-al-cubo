@@ -16,7 +16,7 @@ import {
   TrickTiming,
   getMaxHandSize
 } from './types/game';
-import { ALL_CARDS, createShuffledDeck } from './data/cards';
+import { ALL_CARDS, createShuffledDeck, generateUniqueCardUid } from './data/cards';
 import { CHARACTER_LIST, CHARACTERS } from './data/characters';
 import { DEFAULT_CHAPTERS } from './data/campaign';
 import { sound } from './audio/soundManager';
@@ -31,6 +31,7 @@ import { RosterScreen } from './screens/RosterScreen';
 import { EncyclopediaScreen } from './screens/EncyclopediaScreen';
 import { ArenaScreen } from './screens/ArenaScreen';
 import { DraftScreen } from './screens/DraftScreen';
+import { OnlineLobbyScreen } from './screens/OnlineLobbyScreen';
 import { DiceSpecialChoiceModal } from './components/DiceSpecialChoiceModal';
 import { CombatClashData } from './components/CartoonCombatClash';
 
@@ -97,7 +98,7 @@ export default function App() {
         const [drawn, ...rest] = prevDeck;
         const cardInstance: GameCard = {
           ...drawn,
-          uid: `${drawn.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+          uid: generateUniqueCardUid(drawn.id)
         };
         setPlayers(prev => prev.map(p => {
           if (p.id !== playerId) return p;
@@ -125,7 +126,11 @@ export default function App() {
     if (hero === CharacterType.GLADIACUBON) {
       const idx = deckArr.findIndex(c => c.type === CardType.WEAPON);
       if (idx !== -1) {
-        return [deckArr.splice(idx, 1)[0]];
+        const weapon = deckArr.splice(idx, 1)[0];
+        return [{
+          ...weapon,
+          uid: generateUniqueCardUid(weapon.id)
+        }];
       }
     }
     return [];
@@ -166,10 +171,10 @@ export default function App() {
 
     if (d.length === 0) {
       if (disc.length > 0) {
-        d = [...disc]
+        d = disc
           .map(c => ({
             ...c,
-            uid: `${c.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+            uid: generateUniqueCardUid(c.id)
           }))
           .sort(() => Math.random() - 0.5);
         disc = [];
@@ -178,10 +183,13 @@ export default function App() {
       }
     }
 
-    const card = d.shift() || null;
-    if (card && !card.uid) {
-      card.uid = `${card.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    }
+    const rawCard = d.shift() || null;
+    const card: GameCard | null = rawCard
+      ? {
+          ...rawCard,
+          uid: generateUniqueCardUid(rawCard.id)
+        }
+      : null;
     return { card, newDeck: d, newDiscard: disc };
   };
 
@@ -510,6 +518,82 @@ export default function App() {
     narrator.narrateMatchStart("Pase y Juega Callejero");
   };
 
+  // Start Online Multiplayer Match (Escuadrón Azul vs Escuadrón Rojo)
+  const startOnlineMatch = (playerHero: CharacterType, rivalHero: CharacterType, rivalName: string) => {
+    triggerMatchIntro();
+    let currentDeck = createShuffledDeck();
+    let currentDiscard: GameCard[] = [];
+
+    const pWeapons = getInitialWeapons(playerHero, currentDeck);
+    const rWeapons = getInitialWeapons(rivalHero, currentDeck);
+
+    const newPlayers: PlayerState[] = [
+      {
+        id: 1,
+        name: `Tú: ${CHARACTERS[playerHero].displayName.slice(0, 8)}`,
+        characterType: playerHero,
+        hp: 20,
+        maxHp: 20,
+        actionPoints: 2,
+        hand: [],
+        equippedWeapons: pWeapons,
+        preparedStance: null,
+        isBot: false,
+        isFrozen: false,
+        skipNextTurn: false,
+        forcedTargetPlayerId: null,
+        abilityCooldownRemaining: 0,
+        isEliminated: false,
+        teamId: 1,
+        superBlockMeter: 0,
+        shieldBarrier: 0
+      },
+      {
+        id: 2,
+        name: `${rivalName}: ${CHARACTERS[rivalHero].displayName.slice(0, 7)}`,
+        characterType: rivalHero,
+        hp: 20,
+        maxHp: 20,
+        actionPoints: 2,
+        hand: [],
+        equippedWeapons: rWeapons,
+        preparedStance: null,
+        isBot: true,
+        isFrozen: false,
+        skipNextTurn: false,
+        forcedTargetPlayerId: null,
+        abilityCooldownRemaining: 0,
+        isEliminated: false,
+        teamId: 2,
+        superBlockMeter: 0,
+        shieldBarrier: 0
+      }
+    ];
+
+    setDeck(currentDeck);
+    setDiscardPile(currentDiscard);
+    setPlayers(newPlayers);
+    setRound(1);
+    setTurnIndex(0);
+    setWinner(null);
+    setSelectedTargetId(2);
+    setActiveDiceRoll(null);
+    setGameMode(GameMode.ONLINE_PVP);
+    setLog([
+      {
+        id: Date.now(),
+        round: 1,
+        actorName: "Árbitro Online",
+        message: `¡Duelo Online en Vivo iniciado! Escuadrón Azul (${CHARACTERS[playerHero].displayName}) vs Escuadrón Rojo (${rivalName}).`,
+        isCritical: true
+      }
+    ]);
+    setCurrentScreen(CurrentScreen.ARENA);
+    sound.playDiceRoll();
+    music.play();
+    narrator.narrateMatchStart("Duelo Online en Vivo");
+  };
+
   const currentTurnPlayer = players[turnIndex] || null;
 
   // Apply Heroic Class Synergy (Plants vs. Zombies Heroes Style)
@@ -581,7 +665,7 @@ export default function App() {
             const maxH = getMaxHandSize(actor);
             const cardInstance: GameCard = {
               ...drawn,
-              uid: `${drawn.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+              uid: generateUniqueCardUid(drawn.id)
             };
             setPlayers(prev => prev.map(p => {
               if (p.id !== actorId) return p;
@@ -993,9 +1077,9 @@ export default function App() {
           setTimeout(() => {
             checkVictory();
           }, 300);
-        }, 1200 * speedMultiplier);
-      }, 1250 * speedMultiplier);
-    }, 350 * speedMultiplier);
+        }, 1400 * speedMultiplier);
+      }, 1350 * speedMultiplier);
+    }, 450 * speedMultiplier);
   };
 
   // Reaction handlers for Perfect Block
@@ -1456,6 +1540,14 @@ export default function App() {
           onPassAndPlayClick={() => setCurrentScreen(CurrentScreen.PASS_AND_PLAY_SETUP)}
           onRosterClick={() => setCurrentScreen(CurrentScreen.ROSTER)}
           onCardsClick={() => setCurrentScreen(CurrentScreen.ENCYCLOPEDIA)}
+          onOnlineClick={() => setCurrentScreen(CurrentScreen.ONLINE_LOBBY)}
+        />
+      )}
+
+      {currentScreen === CurrentScreen.ONLINE_LOBBY && (
+        <OnlineLobbyScreen
+          onBack={() => setCurrentScreen(CurrentScreen.TITLE)}
+          onStartOnlineMatch={startOnlineMatch}
         />
       )}
 

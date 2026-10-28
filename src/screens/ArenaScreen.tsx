@@ -415,7 +415,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
 
                     return (
                       <div
-                        key={card.uid || `hand-card-${card.id}-${idx}`}
+                        key={`hand-card-${card.uid || card.id}-${idx}`}
                         className={`p-2.5 rounded-xl border flex flex-col justify-between transition-all relative overflow-hidden ${
                           hasSynergy
                             ? 'ring-2 ring-yellow-400/90 shadow-[0_0_14px_rgba(250,204,21,0.4)]'
@@ -558,9 +558,9 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
-              {log.map(item => (
+              {log.map((item, idx) => (
                 <div
-                  key={item.id}
+                  key={`log-${item.id}-${idx}`}
                   className={`p-2.5 rounded-xl border ${
                     item.isCritical
                       ? 'bg-red-950/40 border-red-500/50 text-red-200 font-bold'

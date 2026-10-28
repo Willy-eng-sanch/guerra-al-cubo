@@ -133,30 +133,26 @@ export const Dice3DVisual: React.FC<Dice3DVisualProps> = ({
           {/* Subtle Isometric Top-Edge Highlight */}
           <div className="absolute top-0 inset-x-0 h-[22%] bg-gradient-to-b from-white/25 to-transparent pointer-events-none" />
 
-          {/* If character is specified and not rolling, show hero face on die with Rotoscope filter */}
+          {/* If character is specified and not rolling, show hero face on die with Papercraft collage & Tape strip */}
           {charDef && !isRolling ? (
             <div className="relative w-full h-full flex flex-col items-center justify-center p-1 overflow-hidden">
-              <img
-                src={charDef.avatar}
-                alt={charDef.displayName}
-                className="w-full h-full object-cover rounded-lg"
-                style={{
-                  filter: `contrast(1.25) saturate(1.15) drop-shadow(1px 0px 0px #000) drop-shadow(-1px 0px 0px #000) drop-shadow(0px 1px 0px #000) drop-shadow(0px -1px 0px #000)`
-                }}
-              />
-              {/* Rotoscope cross-hatch overlay */}
-              <div
-                className="absolute inset-0 pointer-events-none opacity-20 mix-blend-overlay"
-                style={{
-                  backgroundImage: `repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.4) 0px, rgba(0, 0, 0, 0.4) 1px, transparent 1px, transparent 3px)`
-                }}
-              />
-              {/* Corner pip marks */}
-              <span className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-white shadow" />
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-white shadow" />
+              <div className="relative w-full h-full rounded-lg overflow-hidden border border-white/80 shadow-[0_2px_6px_rgba(0,0,0,0.8)] rotate-[-1deg]">
+                <img
+                  src={charDef.avatar}
+                  alt={charDef.displayName}
+                  className="w-full h-full object-cover"
+                  style={{
+                    filter: `contrast(1.25) saturate(1.15) drop-shadow(1px 0px 0px #000) drop-shadow(-1px 0px 0px #000) drop-shadow(0px 1px 0px #000) drop-shadow(0px -1px 0px #000)`
+                  }}
+                />
+                {/* Translucent adhesive tape strip */}
+                <div
+                  className="absolute -top-1 -left-1 w-6 h-2.5 bg-amber-100/50 backdrop-blur-xs border-y border-white/60 shadow-xs rotate-[-15deg] pointer-events-none z-20"
+                />
+              </div>
 
               <span
-                className="absolute bottom-0 inset-x-0 bg-black/90 text-[8px] font-mono font-black text-center truncate px-0.5 border-t border-white/10"
+                className="absolute bottom-0 inset-x-0 bg-black/90 text-[8px] font-mono font-black text-center truncate px-0.5 border-t border-white/10 z-20"
                 style={{ color: accentColor }}
               >
                 {charDef.displayName.slice(0, 7)}

@@ -51,7 +51,7 @@ export const DiceRollModal: React.FC<DiceRollModalProps> = ({
               <div className="flex gap-2">
                 {roll.attackerRolls.map((val, idx) => (
                   <Dice3DVisual
-                    key={idx}
+                    key={`att-roll-${idx}-${val}`}
                     value={val}
                     isRolling={isRolling}
                     size={64}
@@ -74,7 +74,7 @@ export const DiceRollModal: React.FC<DiceRollModalProps> = ({
               <div className="flex gap-2">
                 {roll.defenderRolls.map((val, idx) => (
                   <Dice3DVisual
-                    key={idx}
+                    key={`def-roll-${idx}-${val}`}
                     value={val}
                     isRolling={isRolling}
                     size={64}

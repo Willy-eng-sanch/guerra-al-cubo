@@ -334,9 +334,9 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
             </div>
 
             {/* Floating Combat Damage / Block Text */}
-            {playerFloatingTexts.map(fText => (
+            {playerFloatingTexts.map((fText, fIdx) => (
               <div
-                key={fText.id}
+                key={`floating-${fText.id}-${fIdx}`}
                 className="absolute -top-8 pointer-events-none z-30 font-black text-sm tracking-wider animate-float-damage whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
                 style={{ color: fText.colorHex }}
               >

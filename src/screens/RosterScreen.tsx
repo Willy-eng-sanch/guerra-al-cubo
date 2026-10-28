@@ -3,6 +3,7 @@ import { CHARACTER_LIST } from '../data/characters';
 import { CharacterDef, CATEGORY_INFO } from '../types/game';
 import { ArrowLeft, Sparkles, Shield, Swords, Zap, AlertTriangle, BookOpen, UserCheck } from 'lucide-react';
 import { sound } from '../audio/soundManager';
+import { Model3DViewerModal } from '../components/Model3DViewerModal';
 
 interface RosterScreenProps {
   onBack: () => void;
@@ -10,6 +11,7 @@ interface RosterScreenProps {
 
 export const RosterScreen: React.FC<RosterScreenProps> = ({ onBack }) => {
   const [selectedChar, setSelectedChar] = useState<CharacterDef>(CHARACTER_LIST[0]);
+  const [showViewerModal, setShowViewerModal] = useState<boolean>(false);
 
   const adn = selectedChar.adn;
   const primInfo = CATEGORY_INFO[adn.primaria];
@@ -68,6 +70,13 @@ export const RosterScreen: React.FC<RosterScreenProps> = ({ onBack }) => {
             <span className="text-xs text-amber-300 italic font-medium mt-2 max-w-[180px] text-center leading-snug">
               "{selectedChar.selectionQuote}"
             </span>
+
+            <button
+              onClick={() => setShowViewerModal(true)}
+              className="mt-2.5 px-3 py-1.5 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-500/70 text-cyan-300 text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.3)] cursor-pointer"
+            >
+              <span>📐 Inspeccionar Capas & Collage</span>
+            </button>
           </div>
 
           {/* Details & ADN Breakdown */}
@@ -229,6 +238,13 @@ export const RosterScreen: React.FC<RosterScreenProps> = ({ onBack }) => {
         <span>Roster 100% fiel al <b>Manual Táctico de Guerra Cubita</b></span>
         <span className="text-yellow-400 font-bold">13 Cubos Urbanos con ADN Único</span>
       </div>
+
+      {showViewerModal && (
+        <Model3DViewerModal
+          character={selectedChar}
+          onClose={() => setShowViewerModal(false)}
+        />
+      )}
     </div>
   );
 };
