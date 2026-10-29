@@ -20,8 +20,10 @@ import { GlobalDeckView } from '../components/GlobalDeckView';
 import { ReactionModal } from '../components/ReactionModal';
 import { InteractiveTacticalTutorial } from '../components/InteractiveTacticalTutorial';
 import { HeroAbilityModal } from '../components/HeroAbilityModal';
+import { PostMatchStatsModal } from '../components/PostMatchStatsModal';
 import { AudioControlBar } from '../components/AudioControlBar';
 import {
+  BarChart3,
   Sword,
   Shield,
   Zap,
@@ -111,17 +113,21 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   const [showAbilityModal, setShowAbilityModal] = useState(false);
   const [selectedHandCard, setSelectedHandCard] = useState<GameCard | null>(null);
   const [showTutorialModal, setShowTutorialModal] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(true);
 
-  // Trigger confetti on victory
+  // Trigger confetti on victory & auto show stats
   React.useEffect(() => {
-    if (winner) {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
+    if (winner || phase === MatchPhase.MATCH_OVER) {
+      setShowStatsModal(true);
+      if (winner) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
     }
-  }, [winner]);
+  }, [winner, phase]);
 
   const actorHeroDef = currentTurnPlayer
     ? CHARACTERS[currentTurnPlayer.activeMorphCharacter || currentTurnPlayer.characterType]
@@ -140,7 +146,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
 
   return (
     <div
-      className="relative w-full min-h-screen bg-[#0a0c10] text-white flex flex-col justify-between p-3 md:p-5 select-none overflow-x-hidden bg-cover bg-center bg-no-repeat"
+      className="relative w-full min-h-screen bg-[#0a0c10] text-white flex flex-col justify-between p-2 sm:p-4 select-none overflow-x-hidden bg-cover bg-center bg-no-repeat"
       style={{
         backgroundImage: `linear-gradient(to bottom, rgba(10, 12, 16, 0.88) 0%, rgba(10, 12, 16, 0.70) 40%, rgba(10, 12, 16, 0.94) 85%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`,
       }}
@@ -273,7 +279,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
       </main>
 
       {/* 3. Turn Actions & Cards Dock (Human Player Control) */}
-      <footer className="border-t border-[#1f2636] pt-3 max-w-2xl mx-auto w-full">
+      <footer className="border-t border-[#1f2636] pt-2.5 max-w-4xl mx-auto w-full">
         {isHumanTurn ? (
           <div className="space-y-3">
             {/* Player info & PvZ Heroes Hero Classes / Super-Block Meter */}
@@ -590,42 +596,27 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
         />
       )}
 
-      {/* 6. Victory Overlay (Match Over) */}
-      {winner && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-          <div className="w-full max-w-md bg-[#161a25] border-2 border-yellow-400 rounded-3xl p-6 text-center shadow-2xl space-y-4">
-            <div className="w-16 h-16 mx-auto rounded-full bg-yellow-400/20 border-2 border-yellow-400 flex items-center justify-center">
-              <Trophy className="w-8 h-8 text-yellow-400 animate-bounce" />
-            </div>
+      {/* 6. Post-Match Statistics Screen (Fase MATCH_OVER) */}
+      {(phase === MatchPhase.MATCH_OVER || winner !== null) && showStatsModal && (
+        <PostMatchStatsModal
+          players={players}
+          winner={winner}
+          round={round}
+          onRestartMatch={onRestartMatch}
+          onExitBattle={onExitBattle}
+          onClose={() => setShowStatsModal(false)}
+        />
+      )}
 
-            <div>
-              <span className="text-xs font-black tracking-widest text-cyan-400 uppercase">
-                ¡BATALLA FINALIZADA!
-              </span>
-              <h2 className="text-2xl font-black text-white font-bungee mt-1">
-                {winner.name}
-              </h2>
-              <p className="text-xs text-neutral-300 mt-1">
-                Es el campeón supremo del asfalto y domina la Guerra Cubita.
-              </p>
-            </div>
-
-            <div className="pt-2 flex flex-col gap-2.5">
-              <button
-                onClick={onRestartMatch}
-                className="w-full py-3.5 bg-[#ff1744] hover:bg-[#d50000] active:scale-[0.98] text-white font-black text-sm rounded-xl tracking-wider shadow-lg transition-all"
-              >
-                JUGAR DE NUEVO
-              </button>
-              <button
-                onClick={onExitBattle}
-                className="w-full py-3 bg-[#1e2535] hover:bg-[#283248] text-neutral-300 font-bold text-xs rounded-xl border border-[#2b354b] transition-all"
-              >
-                VOLVER AL MENÚ PRINCIPAL
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Floating button to re-open stats if player closed them to inspect battlefield */}
+      {(phase === MatchPhase.MATCH_OVER || winner !== null) && !showStatsModal && (
+        <button
+          onClick={() => setShowStatsModal(true)}
+          className="fixed bottom-5 right-5 z-40 px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black font-bungee text-xs rounded-2xl shadow-2xl flex items-center gap-2 border-2 border-yellow-500 animate-bounce cursor-pointer"
+        >
+          <BarChart3 className="w-4 h-4 text-black" />
+          <span>VER ESTADÍSTICAS</span>
+        </button>
       )}
 
       {/* 6. Interactive Tactical Tutorial & Manual Modal */}

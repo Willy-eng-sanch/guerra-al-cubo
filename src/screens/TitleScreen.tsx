@@ -29,7 +29,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   const [showDownloadApk, setShowDownloadApk] = useState(false);
 
   return (
-    <div className="relative w-full min-h-screen overflow-hidden flex flex-col justify-between p-4 md:p-6 select-none bg-[#0f1116]">
+    <div className="relative w-full min-h-screen overflow-y-auto flex flex-col justify-between p-3 sm:p-5 select-none bg-[#0f1116]">
       {/* Background Banner with Dark Vignette */}
       <div className="absolute inset-0 z-0">
         <img
@@ -41,9 +41,9 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       </div>
 
       {/* Header Bar with Audio Controls */}
-      <header className="relative z-10 flex flex-wrap items-center justify-between gap-2 max-w-xl mx-auto w-full pt-2">
+      <header className="relative z-10 flex flex-wrap items-center justify-between gap-2 max-w-xl mx-auto w-full pt-1">
         <div className="flex items-center gap-2">
-          <div className="bg-[#ff1744] text-white text-[10px] md:text-xs font-black tracking-widest px-3 py-1 rounded-full border-2 border-yellow-300 shadow-md">
+          <div className="bg-[#ff1744] text-white text-[10px] md:text-xs font-black tracking-widest px-2.5 py-1 rounded-full border-2 border-yellow-300 shadow-md">
             ARENA D6 TÁCTICA
           </div>
           <AudioControlBar />
@@ -61,7 +61,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
 
           <button
             onClick={() => setShowTutorial(true)}
-            className="p-2 rounded-full bg-[#1b2130]/80 hover:bg-[#283248] border border-[#3b4765] text-yellow-400 transition-all flex items-center gap-1.5 text-xs font-bold px-3 shadow"
+            className="p-1.5 px-3 rounded-full bg-[#1b2130]/80 hover:bg-[#283248] border border-[#3b4765] text-yellow-400 transition-all flex items-center gap-1.5 text-xs font-bold shadow"
           >
             <HelpCircle className="w-4 h-4" />
             <span>Reglas</span>
@@ -70,21 +70,21 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       </header>
 
       {/* Main Title & 3D Centerpiece */}
-      <div className="relative z-10 flex flex-col items-center justify-center my-auto text-center max-w-xl mx-auto w-full">
-        <h1 className="text-4xl md:text-5xl font-black text-white tracking-wider font-bungee drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]">
+      <div className="relative z-10 flex flex-col items-center justify-center my-2 text-center max-w-xl mx-auto w-full">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-wider font-bungee drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]">
           GUERRA CUBITA
         </h1>
-        <p className="text-xs md:text-sm font-semibold text-cyan-400 tracking-wide mt-1">
+        <p className="text-xs sm:text-sm font-semibold text-cyan-400 tracking-wide mt-0.5">
           Duelo Táctico de Dados D6 Callejeros · Rotoscopia
         </p>
 
         {/* Mascot 3D Combat Die */}
-        <div className="my-5 relative flex items-center justify-center">
-          <div className="absolute w-44 h-44 rounded-full bg-cyan-500/15 blur-2xl pointer-events-none" />
+        <div className="my-2 sm:my-3 relative flex items-center justify-center">
+          <div className="absolute w-36 h-36 rounded-full bg-cyan-500/15 blur-2xl pointer-events-none" />
           <Cube3DCanvas
             character={CharacterType.CUBINJA}
             teamId={1}
-            size={160}
+            size={130}
             hasPreparedStance={true}
           />
         </div>
@@ -96,13 +96,18 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
 
       {/* Navigation Buttons Dock */}
       <div className="relative z-10 flex flex-col gap-2.5 max-w-md mx-auto w-full pb-4">
-        {/* Draft 3 vs 3 Mode Button */}
+        {/* Modo Aleatorio (Iniciativa D6 & Reparto de 6 dados) */}
         <button
           onClick={onDraftClick}
-          className="w-full py-3.5 bg-gradient-to-r from-[#ff1744] to-[#c51162] hover:brightness-110 active:scale-[0.98] text-white font-black text-sm md:text-base rounded-2xl shadow-xl border-2 border-yellow-300 flex items-center justify-center gap-2.5 tracking-wider transition-all"
+          className="w-full py-3.5 bg-gradient-to-r from-[#ff1744] via-[#e11d48] to-[#c51162] hover:brightness-110 active:scale-[0.98] text-white font-black text-sm md:text-base rounded-2xl shadow-xl border-2 border-yellow-300 flex flex-col items-center justify-center gap-0.5 tracking-wider transition-all cursor-pointer"
         >
-          <Swords className="w-5 h-5 text-yellow-300" />
-          <span>DRAFT 3 VS 3 (INICIATIVA D6)</span>
+          <div className="flex items-center gap-2">
+            <Swords className="w-5 h-5 text-yellow-300" />
+            <span>MODO ALEATORIO (INICIATIVA D6)</span>
+          </div>
+          <span className="text-[10px] text-yellow-200/90 font-mono font-medium tracking-normal">
+            Tira iniciativa · Escoge 3 cada uno (6 en total) · ¡Reparto al azar 3 a 3!
+          </span>
         </button>
 
         {/* Online Multiplayer Lobby Button */}

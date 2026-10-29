@@ -179,6 +179,9 @@ export interface PlayerState {
   teamId?: number;
   superBlockMeter?: number; // Opcional
   shieldBarrier?: number; // Puntos de escudo defensivo acumulados por Sinergia Guardián
+  damageDealt?: number; // Total daño infligido en la partida
+  perfectBlocks?: number; // Bloqueos perfectos realizados
+  cardsDrawn?: number; // Cartas totales robadas del mazo
 }
 
 export function getMaxHandSize(player: PlayerState): number {
@@ -265,7 +268,7 @@ export enum CurrentScreen {
 }
 
 export interface DraftState {
-  stage: 'ROLL_INITIATIVE' | 'DRAFTING' | 'READY';
+  stage: 'ROLL_INITIATIVE' | 'DRAFTING' | 'SHUFFLING_DEAL' | 'READY' | 'DEALT_READY';
   playerRoll: number;
   rivalRoll: number;
   isRolling: boolean;
@@ -274,4 +277,6 @@ export interface DraftState {
   playerTeam: CharacterType[];
   rivalTeam: CharacterType[];
   pickHistory: { picker: 'PLAYER' | 'RIVAL'; character: CharacterType }[];
+  finalPlayerTeam?: CharacterType[];
+  finalRivalTeam?: CharacterType[];
 }

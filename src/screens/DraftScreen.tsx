@@ -22,7 +22,9 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
     turn: 'PLAYER',
     playerTeam: [],
     rivalTeam: [],
-    pickHistory: []
+    pickHistory: [],
+    finalPlayerTeam: [],
+    finalRivalTeam: []
   });
 
   // Inspected die type for the 1st click
@@ -40,8 +42,10 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
   } | null>(null);
 
   const [initiativeMessage, setInitiativeMessage] = useState<string>(
-    "Lanza el dado D6 para determinar quién tiene la primera elección."
+    "Lanza el dado D6 para determinar quién tiene la primera elección de dados."
   );
+
+  const [isShufflingAnimation, setIsShufflingAnimation] = useState(false);
 
   useEffect(() => {
     if (window.speechSynthesis) {
@@ -79,15 +83,51 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
       sound.playPerfectBlock();
 
       if (winner === 'PLAYER') {
-        setInitiativeMessage(`¡Sacaste ${pRoll} vs ${rRoll} del Rival! Ganas la iniciativa y eliges primero.`);
+        setInitiativeMessage(`¡Sacaste ${pRoll} vs ${rRoll} del Rival! Ganas la iniciativa y escoges el primer dado.`);
       } else {
-        setInitiativeMessage(`¡El Rival sacó ${rRoll} vs ${pRoll} tuyo! El Rival tiene la iniciativa y elige primero.`);
+        setInitiativeMessage(`¡El Rival sacó ${rRoll} vs ${pRoll} tuyo! El Rival tiene la iniciativa y escoge el primer dado.`);
       }
 
       setTimeout(() => {
         setDraftState(prev => ({ ...prev, stage: 'DRAFTING' }));
-      }, 1600);
+      }, 1500);
     }, 700);
+  };
+
+  // Perform the random shuffle and deal of the 6 selected dice (3 to Player, 3 to Rival)
+  const triggerRandomDeal = (pPicks: CharacterType[], rPicks: CharacterType[]) => {
+    setDraftState(prev => ({ ...prev, stage: 'SHUFFLING_DEAL', turn: 'ANIMATING' }));
+    setIsShufflingAnimation(true);
+    sound.playCupShake();
+
+    setTimeout(() => {
+      sound.playDiceRoll();
+    }, 700);
+
+    setTimeout(() => {
+      const allSix = [...pPicks, ...rPicks];
+      // Fisher-Yates shuffle
+      const pool = [...allSix];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+
+      const dealtPlayerTeam = pool.slice(0, 3);
+      const dealtRivalTeam = pool.slice(3, 6);
+
+      sound.playCupDump();
+      sound.playStanceActivate();
+      setIsShufflingAnimation(false);
+
+      setDraftState(prev => ({
+        ...prev,
+        stage: 'DEALT_READY',
+        turn: 'PLAYER',
+        finalPlayerTeam: dealtPlayerTeam,
+        finalRivalTeam: dealtRivalTeam
+      }));
+    }, 2000);
   };
 
   // Advance turn ONLY after the animation or video has finished
@@ -96,12 +136,16 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
     setRecentPickBanner(null);
 
     setDraftState(prev => {
-      const isDone = prev.playerTeam.length >= 3 && prev.rivalTeam.length >= 3;
-      if (isDone) {
+      const isSixPicksDone = prev.playerTeam.length >= 3 && prev.rivalTeam.length >= 3;
+      if (isSixPicksDone) {
+        // Trigger the automatic random deal!
+        setTimeout(() => {
+          triggerRandomDeal(prev.playerTeam, prev.rivalTeam);
+        }, 100);
         return {
           ...prev,
-          stage: 'READY',
-          turn: 'PLAYER'
+          stage: 'SHUFFLING_DEAL',
+          turn: 'ANIMATING'
         };
       }
 
@@ -145,7 +189,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
         setRecentPickBanner({ name: chosenDef.displayName, picker: 'RIVAL' });
         setTimeout(() => {
           handleCutsceneFinished('RIVAL');
-        }, 1200);
+        }, 1100);
 
         return {
           ...prev,
@@ -154,7 +198,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
           pickHistory: newHistory
         };
       });
-    }, 1200);
+    }, 1100);
 
     return () => clearTimeout(timer);
   }, [draftState.turn, draftState.stage, draftState.rivalTeam.length, activeCutscene, recentPickBanner]);
@@ -195,9 +239,9 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
   const isDraftComplete = draftState.playerTeam.length === 3 && draftState.rivalTeam.length === 3;
   const inspectedHero = inspectedCharType ? CHARACTERS[inspectedCharType] : null;
 
-  return (
+    return (
     <div
-      className="relative w-full min-h-screen bg-[#0d0f14] p-3 md:p-6 text-white flex flex-col justify-between max-w-5xl mx-auto select-none rounded-3xl"
+      className="relative w-full min-h-screen bg-[#0d0f14] p-3 sm:p-5 text-white flex flex-col justify-between max-w-6xl mx-auto select-none overflow-y-auto"
       style={{
         backgroundImage: `radial-gradient(ellipse at 50% 50%, rgba(13, 15, 20, 0.84) 0%, rgba(10, 12, 16, 0.96) 85%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`,
         backgroundSize: 'cover',
@@ -214,42 +258,43 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
           <span>Volver al Menú</span>
         </button>
 
-        <h2 className="text-sm md:text-lg font-black tracking-wide text-white font-bungee flex items-center gap-2">
-          <span>DRAFT 3 VS 3 · VASO DE DADOS</span>
-        </h2>
+        <div className="text-center">
+          <h2 className="text-sm md:text-lg font-black tracking-wide text-white font-bungee flex items-center justify-center gap-2">
+            <Dices className="w-5 h-5 text-yellow-400" />
+            <span>MODO ALEATORIO · DADOS D6</span>
+          </h2>
+          <p className="text-[10px] text-cyan-300 hidden sm:block">
+            Iniciativa D6 → Elección de 6 dados (3 cada uno) → ¡Reparto aleatorio al azar a cada equipo!
+          </p>
+        </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[10px] bg-amber-950 text-amber-300 border border-amber-600 px-2.5 py-1 rounded-full font-mono font-bold hidden sm:inline">
-            {draftState.playerTeam.length + draftState.rivalTeam.length} / 6 DADOS
+          <span className="text-[10px] bg-amber-950 text-amber-300 border border-amber-600 px-2.5 py-1 rounded-full font-mono font-bold">
+            {draftState.stage === 'DEALT_READY'
+              ? '6 DADOS REPARTIDOS'
+              : `${draftState.playerTeam.length + draftState.rivalTeam.length} / 6 DADOS`}
           </span>
-
-          {isDraftComplete && (
-            <button
-              onClick={() => onStartBattle(draftState.playerTeam, draftState.rivalTeam)}
-              className="py-1.5 px-3 rounded-xl font-black text-xs uppercase tracking-wide flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-300 text-black border border-yellow-200 animate-bounce shadow-md cursor-pointer transition-all"
-            >
-              <Swords className="w-3.5 h-3.5" />
-              <span>INICIAR PARTIDA</span>
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Main Draft Area */}
-      <div className="space-y-4 my-3 overflow-y-auto pr-1">
+      {/* Main Mode Area */}
+      <div className="space-y-4 my-3 overflow-y-auto pr-1 flex-1">
 
         {/* Phase 1: Initiative Roll */}
         {draftState.stage === 'ROLL_INITIATIVE' && (
           <div className="bg-[#141824]/90 border-2 border-[#29354d] rounded-3xl p-5 md:p-8 text-center space-y-6 shadow-2xl backdrop-blur-md">
             <div className="max-w-md mx-auto space-y-2">
               <span className="text-xs font-black text-yellow-400 uppercase tracking-widest bg-yellow-950/60 px-3 py-1 rounded-full border border-yellow-700">
-                Paso 1: Iniciativa con Dados 3D
+                Paso 1: Tirada de Iniciativa D6
               </span>
               <h3 className="text-xl md:text-2xl font-black text-white font-bungee">
-                ¿Quién Elige Primero?
+                ¿Quién Empieza a Escoger?
               </h3>
               <p className="text-xs text-neutral-300 leading-relaxed">
                 {initiativeMessage}
+              </p>
+              <p className="text-[11px] text-amber-300/90 italic">
+                El mayor empieza a escoger, luego el siguiente, hasta que cada uno elija 3 dados (6 en total).
               </p>
             </div>
 
@@ -302,15 +347,13 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
           </div>
         )}
 
-        {/* Phase 2: Turn-based Draft & Teams Display */}
-        {(draftState.stage === 'DRAFTING' || draftState.stage === 'READY') && (
+        {/* Phase 2: Turn-based Alternating Picks for the 6 Dice Pool */}
+        {draftState.stage === 'DRAFTING' && (
           <div className="space-y-4">
 
-            {/* Current Turn Indicator Bar */}
-            <div className={`p-3 rounded-2xl border-2 flex items-center justify-between shadow-lg transition-all ${
-              draftState.stage === 'READY'
-                ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300'
-                : draftState.turn === 'PLAYER'
+            {/* Mode rules reminder & Turn indicator */}
+            <div className={`p-3 rounded-2xl border-2 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-lg transition-all ${
+              draftState.turn === 'PLAYER'
                 ? 'bg-cyan-950/80 border-cyan-400 text-cyan-300'
                 : draftState.turn === 'ANIMATING'
                 ? 'bg-pink-950/80 border-pink-400 text-pink-300 animate-pulse'
@@ -318,56 +361,99 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
             }`}>
               <div className="flex items-center gap-2.5">
                 <div className={`w-3.5 h-3.5 rounded-full ${
-                  draftState.stage === 'READY'
-                    ? 'bg-emerald-400'
-                    : draftState.turn === 'PLAYER'
+                  draftState.turn === 'PLAYER'
                     ? 'bg-cyan-400 animate-ping'
                     : draftState.turn === 'ANIMATING'
                     ? 'bg-pink-400'
                     : 'bg-red-400'
                 }`} />
                 <span className="text-xs md:text-sm font-black tracking-wide">
-                  {draftState.stage === 'READY'
-                    ? '¡DADOS COMPLETOS EN EL VASO! AGITA EL VASO PARA LANZAR A LA ARENA'
-                    : draftState.turn === 'PLAYER'
-                    ? '👉 TU TURNO: Haz 1er clic para ver habilidad y clase, 2do clic o arrastra al vaso'
+                  {draftState.turn === 'PLAYER'
+                    ? '👉 TU TURNO: Escoge 1 dado para el pozo común de 6 dados (1er clic = ver info, 2do clic = seleccionar)'
                     : draftState.turn === 'ANIMATING'
-                    ? '🎬 METIENDO DADO EN EL VASO...'
-                    : '⏳ TURNO DEL RIVAL: El bot está seleccionando su dado...'}
+                    ? '🎬 AGREGANDO DADO AL POZO DE 6...'
+                    : '⏳ TURNO DEL RIVAL: El rival está seleccionando 1 dado...'}
                 </span>
               </div>
 
-              <span className="text-[10px] font-mono font-bold bg-black/50 px-2.5 py-1 rounded-md">
-                {draftState.playerTeam.length + draftState.rivalTeam.length} / 6 Escogidos
+              <span className="text-[10px] font-mono font-bold bg-black/60 px-3 py-1 rounded-lg border border-white/10">
+                Paso 2: {draftState.playerTeam.length + draftState.rivalTeam.length} de 6 dados seleccionados
               </span>
             </div>
 
-            {/* Central Area: The Interactive Dice Cup (Vaso) and Rival Squad */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-              
-              {/* Player's Interactive Dice Cup (Vaso de Dados) */}
-              <div className="lg:col-span-7">
-                <DiceCupShaker
-                  team={draftState.playerTeam}
-                  maxCapacity={3}
-                  onDropDie={handlePlayerPick}
-                  onLaunch={() => onStartBattle(draftState.playerTeam, draftState.rivalTeam)}
-                  isReadyToLaunch={isDraftComplete}
-                  disabled={!isDraftComplete && (draftState.turn !== 'PLAYER' || draftState.stage !== 'DRAFTING')}
-                  cupTitle="TU VASO DE DADOS (BANDO AZUL)"
-                  cupSubtitle="Arrastra aquí tus dados héroe o haz doble clic sobre ellos"
-                />
+            {/* Explanatory Banner for Modo Aleatorio */}
+            <div className="bg-gradient-to-r from-blue-950/60 via-purple-950/50 to-red-950/60 p-2.5 rounded-2xl border border-[#3b4865] flex items-center justify-between gap-3 text-xs text-neutral-300">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🎲</span>
+                <span>
+                  <b>Regla del Modo Aleatorio:</b> Ambos eligen 3 dados alternadamente (6 en total). Al completar los 6, <b>¡el cubilete los barajará y repartirá 3 dados al azar a cada equipo!</b>
+                </span>
+              </div>
+            </div>
+
+            {/* Central Area: Current Picks Breakdown (Player's 3 picks vs Rival's 3 picks) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Player Picks */}
+              <div className="bg-[#101726] border-2 border-cyan-500/60 rounded-3xl p-4 shadow-xl">
+                <div className="flex items-center justify-between mb-3 border-b border-cyan-900/60 pb-2">
+                  <span className="text-xs font-black text-cyan-300 uppercase tracking-wider flex items-center gap-1.5 font-bungee">
+                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
+                    <span>Tus 3 Elecciones ({draftState.playerTeam.length} / 3)</span>
+                  </span>
+                  <span className="text-[10px] bg-cyan-950 text-cyan-200 px-2.5 py-0.5 rounded-full border border-cyan-700 font-bold">
+                    {draftState.turn === 'PLAYER' ? 'Te toca elegir' : 'Esperando rival'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {[0, 1, 2].map(slotIdx => {
+                    const heroType = draftState.playerTeam[slotIdx];
+                    const hero = heroType ? CHARACTERS[heroType] : null;
+
+                    return (
+                      <div
+                        key={slotIdx}
+                        className={`h-24 md:h-28 rounded-2xl border-2 flex flex-col items-center justify-center p-1.5 relative text-center transition-all ${
+                          hero
+                            ? 'bg-[#15233c] border-cyan-400 shadow-md animate-clay'
+                            : 'bg-[#0a0f18] border-dashed border-[#233554]'
+                        }`}
+                      >
+                        {hero ? (
+                          <>
+                            <Dice3DVisual
+                              character={hero.type}
+                              size={44}
+                              glowColor="#38bdf8"
+                            />
+                            <span className="text-[10px] font-black text-white truncate w-full mt-1">
+                              {hero.displayName}
+                            </span>
+                            <span className="text-[8px] text-cyan-300 truncate w-full">
+                              ★ {hero.abilityName.slice(0, 10)}
+                            </span>
+                          </>
+                        ) : (
+                          <div className="text-neutral-500 flex flex-col items-center">
+                            <span className="text-lg opacity-40">🎲</span>
+                            <span className="text-[9px] font-bold mt-1">Tu #{slotIdx + 1}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Rival Squad Card */}
-              <div className="lg:col-span-5 bg-[#1b1216] border-2 border-red-500/50 rounded-3xl p-4 shadow-xl flex flex-col justify-between">
+              {/* Rival Picks */}
+              <div className="bg-[#1b1216] border-2 border-red-500/50 rounded-3xl p-4 shadow-xl">
                 <div className="flex items-center justify-between mb-3 border-b border-red-950 pb-2">
                   <span className="text-xs font-black text-red-400 uppercase tracking-wider flex items-center gap-1.5 font-bungee">
-                    <Swords className="w-4 h-4 text-red-400" />
-                    <span>VASO RIVAL (BANDO ROJO)</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                    <span>Elecciones del Rival ({draftState.rivalTeam.length} / 3)</span>
                   </span>
                   <span className="text-[10px] bg-red-950 text-red-300 px-2.5 py-0.5 rounded-full border border-red-700 font-bold">
-                    {draftState.rivalTeam.length} / 3 Dados
+                    {draftState.turn === 'RIVAL' ? 'Rival pensando...' : 'Turno cumplido'}
                   </span>
                 </div>
 
@@ -402,16 +488,12 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
                         ) : (
                           <div className="text-neutral-600 flex flex-col items-center">
                             <span className="text-lg opacity-30">🎲</span>
-                            <span className="text-[9px] font-bold mt-1">Slot #{slotIdx + 1}</span>
+                            <span className="text-[9px] font-bold mt-1">Rival #{slotIdx + 1}</span>
                           </div>
                         )}
                       </div>
                     );
                   })}
-                </div>
-
-                <div className="mt-3 p-2 rounded-xl bg-black/40 border border-red-950 text-[10px] text-neutral-400 text-center">
-                  El Rival elige automáticamente en su turno tras cada selección tuya.
                 </div>
               </div>
             </div>
@@ -466,14 +548,14 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
                   </div>
                 </div>
 
-                {/* Direct Action Button to put into cup */}
+                {/* Direct Action Button */}
                 <button
                   onClick={() => handlePlayerPick(inspectedHero.type)}
                   disabled={draftState.turn !== 'PLAYER' || draftState.playerTeam.length >= 3}
                   className="w-full md:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-black font-black text-xs md:text-sm shadow-xl flex items-center justify-center gap-2 shrink-0 cursor-pointer active:scale-95 transition-all"
                 >
                   <Dices className="w-4 h-4 text-black" />
-                  <span>LLEVAR AL VASO (2º CLIC)</span>
+                  <span>SELECCIONAR DADO (2º CLIC)</span>
                 </button>
               </div>
             )}
@@ -483,10 +565,10 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
               <div className="flex items-center justify-between mb-3 px-1">
                 <span className="text-xs font-black uppercase text-amber-400 flex items-center gap-1.5 font-bungee">
                   <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>Pool de Selección (13 Dados Cúbicos Únicos)</span>
+                  <span>Pool de Dados Disponibles (13 Personajes)</span>
                 </span>
                 <span className="text-[10px] text-neutral-400">
-                  Arrastra al vaso o: 1er clic = info & sinergias · 2do clic = al vaso
+                  1er clic = info & sinergias · 2do clic = seleccionar para el pozo
                 </span>
               </div>
 
@@ -521,34 +603,219 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
           </div>
         )}
 
-      </div>
+        {/* Phase 3: The Big Random Deal Shuffle Animation */}
+        {draftState.stage === 'SHUFFLING_DEAL' && (
+          <div className="bg-[#121624]/95 border-2 border-yellow-400 rounded-3xl p-6 md:p-10 text-center space-y-6 shadow-2xl backdrop-blur-md animate-fadeIn my-auto">
+            <span className="text-xs font-black text-yellow-400 uppercase tracking-widest bg-yellow-950/80 px-4 py-1.5 rounded-full border border-yellow-600">
+              ¡6 DADOS COMPLETADOS!
+            </span>
 
-      {/* Sticky Completion Launch Bar */}
-      {isDraftComplete && (
-        <div className="sticky bottom-0 z-30 pt-3 pb-1 bg-gradient-to-t from-[#0d0f14] via-[#0d0f14]/95 to-transparent animate-fadeIn">
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 text-black border-2 border-white shadow-[0_0_40px_rgba(250,204,21,0.6)] flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-black text-yellow-400 shadow-md">
-                <Swords className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-sm sm:text-base font-black font-bungee">¡DRAFT COMPLETADO (3 VS 3)!</h4>
-                <p className="text-xs font-bold text-neutral-900">
-                  Tus 3 héroes y los 3 héroes rivales ya están en sus vasos listos para el combate.
-                </p>
-              </div>
+            <h3 className="text-2xl md:text-3xl font-black text-white font-bungee animate-pulse">
+              🎲 BARAJANDO Y REPARTIENDO AL AZAR 🎲
+            </h3>
+
+            <p className="text-xs md:text-sm text-neutral-300 max-w-lg mx-auto leading-relaxed">
+              Los 6 dados escogidos (3 tuyos y 3 del rival) entran al cubilete. La suerte los baraja y reparte 3 dados aleatoriamente a cada equipo.
+            </p>
+
+            {/* Shuffling Dice Animation Showcase */}
+            <div className="py-6 flex flex-wrap items-center justify-center gap-3">
+              {[...draftState.playerTeam, ...draftState.rivalTeam].map((cType, idx) => (
+                <div
+                  key={idx}
+                  className="animate-bounce"
+                  style={{ animationDelay: `${idx * 150}ms`, animationDuration: '0.8s' }}
+                >
+                  <Dice3DVisual
+                    character={cType}
+                    size={64}
+                    isRolling={true}
+                    glowColor={idx < 3 ? '#38bdf8' : '#ef4444'}
+                  />
+                </div>
+              ))}
             </div>
 
-            <button
-              onClick={() => onStartBattle(draftState.playerTeam, draftState.rivalTeam)}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-black hover:bg-neutral-900 active:scale-95 text-yellow-300 font-black text-sm uppercase tracking-wider border-2 border-yellow-300 shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              <Swords className="w-5 h-5 text-yellow-400" />
-              <span>¡INICIAR PARTIDA EN LA ARENA!</span>
-            </button>
+            <div className="flex items-center justify-center gap-2 text-yellow-400 font-mono text-xs font-black animate-pulse">
+              <Sparkles className="w-4 h-4 animate-spin" />
+              <span>Agitando cubilete y repartiendo dados al azar...</span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Phase 4: Final Deal Presentation (Dealt Teams Ready) */}
+        {draftState.stage === 'DEALT_READY' && (
+          <div className="space-y-4 animate-fadeIn">
+            {/* Success Banner */}
+            <div className="bg-gradient-to-r from-emerald-950/90 via-[#13221d] to-emerald-950/90 border-2 border-emerald-400 rounded-3xl p-4 shadow-xl text-center space-y-1">
+              <span className="text-[10px] font-black uppercase text-emerald-400 tracking-widest bg-black/50 px-3 py-1 rounded-full border border-emerald-600 inline-block">
+                ¡REPARTO ALEATORIO COMPLETADO!
+              </span>
+              <h3 className="text-lg md:text-xl font-black text-white font-bungee">
+                La Suerte Ha Decidido los Escuadrones
+              </h3>
+              <p className="text-xs text-neutral-300">
+                Los 6 dados elegidos fueron barajados: 3 dados asignados a tu Escuadrón Aliado y 3 dados al Escuadrón Rival.
+              </p>
+            </div>
+
+            {/* Comparison Grid: Dealt Player Team vs Dealt Rival Team */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              {/* Dealt Player Squad (Azul) */}
+              <div className="bg-[#101726] border-2 border-cyan-400 rounded-3xl p-4 shadow-2xl space-y-3">
+                <div className="flex items-center justify-between border-b border-cyan-900 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
+                    <h4 className="text-sm font-black text-white font-bungee">
+                      TU ESCUADRÓN (BANDO AZUL)
+                    </h4>
+                  </div>
+                  <span className="text-[10px] bg-cyan-950 text-cyan-200 border border-cyan-600 px-2 py-0.5 rounded-full font-bold">
+                    3 Dados Aliados
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {(draftState.finalPlayerTeam || []).map((heroType, idx) => {
+                    const hero = CHARACTERS[heroType];
+                    const originallyPlayerPick = draftState.playerTeam.includes(heroType);
+
+                    return (
+                      <div
+                        key={idx}
+                        className="bg-[#162138] border-2 border-cyan-500 rounded-2xl p-2 flex flex-col items-center text-center shadow-lg hover:scale-105 transition-all"
+                      >
+                        <Dice3DVisual character={hero.type} size={50} glowColor="#38bdf8" />
+                        <span className="text-[11px] font-black text-white mt-1.5 truncate w-full">
+                          {hero.displayName}
+                        </span>
+                        <span className="text-[9px] font-bold text-cyan-300">
+                          {hero.title.slice(0, 14)}
+                        </span>
+                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md mt-1 w-full truncate ${
+                          originallyPlayerPick
+                            ? 'bg-blue-950 text-cyan-300 border border-cyan-700'
+                            : 'bg-purple-950 text-purple-300 border border-purple-600'
+                        }`}>
+                          {originallyPlayerPick ? '★ Tu elección' : '⚡ Del rival'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Sinergias del Bando Azul */}
+                <div className="p-2.5 rounded-xl bg-black/40 border border-cyan-900/60 space-y-1">
+                  <span className="text-[9px] font-black uppercase text-cyan-300 block">
+                    ADN Colectivo del Bando Azul:
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {(draftState.finalPlayerTeam || []).map(hType => CHARACTERS[hType].classes).flat().filter((v, i, a) => a.indexOf(v) === i).map(cat => {
+                      const info = CATEGORY_INFO[cat];
+                      return (
+                        <span key={cat} className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-200 font-bold">
+                          {info.symbol} {info.name.split(' ')[0]}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Dealt Rival Squad (Rojo) */}
+              <div className="bg-[#1b1216] border-2 border-red-500 rounded-3xl p-4 shadow-2xl space-y-3">
+                <div className="flex items-center justify-between border-b border-red-950 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-red-400 animate-pulse" />
+                    <h4 className="text-sm font-black text-white font-bungee">
+                      ESCUADRÓN RIVAL (BANDO ROJO)
+                    </h4>
+                  </div>
+                  <span className="text-[10px] bg-red-950 text-red-200 border border-red-600 px-2 py-0.5 rounded-full font-bold">
+                    3 Dados Rivales
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {(draftState.finalRivalTeam || []).map((heroType, idx) => {
+                    const hero = CHARACTERS[heroType];
+                    const originallyRivalPick = draftState.rivalTeam.includes(heroType);
+
+                    return (
+                      <div
+                        key={idx}
+                        className="bg-[#29171d] border-2 border-red-500 rounded-2xl p-2 flex flex-col items-center text-center shadow-lg hover:scale-105 transition-all"
+                      >
+                        <Dice3DVisual character={hero.type} size={50} glowColor="#ef4444" />
+                        <span className="text-[11px] font-black text-white mt-1.5 truncate w-full">
+                          {hero.displayName}
+                        </span>
+                        <span className="text-[9px] font-bold text-red-300">
+                          {hero.title.slice(0, 14)}
+                        </span>
+                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md mt-1 w-full truncate ${
+                          originallyRivalPick
+                            ? 'bg-red-950 text-red-300 border border-red-700'
+                            : 'bg-amber-950 text-amber-300 border border-amber-600'
+                        }`}>
+                          {originallyRivalPick ? '★ Elección rival' : '⚡ Tu elección'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Sinergias del Bando Rojo */}
+                <div className="p-2.5 rounded-xl bg-black/40 border border-red-950 space-y-1">
+                  <span className="text-[9px] font-black uppercase text-red-400 block">
+                    ADN Colectivo del Bando Rojo:
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {(draftState.finalRivalTeam || []).map(hType => CHARACTERS[hType].classes).flat().filter((v, i, a) => a.indexOf(v) === i).map(cat => {
+                      const info = CATEGORY_INFO[cat];
+                      return (
+                        <span key={cat} className="text-[9px] px-1.5 py-0.5 rounded bg-red-950 border border-red-800 text-red-200 font-bold">
+                          {info.symbol} {info.name.split(' ')[0]}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Launch or Re-deal Action Dock */}
+            <div className="p-4 rounded-3xl bg-[#141824] border-2 border-yellow-400 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                onClick={() => triggerRandomDeal(draftState.playerTeam, draftState.rivalTeam)}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#1d2436] hover:bg-[#252f47] text-neutral-300 font-bold text-xs border border-neutral-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                title="Volver a barajar los mismos 6 dados escogidos"
+              >
+                <Dices className="w-4 h-4 text-amber-400" />
+                <span>Volver a Repartir los 6 Dados</span>
+              </button>
+
+              <button
+                onClick={() => onStartBattle(
+                  draftState.finalPlayerTeam && draftState.finalPlayerTeam.length === 3
+                    ? draftState.finalPlayerTeam
+                    : draftState.playerTeam,
+                  draftState.finalRivalTeam && draftState.finalRivalTeam.length === 3
+                    ? draftState.finalRivalTeam
+                    : draftState.rivalTeam
+                )}
+                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-500 hover:brightness-110 active:scale-95 text-black font-black text-sm uppercase tracking-wider border-2 border-white shadow-[0_0_25px_rgba(250,204,21,0.6)] transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Swords className="w-5 h-5 text-black" />
+                <span>¡ENTRAR A LA ARENA DE COMBATE!</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+      </div>
 
       {/* Pick Banner Toast */}
       {recentPickBanner && (
@@ -556,8 +823,8 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
           <Sparkles className="w-5 h-5 text-black" />
           <span className="text-sm">
             {recentPickBanner.picker === 'PLAYER'
-              ? `¡Has metido al Vaso a ${recentPickBanner.name}!`
-              : `¡El Rival ha reclutado a ${recentPickBanner.name}!`}
+              ? `¡Has seleccionado a ${recentPickBanner.name}!`
+              : `¡El Rival ha seleccionado a ${recentPickBanner.name}!`}
           </span>
         </div>
       )}

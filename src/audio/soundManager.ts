@@ -250,6 +250,11 @@ class SoundManager {
     noise.start(now);
   }
 
+  playClashBlocked() {
+    this.vibrate(50);
+    this.playImpact(140, 0.09, 0.18, 0.15);
+  }
+
   playPerfectBlock() {
     this.vibrate(120);
     const ctx = this.getContext();

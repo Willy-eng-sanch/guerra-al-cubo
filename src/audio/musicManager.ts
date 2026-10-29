@@ -217,7 +217,19 @@ class UrbanMusicManager {
   }
 
   private notify() {
-    this.listeners.forEach(fn => fn());
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        this.listeners.forEach(fn => {
+          try {
+            fn();
+          } catch (e) {
+            console.warn('music subscriber error:', e);
+          }
+        });
+      }, 0);
+    } else {
+      this.listeners.forEach(fn => fn());
+    }
   }
 
   // Procedural Drum & Bass & Rhodes synthesis

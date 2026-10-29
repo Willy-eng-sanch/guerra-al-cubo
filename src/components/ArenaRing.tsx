@@ -125,7 +125,7 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
     <div
       ref={containerRef}
       className={`relative w-full ${isMatchIntroPlaying ? 'z-20' : ''} ${
-        isTeamMatch ? 'h-[460px] md:h-[500px]' : 'h-[340px] md:h-[420px]'
+        isTeamMatch ? 'h-[320px] sm:h-[370px] md:h-[420px]' : 'h-[280px] sm:h-[330px] md:h-[380px]'
       } rounded-3xl overflow-hidden bg-[#0d0f15] border-2 border-[#ff1744]/40 shadow-[0_0_30px_rgba(255,23,68,0.2)] select-none flex items-center justify-center`}
       style={{
         backgroundImage: `radial-gradient(ellipse at 50% 50%, rgba(13, 15, 21, 0.45) 0%, rgba(10, 12, 16, 0.90) 80%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`,
@@ -142,7 +142,7 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
 
       {/* Central Street Battle Table Mat (Tablero Callejero Real) */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-        <div className="relative w-[260px] h-[260px] sm:w-[310px] sm:h-[310px] md:w-[350px] md:h-[350px] rounded-3xl overflow-hidden border-2 border-amber-500/60 shadow-[0_15px_40px_rgba(0,0,0,0.95),0_0_25px_rgba(245,158,11,0.25)] transition-all">
+        <div className="relative w-[190px] h-[190px] sm:w-[240px] sm:h-[240px] md:w-[280px] md:h-[280px] max-h-[85%] aspect-square rounded-3xl overflow-hidden border-2 border-amber-500/60 shadow-[0_15px_40px_rgba(0,0,0,0.95),0_0_25px_rgba(245,158,11,0.25)] transition-all">
           <img
             src="/assets/aistudio/tablero_0937dc37.jpeg"
             alt="Tablero de Guerra Cubita"
@@ -152,9 +152,9 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 pointer-events-none" />
 
           {/* D6 Center Pit Ring with Yellow Chalk Highlight */}
-          <div className="absolute inset-6 rounded-2xl border-2 border-dashed border-yellow-400/50 pointer-events-none" />
+          <div className="absolute inset-5 rounded-2xl border-2 border-dashed border-yellow-400/50 pointer-events-none" />
           <div className="absolute bottom-2 inset-x-0 text-center">
-            <span className="text-[9px] font-black font-mono tracking-wider text-yellow-300/80 bg-black/75 px-2 py-0.5 rounded-full border border-yellow-400/30">
+            <span className="text-[8px] sm:text-[9px] font-black font-mono tracking-wider text-yellow-300/80 bg-black/75 px-2 py-0.5 rounded-full border border-yellow-400/30">
               TABLERO CENTRAL // FOSO D6
             </span>
           </div>
@@ -244,7 +244,7 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
               <Cube3DCanvas
                 character={player.activeMorphCharacter || player.characterType}
                 teamId={player.teamId}
-                size={isTeamPositioned ? 72 : 86}
+                size={isTeamPositioned ? 62 : 74}
                 hasPreparedStance={!!player.preparedStance}
                 isFrozen={player.isFrozen}
                 isAttacking={isTurn && isRollingAnimation}
@@ -259,14 +259,14 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
               )}
               {player.isEliminated && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
-                  <Skull className="w-8 h-8 text-red-500 animate-pulse" />
+                  <Skull className="w-7 h-7 text-red-500 animate-pulse" />
                 </div>
               )}
             </div>
 
             {/* Player Info Badge */}
             <div
-              className={`mt-[-4px] px-2 py-1 rounded-lg border text-center shadow-md backdrop-blur-md min-w-[88px] max-w-[120px] transition-all ${
+              className={`mt-[-2px] px-1.5 py-0.5 rounded-lg border text-center shadow-md backdrop-blur-md min-w-[76px] max-w-[108px] transition-all ${
                 isTarget
                   ? 'bg-red-950/90 border-[#ff1744] ring-2 ring-[#ff1744]/40'
                   : isTurn

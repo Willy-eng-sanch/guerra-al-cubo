@@ -136,7 +136,19 @@ class StreetNarratorManager {
   }
 
   private notify() {
-    this.listeners.forEach(fn => fn());
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        this.listeners.forEach(fn => {
+          try {
+            fn();
+          } catch (e) {
+            console.warn('narrator subscriber error:', e);
+          }
+        });
+      }, 0);
+    } else {
+      this.listeners.forEach(fn => fn());
+    }
   }
 
   // Announce an event with human sports/street fight commentary

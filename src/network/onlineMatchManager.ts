@@ -7,6 +7,7 @@ export interface OnlinePlayer {
   id: number;
   name: string;
   hero: CharacterType;
+  heroes?: CharacterType[];
   teamId: number; // 1 = Azul (Host / Aliado), 2 = Rojo (Guest / Rival)
   isReady: boolean;
   avatarSeed?: string;
@@ -120,7 +121,8 @@ class OnlineMatchManager {
       case 'ROOM_HELLO':
         // Host announces room
         if (!this.state.isHost && this.state.status === 'SEARCHING_MATCHMAKING') {
-          this.joinRoom(packet.roomCode, this.state.localPlayer.hero, this.state.localPlayer.name);
+          const localSquad = this.state.localPlayer.heroes || [this.state.localPlayer.hero];
+          this.joinRoom(packet.roomCode, localSquad, this.state.localPlayer.name);
         }
         break;
 
@@ -165,6 +167,7 @@ class OnlineMatchManager {
             remotePlayer: {
               ...this.state.remotePlayer,
               hero: packet.payload.hero || this.state.remotePlayer.hero,
+              heroes: packet.payload.heroes || this.state.remotePlayer.heroes,
               name: packet.payload.name || this.state.remotePlayer.name,
               isReady: packet.payload.isReady ?? this.state.remotePlayer.isReady
             }
@@ -212,9 +215,10 @@ class OnlineMatchManager {
     }
   }
 
-  // Create a brand new multiplayer room
-  createRoom(hero: CharacterType, playerName: string = 'Tú (Anfitrión)'): string {
+  // Create a brand new multiplayer room with a 3-dice squad
+  createRoom(heroes: CharacterType[], playerName: string = 'Tú (Anfitrión)'): string {
     const code = `CUBITA-${Math.floor(100 + Math.random() * 900)}`;
+    const leadHero = heroes[0] || CharacterType.CUBINJA;
     this.state = {
       ...this.state,
       roomCode: code,
@@ -223,7 +227,8 @@ class OnlineMatchManager {
       localPlayer: {
         id: 1,
         name: playerName,
-        hero,
+        hero: leadHero,
+        heroes,
         teamId: 1, // Escuadrón Azul
         isReady: false
       },
@@ -232,7 +237,7 @@ class OnlineMatchManager {
         {
           id: '1',
           sender: 'Árbitro',
-          text: `Sala creada con código [${code}]. Comparte el código con tu rival para empezar.`,
+          text: `Sala creada con código [${code}]. Comparte el código con tu rival para empezar el duelo 3 vs 3.`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isSystem: true
         }
@@ -245,9 +250,10 @@ class OnlineMatchManager {
     return code;
   }
 
-  // Join an existing room code
-  joinRoom(code: string, hero: CharacterType, playerName: string = 'Tú (Rival)') {
+  // Join an existing room code with a 3-dice squad
+  joinRoom(code: string, heroes: CharacterType[], playerName: string = 'Tú (Rival)') {
     const cleanCode = code.trim().toUpperCase();
+    const leadHero = heroes[0] || CharacterType.TRAMCUBOSO;
     this.state = {
       ...this.state,
       roomCode: cleanCode,
@@ -256,7 +262,8 @@ class OnlineMatchManager {
       localPlayer: {
         id: 2,
         name: playerName,
-        hero,
+        hero: leadHero,
+        heroes,
         teamId: 2, // Escuadrón Rojo
         isReady: false
       },
@@ -264,6 +271,7 @@ class OnlineMatchManager {
         id: 1,
         name: 'Anfitrión Online',
         hero: CharacterType.CUBINJA,
+        heroes: [CharacterType.CUBINJA, CharacterType.GLADIACUBON, CharacterType.HADA_AL_CUBO],
         teamId: 1, // Escuadrón Azul
         isReady: false
       },
@@ -271,7 +279,7 @@ class OnlineMatchManager {
         {
           id: '1',
           sender: 'Árbitro',
-          text: `Conectado a la sala [${cleanCode}]. Escoge tu héroe y pulsa ¡LISTO!`,
+          text: `Conectado a la sala [${cleanCode}]. Escuadras listas para el duelo normal 3 vs 3.`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isSystem: true
         }
@@ -283,21 +291,28 @@ class OnlineMatchManager {
     this.sendPacket('ROOM_JOIN', {
       id: 2,
       name: playerName,
-      hero,
+      hero: leadHero,
+      heroes,
       isReady: false
     });
   }
 
-  // Quick Matchmaking search simulation
-  startQuickMatchmaking(hero: CharacterType, playerName: string = 'Tú') {
+  // Quick Matchmaking search simulation with 3-dice squad
+  startQuickMatchmaking(heroes: CharacterType[], playerName: string = 'Tú') {
+    const leadHero = heroes[0] || CharacterType.CUBINJA;
     this.state = {
       ...this.state,
       status: 'SEARCHING_MATCHMAKING',
+      localPlayer: {
+        ...this.state.localPlayer,
+        hero: leadHero,
+        heroes
+      },
       messages: [
         {
           id: '1',
           sender: 'Árbitro',
-          text: 'Buscando contrincante en el asfalto... (Ping: 22ms)',
+          text: 'Buscando escuadra rival en el asfalto... (Ping: 22ms)',
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isSystem: true
         }
@@ -305,18 +320,23 @@ class OnlineMatchManager {
     };
     this.notify();
 
-    // Simulate matchmaking finding a live rival after 2.5 seconds if none found
+    // Simulate matchmaking finding a live rival after 2.4 seconds if none found
     if (this.matchmakingTimer) window.clearTimeout(this.matchmakingTimer);
     this.matchmakingTimer = window.setTimeout(() => {
       if (this.state.status === 'SEARCHING_MATCHMAKING') {
-        const rivalHeros = [
+        const rivalPool = [
           CharacterType.CUBOGRO,
           CharacterType.GLADIACUBON,
           CharacterType.TRAMCUBOSO,
           CharacterType.DRACUBON,
-          CharacterType.HADA_AL_CUBO
-        ];
-        const randomRivalHero = rivalHeros[Math.floor(Math.random() * rivalHeros.length)];
+          CharacterType.HADA_AL_CUBO,
+          CharacterType.PIRATA,
+          CharacterType.CUBITO_DE_HIELO,
+          CharacterType.RACUBITERO,
+          CharacterType.CUBINARCA
+        ].sort(() => Math.random() - 0.5);
+
+        const rivalSquad = [rivalPool[0], rivalPool[1], rivalPool[2]];
         const rivalNames = ["Dany_Dados99", "ReyDelAsfalto", "CubitoFeroz", "MasterPlastilina", "LaSombra"];
         const randomName = rivalNames[Math.floor(Math.random() * rivalNames.length)];
 
@@ -328,14 +348,16 @@ class OnlineMatchManager {
           localPlayer: {
             id: 1,
             name: playerName,
-            hero,
+            hero: leadHero,
+            heroes,
             teamId: 1,
             isReady: false
           },
           remotePlayer: {
             id: 2,
             name: randomName,
-            hero: randomRivalHero,
+            hero: rivalSquad[0],
+            heroes: rivalSquad,
             teamId: 2,
             isReady: true // Rival is ready!
           },
@@ -344,7 +366,7 @@ class OnlineMatchManager {
             {
               id: String(Date.now()),
               sender: 'Árbitro',
-              text: `¡Rival encontrado! [${randomName}] se une con ${randomRivalHero}.`,
+              text: `¡Escuadra rival encontrada! [${randomName}] entra con su trío de dados.`,
               time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               isSystem: true
             }
@@ -355,18 +377,21 @@ class OnlineMatchManager {
     }, 2400);
   }
 
-  // Update hero in lobby
-  selectHero(hero: CharacterType) {
+  // Update heroes squad in lobby
+  selectSquad(heroes: CharacterType[]) {
+    const leadHero = heroes[0] || CharacterType.CUBINJA;
     this.state = {
       ...this.state,
       localPlayer: {
         ...this.state.localPlayer,
-        hero
+        hero: leadHero,
+        heroes
       }
     };
     this.notify();
     this.sendPacket('HERO_SELECT', {
-      hero,
+      hero: leadHero,
+      heroes,
       name: this.state.localPlayer.name,
       isReady: this.state.localPlayer.isReady
     });

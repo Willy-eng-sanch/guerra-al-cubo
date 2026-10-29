@@ -22,6 +22,7 @@ import { DEFAULT_CHAPTERS } from './data/campaign';
 import { sound } from './audio/soundManager';
 import { music } from './audio/musicManager';
 import { narrator } from './audio/narratorManager';
+import { collectionManager } from './data/collectionManager';
 
 import { TitleScreen } from './screens/TitleScreen';
 import { SetupScreen } from './screens/SetupScreen';
@@ -102,7 +103,11 @@ export default function App() {
         };
         setPlayers(prev => prev.map(p => {
           if (p.id !== playerId) return p;
-          return { ...p, hand: [...p.hand, cardInstance] };
+          return {
+            ...p,
+            hand: [...p.hand, cardInstance],
+            cardsDrawn: (p.cardsDrawn || 0) + 1
+          };
         }));
         addFloatingText(playerId, "+1 CARTA MAZO", "#00e5ff");
         addLog(`¡Cara Especial 6! ${actorName} elige ROBAR CARTA y toma 1 del Mazo Global.`, true);
@@ -227,7 +232,10 @@ export default function App() {
         isEliminated: false,
         teamId: 1,
         superBlockMeter: 0,
-        shieldBarrier: 0
+        shieldBarrier: 0,
+        damageDealt: 0,
+        perfectBlocks: 0,
+        cardsDrawn: 0
       });
 
       // Rival hero
@@ -252,7 +260,10 @@ export default function App() {
         isEliminated: false,
         teamId: 2,
         superBlockMeter: 0,
-        shieldBarrier: 0
+        shieldBarrier: 0,
+        damageDealt: 0,
+        perfectBlocks: 0,
+        cardsDrawn: 0
       });
     }
 
@@ -270,14 +281,14 @@ export default function App() {
         id: Date.now(),
         round: 1,
         actorName: "Árbitro",
-        message: `¡Guerra de Escuadras 3 vs 3! Manos vacías al inicio. Cartas se obtienen del Mazo Global por Bloqueo Perfecto o al quebrar umbrales de vida (≤15, ≤10, ≤5 HP).`,
+        message: `¡Modo Aleatorio 3 vs 3! Dados barajados y repartidos a cada escuadrón. Manos vacías al inicio. Cartas se obtienen del Mazo Global por Bloqueo Perfecto o al quebrar umbrales de vida (≤15, ≤10, ≤5 HP).`,
         isCritical: true
       }
     ]);
     setCurrentScreen(CurrentScreen.ARENA);
     sound.playDiceRoll();
     music.play();
-    narrator.narrateMatchStart("Guerra de Escuadras 3 contra 3");
+    narrator.narrateMatchStart("Modo Aleatorio de Escuadras");
   };
 
   // Start Quick Battle
@@ -308,7 +319,10 @@ export default function App() {
       abilityCooldownRemaining: 0,
       isEliminated: false,
       superBlockMeter: 0,
-      shieldBarrier: 0
+      shieldBarrier: 0,
+      damageDealt: 0,
+      perfectBlocks: 0,
+      cardsDrawn: 0
     });
 
     // Bots
@@ -333,7 +347,10 @@ export default function App() {
         abilityCooldownRemaining: 0,
         isEliminated: false,
         superBlockMeter: 0,
-        shieldBarrier: 0
+        shieldBarrier: 0,
+        damageDealt: 0,
+        perfectBlocks: 0,
+        cardsDrawn: 0
       });
     }
 
@@ -388,7 +405,10 @@ export default function App() {
       abilityCooldownRemaining: 0,
       isEliminated: false,
       superBlockMeter: 0,
-      shieldBarrier: 0
+      shieldBarrier: 0,
+      damageDealt: 0,
+      perfectBlocks: 0,
+      cardsDrawn: 0
     });
 
     // Boss
@@ -411,7 +431,10 @@ export default function App() {
       abilityCooldownRemaining: 0,
       isEliminated: false,
       superBlockMeter: 0,
-      shieldBarrier: 0
+      shieldBarrier: 0,
+      damageDealt: 0,
+      perfectBlocks: 0,
+      cardsDrawn: 0
     });
 
     // Minions
@@ -434,7 +457,10 @@ export default function App() {
         abilityCooldownRemaining: 0,
         isEliminated: false,
         superBlockMeter: 0,
-        shieldBarrier: 0
+        shieldBarrier: 0,
+        damageDealt: 0,
+        perfectBlocks: 0,
+        cardsDrawn: 0
       });
     });
 
@@ -490,7 +516,10 @@ export default function App() {
         abilityCooldownRemaining: 0,
         isEliminated: false,
         superBlockMeter: 0,
-        shieldBarrier: 0
+        shieldBarrier: 0,
+        damageDealt: 0,
+        perfectBlocks: 0,
+        cardsDrawn: 0
       });
     }
 
@@ -518,20 +547,41 @@ export default function App() {
     narrator.narrateMatchStart("Pase y Juega Callejero");
   };
 
-  // Start Online Multiplayer Match (Escuadrón Azul vs Escuadrón Rojo)
-  const startOnlineMatch = (playerHero: CharacterType, rivalHero: CharacterType, rivalName: string) => {
+  // Start Online Multiplayer Match (Escuadrón Azul 3vs3 vs Escuadrón Rojo 3vs3)
+  const startOnlineMatch = (
+    playerTeam: CharacterType[],
+    rivalTeam: CharacterType[],
+    rivalName: string = 'Rival Online'
+  ) => {
     triggerMatchIntro();
     let currentDeck = createShuffledDeck();
     let currentDiscard: GameCard[] = [];
 
-    const pWeapons = getInitialWeapons(playerHero, currentDeck);
-    const rWeapons = getInitialWeapons(rivalHero, currentDeck);
+    const newPlayers: PlayerState[] = [];
 
-    const newPlayers: PlayerState[] = [
-      {
-        id: 1,
-        name: `Tú: ${CHARACTERS[playerHero].displayName.slice(0, 8)}`,
-        characterType: playerHero,
+    // Ensure teams have 3 characters each
+    const pSquad = playerTeam.length >= 3 ? playerTeam.slice(0, 3) : [
+      playerTeam[0] || CharacterType.CUBINJA,
+      playerTeam[1] || CharacterType.TRAMCUBOSO,
+      playerTeam[2] || CharacterType.GLADIACUBON
+    ];
+    const rSquad = rivalTeam.length >= 3 ? rivalTeam.slice(0, 3) : [
+      rivalTeam[0] || CharacterType.CUBOGRO,
+      rivalTeam[1] || CharacterType.DRACUBON,
+      rivalTeam[2] || CharacterType.HADA_AL_CUBO
+    ];
+
+    // Interleave turn order for alternating team battle:
+    // P1, R1, P2, R2, P3, R3
+    for (let i = 0; i < 3; i++) {
+      // Player hero (Escuadrón Azul - Team 1)
+      const pHero = pSquad[i];
+      const pWeapons = getInitialWeapons(pHero, currentDeck);
+
+      newPlayers.push({
+        id: (i * 2) + 1,
+        name: `Tú: ${CHARACTERS[pHero].displayName.slice(0, 8)}`,
+        characterType: pHero,
         hp: 20,
         maxHp: 20,
         actionPoints: 2,
@@ -544,14 +594,22 @@ export default function App() {
         forcedTargetPlayerId: null,
         abilityCooldownRemaining: 0,
         isEliminated: false,
-        teamId: 1,
+        teamId: 1, // Azul
         superBlockMeter: 0,
-        shieldBarrier: 0
-      },
-      {
-        id: 2,
-        name: `${rivalName}: ${CHARACTERS[rivalHero].displayName.slice(0, 7)}`,
-        characterType: rivalHero,
+        shieldBarrier: 0,
+        damageDealt: 0,
+        perfectBlocks: 0,
+        cardsDrawn: 0
+      });
+
+      // Rival hero (Escuadrón Rojo - Team 2)
+      const rHero = rSquad[i];
+      const rWeapons = getInitialWeapons(rHero, currentDeck);
+
+      newPlayers.push({
+        id: (i * 2) + 2,
+        name: `${rivalName}: ${CHARACTERS[rHero].displayName.slice(0, 7)}`,
+        characterType: rHero,
         hp: 20,
         maxHp: 20,
         actionPoints: 2,
@@ -564,11 +622,14 @@ export default function App() {
         forcedTargetPlayerId: null,
         abilityCooldownRemaining: 0,
         isEliminated: false,
-        teamId: 2,
+        teamId: 2, // Rojo
         superBlockMeter: 0,
-        shieldBarrier: 0
-      }
-    ];
+        shieldBarrier: 0,
+        damageDealt: 0,
+        perfectBlocks: 0,
+        cardsDrawn: 0
+      });
+    }
 
     setDeck(currentDeck);
     setDiscardPile(currentDiscard);
@@ -576,7 +637,7 @@ export default function App() {
     setRound(1);
     setTurnIndex(0);
     setWinner(null);
-    setSelectedTargetId(2);
+    setSelectedTargetId(newPlayers.find(p => p.teamId === 2)?.id || 2);
     setActiveDiceRoll(null);
     setGameMode(GameMode.ONLINE_PVP);
     setLog([
@@ -584,14 +645,14 @@ export default function App() {
         id: Date.now(),
         round: 1,
         actorName: "Árbitro Online",
-        message: `¡Duelo Online en Vivo iniciado! Escuadrón Azul (${CHARACTERS[playerHero].displayName}) vs Escuadrón Rojo (${rivalName}).`,
+        message: `¡Duelo Online 3 vs 3 iniciado! Escuadrón Azul (Tú) vs Escuadrón Rojo (${rivalName}).`,
         isCritical: true
       }
     ]);
     setCurrentScreen(CurrentScreen.ARENA);
     sound.playDiceRoll();
     music.play();
-    narrator.narrateMatchStart("Duelo Online en Vivo");
+    narrator.narrateMatchStart("Duelo Online 3 vs 3");
   };
 
   const currentTurnPlayer = players[turnIndex] || null;
@@ -639,6 +700,9 @@ export default function App() {
                        players.find(p => !p.isEliminated && p.id !== actorId && (!opposingTeam || p.teamId === opposingTeam));
         if (target) {
           setPlayers(prev => prev.map(p => {
+            if (p.id === actorId) {
+              return { ...p, damageDealt: (p.damageDealt || 0) + 1 };
+            }
             if (p.id !== target.id) return p;
             const newHp = Math.max(0, p.hp - 1);
             return { ...p, hp: newHp, isEliminated: newHp <= 0 };
@@ -670,7 +734,11 @@ export default function App() {
             setPlayers(prev => prev.map(p => {
               if (p.id !== actorId) return p;
               if (p.hand.length >= maxH) return p;
-              return { ...p, hand: [...p.hand, cardInstance] };
+              return {
+                ...p,
+                hand: [...p.hand, cardInstance],
+                cardsDrawn: (p.cardsDrawn || 0) + 1
+              };
             }));
             triggerDeckAnimation();
             sound.playCardDraw();
@@ -964,19 +1032,25 @@ export default function App() {
                     ? 3
                     : 2;
 
+                let attackerDrawnCount = 0;
                 for (let i = 0; i < attackerCardsToAdd; i++) {
                   if (newHand.length < maxH) {
                     const drawRes = drawCardFromDeck(currentDeckState, currentDiscardState);
                     currentDeckState = drawRes.newDeck;
                     currentDiscardState = drawRes.newDiscard;
-                    if (drawRes.card) newHand.push(drawRes.card);
+                    if (drawRes.card) {
+                      newHand.push(drawRes.card);
+                      attackerDrawnCount++;
+                    }
                   }
                 }
 
                 return {
                   ...p,
                   actionPoints: Math.max(0, p.actionPoints - 1),
-                  hand: newHand
+                  hand: newHand,
+                  damageDealt: (p.damageDealt || 0) + finalDamage,
+                  cardsDrawn: (p.cardsDrawn || 0) + attackerDrawnCount
                 };
               } else if (p.id === target.id) {
                 const newHand = [...p.hand];
@@ -987,12 +1061,16 @@ export default function App() {
                     ? 3
                     : 2;
 
+                let defenderDrawnCount = 0;
                 for (let i = 0; i < defenderCardsToAdd; i++) {
                   if (newHand.length < maxH) {
                     const drawRes = drawCardFromDeck(currentDeckState, currentDiscardState);
                     currentDeckState = drawRes.newDeck;
                     currentDiscardState = drawRes.newDiscard;
-                    if (drawRes.card) newHand.push(drawRes.card);
+                    if (drawRes.card) {
+                      newHand.push(drawRes.card);
+                      defenderDrawnCount++;
+                    }
                   }
                 }
 
@@ -1002,7 +1080,9 @@ export default function App() {
                   hand: newHand,
                   preparedStance: updatedTargetStance,
                   shieldBarrier: targetBarrierRemaining,
-                  isEliminated: newHp <= 0
+                  isEliminated: newHp <= 0,
+                  perfectBlocks: (p.perfectBlocks || 0) + (isPerfectBlock ? 1 : 0),
+                  cardsDrawn: (p.cardsDrawn || 0) + defenderDrawnCount
                 };
               }
               return p;
@@ -1337,10 +1417,16 @@ export default function App() {
       }
 
       if (roll === chosenNum) {
-        sound.playPunchHit();
+        const affectedEnemies = players.filter(p => p.id !== actor.id && !p.isEliminated).length;
         setPlayers(prev =>
           prev.map(p => {
-            if (p.id === actor.id) return { ...p, hp: Math.min(p.maxHp, p.hp + 2) };
+            if (p.id === actor.id) {
+              return {
+                ...p,
+                hp: Math.min(p.maxHp, p.hp + 2),
+                damageDealt: (p.damageDealt || 0) + (affectedEnemies * 2)
+              };
+            }
             if (!p.isEliminated) {
               const nhp = Math.max(0, p.hp - 2);
               return { ...p, hp: nhp, isEliminated: nhp <= 0 };
@@ -1439,12 +1525,20 @@ export default function App() {
         setPhase(MatchPhase.MATCH_OVER);
         addLog(`¡¡EL BANDO RIVAL (ROJO) HA DERROTADO A TODA TU ESCUADRA!!`, true, "Árbitro");
         narrator.narrateVictory("El Bando Rojo");
+        if (gameMode === GameMode.ONLINE_PVP) {
+          collectionManager.addCoins(25);
+          addFloatingText(playersList[0]?.id || 1, "+25 Cubi-Monedas de Consuelo", "#fbbf24");
+        }
         return;
       } else if (aliveTeam2.length === 0 && aliveTeam1.length > 0) {
         setWinner(aliveTeam1[0]);
         setPhase(MatchPhase.MATCH_OVER);
         addLog(`¡¡VICTORIA TOTAL! TU BANDO (AZUL) HA DERROTADO A TODOS LOS RIVALES!!`, true, "Árbitro");
         narrator.narrateVictory("Tu Escuadra Azul");
+        if (gameMode === GameMode.ONLINE_PVP) {
+          collectionManager.addCoins(60);
+          addFloatingText(playersList[0]?.id || 1, "¡+60 Cubi-Monedas de Victoria!", "#ffd600");
+        }
         return;
       }
     }
@@ -1457,6 +1551,13 @@ export default function App() {
       if (champ) {
         addLog(`¡¡${champ.name} ES EL CAMPEÓN SUPREMO DE GUERRA CUBITA!!`, true, "Árbitro");
         narrator.narrateVictory(champ.name);
+        if (gameMode === GameMode.ONLINE_PVP) {
+          if (!champ.isBot) {
+            collectionManager.addCoins(60);
+          } else {
+            collectionManager.addCoins(25);
+          }
+        }
       }
     }
   };

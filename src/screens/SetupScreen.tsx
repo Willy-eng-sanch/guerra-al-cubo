@@ -82,7 +82,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
 
   return (
     <div
-      className="relative w-full min-h-screen bg-[#0d0f14] p-4 md:p-6 text-white flex flex-col justify-between max-w-5xl mx-auto select-none rounded-3xl"
+      className="relative w-full min-h-screen bg-[#0d0f14] p-3 sm:p-5 text-white flex flex-col justify-between max-w-6xl mx-auto select-none overflow-y-auto"
       style={{
         backgroundImage: `radial-gradient(ellipse at 50% 50%, rgba(13, 15, 20, 0.85) 0%, rgba(10, 12, 16, 0.96) 85%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`,
         backgroundSize: 'cover',
@@ -154,7 +154,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
               className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:brightness-110 active:scale-[0.98] text-black font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 border border-amber-300 transition-all cursor-pointer"
             >
               <Dices className="w-4 h-4 text-black" />
-              <span>Ir a Sorteo y Draft con Dados D6</span>
+              <span>Ir al Modo Aleatorio (Iniciativa D6 & Reparto)</span>
             </button>
           </div>
         </div>
