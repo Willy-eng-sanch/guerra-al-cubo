@@ -22,6 +22,7 @@ import { InteractiveTacticalTutorial } from '../components/InteractiveTacticalTu
 import { HeroAbilityModal } from '../components/HeroAbilityModal';
 import { PostMatchStatsModal } from '../components/PostMatchStatsModal';
 import { AudioControlBar } from '../components/AudioControlBar';
+import { FTUECombatGuide } from '../components/FTUECombatGuide';
 import {
   BarChart3,
   Sword,
@@ -640,6 +641,14 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           }}
         />
       )}
+
+      {/* 8. First-Time User Tactical Combat Walkthrough Guide */}
+      <FTUECombatGuide
+        phase={phase}
+        isHumanTurn={Boolean(isHumanTurn)}
+        hasSelectedTarget={Boolean(selectedTargetId)}
+        round={round}
+      />
     </div>
   );
 };

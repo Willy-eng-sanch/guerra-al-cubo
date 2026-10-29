@@ -184,8 +184,8 @@ export const CartoonCombatClash: React.FC<CartoonCombatClashProps> = ({ clash })
               </div>
             </div>
 
-            {/* Bocadillo de Onomatopeya Cómica Dinámica */}
-            <div className="absolute z-40 animate-bounce">
+            {/* Bocadillo de Onomatopeya Cómica Dinámica con Pop */}
+            <div key={currentWordIdx} className="absolute z-40 animate-comic-pop">
               <div className="relative bg-yellow-400 text-black font-black font-bungee text-2xl md:text-3xl px-5 py-2 rounded-2xl border-4 border-black shadow-[5px_5px_0px_#000000] rotate-[-5deg] tracking-wider uppercase">
                 {ONOMATOPOEIAS[currentWordIdx]}
               </div>

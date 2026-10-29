@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { PlayerState, CharacterType } from '../types/game';
 import { CHARACTERS } from '../data/characters';
 import { DiceCharacterSprite } from './DiceCharacterSprite';
+import { collectionManager } from '../data/collectionManager';
+import { AuraShopModal } from './AuraShopModal';
 import {
   Trophy,
   Swords,
@@ -15,7 +17,9 @@ import {
   Award,
   Sparkles,
   Skull,
-  Heart
+  Heart,
+  Package,
+  Zap
 } from 'lucide-react';
 
 interface PostMatchStatsModalProps {
@@ -37,6 +41,9 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
 }) => {
   const isTeamMatch = players.some(p => p.teamId === 1) && players.some(p => p.teamId === 2);
   const [selectedTab, setSelectedTab] = useState<'ALL' | 'TEAM_BLUE' | 'TEAM_RED'>('ALL');
+  const [showAuraShop, setShowAuraShop] = useState(false);
+  const [auraInfo, setAuraInfo] = useState(() => collectionManager.getAuraRank());
+  const [unopenedBoxes, setUnopenedBoxes] = useState(() => collectionManager.getUnopenedBoxes());
 
   // Compute Aggregates
   const teamBluePlayers = players.filter(p => p.teamId === 1);
@@ -118,6 +125,40 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
               <span className="hidden sm:inline">Ver Tablero</span>
             </button>
           )}
+        </div>
+
+        {/* Aura & Beta Box Gain Banner */}
+        <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-cyan-500/20 border border-yellow-400/50 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-yellow-400/20 border border-yellow-400 flex items-center justify-center text-yellow-300">
+              <Zap className="w-5 h-5 text-yellow-400 animate-bounce" />
+            </div>
+            <div>
+              <div className="text-xs font-black text-yellow-300 flex items-center gap-1.5">
+                <span>{isHumanWinner ? '¡RECOMPENSA DE VICTORIA BETA!' : 'RECOMPENSA DE REFRIGA'}</span>
+                <span className="text-[10px] bg-yellow-400/20 px-1.5 py-0.5 rounded text-yellow-200 border border-yellow-400/30">
+                  {auraInfo.rankTitle}
+                </span>
+              </div>
+              <div className="text-xs text-neutral-200">
+                {isHumanWinner ? (
+                  <span className="font-bold text-emerald-300">
+                    +35 Aura de Calle <span className="text-white">·</span> +1 Caja de 3 Dados Desbloqueada 🎁
+                  </span>
+                ) : (
+                  <span className="text-neutral-300">+15 Aura de Calle acumulada</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowAuraShop(true)}
+            className="px-3.5 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-black font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer transform active:scale-95"
+          >
+            <Package className="w-4 h-4 text-black" />
+            <span>ABRIR CAJAS ({unopenedBoxes})</span>
+          </button>
         </div>
 
         {/* Team Battle Aggregate Scoreboard (If Squad Mode) */}
@@ -401,6 +442,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
           </div>
         </div>
       </div>
+      {showAuraShop && <AuraShopModal onClose={() => setShowAuraShop(false)} />}
     </div>
   );
 };

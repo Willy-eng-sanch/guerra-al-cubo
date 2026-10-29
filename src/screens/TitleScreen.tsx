@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Cube3DCanvas } from '../components/Cube3DCanvas';
 import { InteractiveTacticalTutorial } from '../components/InteractiveTacticalTutorial';
 import { DownloadApkModal } from '../components/DownloadApkModal';
+import { AuraShopModal } from '../components/AuraShopModal';
+import { DailyMissionsModal } from '../components/DailyMissionsModal';
 import { AudioControlBar } from '../components/AudioControlBar';
+import { collectionManager } from '../data/collectionManager';
+import { dailyMissionsManager } from '../data/dailyMissionsManager';
 import { CharacterType } from '../types/game';
-import { Swords, Trophy, Users, Shield, BookOpen, HelpCircle, Download } from 'lucide-react';
+import { Swords, Trophy, Users, Shield, BookOpen, HelpCircle, Download, Zap, Package, Heart, Crown, Flame, Calendar } from 'lucide-react';
 
 interface TitleScreenProps {
   onStartClick: () => void;
@@ -27,6 +31,29 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showDownloadApk, setShowDownloadApk] = useState(false);
+  const [showAuraShop, setShowAuraShop] = useState(false);
+  const [showMissions, setShowMissions] = useState(false);
+  const [auraRank, setAuraRank] = useState(() => collectionManager.getAuraRank());
+  const [unopenedBoxes, setUnopenedBoxes] = useState(() => collectionManager.getUnopenedBoxes());
+  const [unclaimedMissions, setUnclaimedMissions] = useState(() => dailyMissionsManager.getUnclaimedMissionsCount());
+  const [canClaimStreak, setCanClaimStreak] = useState(() => dailyMissionsManager.canClaimStreakToday());
+  const [streakDay, setStreakDay] = useState(() => dailyMissionsManager.getCurrentStreak());
+
+  useEffect(() => {
+    const unsubCol = collectionManager.subscribe(() => {
+      setAuraRank(collectionManager.getAuraRank());
+      setUnopenedBoxes(collectionManager.getUnopenedBoxes());
+    });
+    const unsubMis = dailyMissionsManager.subscribe(() => {
+      setUnclaimedMissions(dailyMissionsManager.getUnclaimedMissionsCount());
+      setCanClaimStreak(dailyMissionsManager.canClaimStreakToday());
+      setStreakDay(dailyMissionsManager.getCurrentStreak());
+    });
+    return () => {
+      unsubCol();
+      unsubMis();
+    };
+  }, []);
 
   return (
     <div className="relative w-full min-h-screen overflow-y-auto flex flex-col justify-between p-3 sm:p-5 select-none bg-[#0f1116]">
@@ -40,23 +67,52 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         <div className="absolute inset-0 bg-gradient-to-b from-[#0f1116]/85 via-[#0f1116]/65 to-[#0f1116]/95" />
       </div>
 
-      {/* Header Bar with Audio Controls */}
+      {/* Header Bar with Beta Badge & Aura Status */}
       <header className="relative z-10 flex flex-wrap items-center justify-between gap-2 max-w-xl mx-auto w-full pt-1">
         <div className="flex items-center gap-2">
-          <div className="bg-[#ff1744] text-white text-[10px] md:text-xs font-black tracking-widest px-2.5 py-1 rounded-full border-2 border-yellow-300 shadow-md">
-            ARENA D6 TÁCTICA
+          <div className="bg-[#ff1744] text-white text-[10px] md:text-xs font-black tracking-widest px-2.5 py-1 rounded-full border-2 border-yellow-300 shadow-md flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-yellow-300 animate-ping" />
+            <span>BETA 1.0 LANZAMIENTO</span>
           </div>
           <AudioControlBar />
         </div>
 
+        {/* Aura, Misiones & Cajas Quick Status Buttons */}
         <div className="flex items-center gap-2">
+          {/* Daily Streak & Missions Quick Button */}
+          <button
+            onClick={() => setShowMissions(true)}
+            className="p-1 px-2.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-yellow-400/60 text-yellow-300 transition-all flex items-center gap-1.5 text-xs font-mono font-bold shadow cursor-pointer"
+            title="Misiones Diarias y Racha de 7 Días"
+          >
+            <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400 animate-bounce" />
+            <span>Día {streakDay}</span>
+            {(canClaimStreak || unclaimedMissions > 0) && (
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+            )}
+          </button>
+
+          <button
+            onClick={() => setShowAuraShop(true)}
+            className="p-1 px-2.5 rounded-full bg-[#161d2b] hover:bg-[#222c40] border border-cyan-400/50 text-cyan-300 transition-all flex items-center gap-1.5 text-xs font-mono font-bold shadow cursor-pointer"
+            title="Ver tu Nivel de Aura y Cajas de Dados"
+          >
+            <Zap className="w-3.5 h-3.5 text-cyan-400" />
+            <span>{auraRank.currentAura} Aura</span>
+            {unopenedBoxes > 0 && (
+              <span className="bg-yellow-400 text-black text-[9px] font-black px-1.5 py-0.2 rounded-full">
+                {unopenedBoxes} 🎁
+              </span>
+            )}
+          </button>
+
           <button
             onClick={() => setShowDownloadApk(true)}
             className="p-1.5 px-3 rounded-full bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 transition-all flex items-center gap-1.5 text-xs font-bold shadow"
             title="Descargar APK o Instalar en Android"
           >
             <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Descargar APK</span>
+            <span className="hidden sm:inline">APK</span>
           </button>
 
           <button
@@ -78,9 +134,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           Duelo Táctico de Dados D6 Callejeros · Rotoscopia
         </p>
 
-        {/* Mascot 3D Combat Die */}
+        {/* Mascot 3D Combat Die with Aura Glow */}
         <div className="my-2 sm:my-3 relative flex items-center justify-center">
-          <div className="absolute w-36 h-36 rounded-full bg-cyan-500/15 blur-2xl pointer-events-none" />
+          <div
+            className="absolute w-36 h-36 rounded-full blur-2xl pointer-events-none"
+            style={{ backgroundColor: auraRank.auraGlowCss }}
+          />
           <Cube3DCanvas
             character={CharacterType.CUBINJA}
             teamId={1}
@@ -89,37 +148,76 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           />
         </div>
 
-        <p className="text-[11px] text-neutral-400 max-w-xs mx-auto">
-          Dados D6 tácticos · Equipo Azul vs Equipo Rojo · Arte rotoscopia y manual de 50 cartas
-        </p>
+        <div className="flex items-center gap-2 max-w-xs mx-auto">
+          <span
+            className="text-[9px] font-black px-2 py-0.5 rounded-full border text-black font-mono shadow"
+            style={{ backgroundColor: auraRank.colorHex, borderColor: auraRank.colorHex }}
+          >
+            {auraRank.rankTitle}
+          </span>
+          <span className="text-[11px] text-neutral-400">
+            · Sube de Aura ganando partidas
+          </span>
+        </div>
       </div>
 
       {/* Navigation Buttons Dock */}
       <div className="relative z-10 flex flex-col gap-2.5 max-w-md mx-auto w-full pb-4">
-        {/* Modo Aleatorio (Iniciativa D6 & Reparto de 6 dados) */}
+        {/* MODO ALEATORIO (LA DEMO GRATUITA) */}
         <button
           onClick={onDraftClick}
           className="w-full py-3.5 bg-gradient-to-r from-[#ff1744] via-[#e11d48] to-[#c51162] hover:brightness-110 active:scale-[0.98] text-white font-black text-sm md:text-base rounded-2xl shadow-xl border-2 border-yellow-300 flex flex-col items-center justify-center gap-0.5 tracking-wider transition-all cursor-pointer"
         >
           <div className="flex items-center gap-2">
+            <span className="bg-yellow-400 text-black text-[9px] font-black px-2 py-0.5 rounded-md font-mono tracking-widest">
+              DEMO GRATIS
+            </span>
             <Swords className="w-5 h-5 text-yellow-300" />
             <span>MODO ALEATORIO (INICIATIVA D6)</span>
           </div>
           <span className="text-[10px] text-yellow-200/90 font-mono font-medium tracking-normal">
-            Tira iniciativa · Escoge 3 cada uno (6 en total) · ¡Reparto al azar 3 a 3!
+            ¡Juega gratis sin coste! Tira iniciativa · 6 dados al azar · ¡Gana Aura y Cajas!
           </span>
         </button>
 
-        {/* Online Multiplayer Lobby Button */}
+        {/* Online Multiplayer Beta */}
         <button
           onClick={onOnlineClick}
           className="w-full py-3 bg-gradient-to-r from-blue-600/40 via-cyan-600/30 to-blue-700/40 hover:brightness-125 active:scale-[0.98] text-cyan-300 font-black text-xs md:text-sm rounded-xl border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.35)] flex items-center justify-center gap-2 tracking-wide transition-all cursor-pointer"
         >
           <Users className="w-4 h-4 text-cyan-300" />
-          <span>🌐 MULTIJUGADOR ONLINE (SALAS & EMPAREJAMIENTO)</span>
+          <span>🌐 MULTIJUGADOR BETA (SALAS PRIVADAS & DEMO ONLINE)</span>
         </button>
 
-        {/* Direct Squad Selection (Choose all 3 characters) */}
+        {/* Aura & Tienda "Paga lo que Quieras" */}
+        <button
+          onClick={() => setShowAuraShop(true)}
+          className="w-full py-3 bg-gradient-to-r from-purple-950/60 via-pink-950/50 to-amber-950/60 hover:brightness-125 active:scale-[0.98] text-pink-300 font-extrabold text-xs md:text-sm rounded-xl border-2 border-pink-400/70 shadow-[0_0_15px_rgba(236,72,153,0.3)] flex items-center justify-between px-4 tracking-wide transition-all cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <Heart className="w-4 h-4 text-pink-400 fill-current" />
+            <span>AURA & TIENDA "PAGA LO QUE QUIERAS"</span>
+          </div>
+          <span className="text-[10px] font-mono text-yellow-300 bg-black/60 px-2 py-0.5 rounded-md border border-yellow-400/40">
+            {unopenedBoxes > 0 ? `¡${unopenedBoxes} Caja(s) Listas!` : 'Cajas de 3 Dados'}
+          </span>
+        </button>
+
+        {/* Daily Bounties & Streak */}
+        <button
+          onClick={() => setShowMissions(true)}
+          className="w-full py-2.5 bg-gradient-to-r from-amber-950/60 via-yellow-950/50 to-orange-950/60 hover:brightness-125 active:scale-[0.98] text-amber-200 font-bold text-xs md:text-sm rounded-xl border border-yellow-500/60 flex items-center justify-between px-4 transition-all shadow-md cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-yellow-400" />
+            <span>MISIONES & RACHA DIARIA (DÍA {streakDay})</span>
+          </div>
+          <span className="text-[10px] font-mono text-yellow-300 bg-black/60 px-2 py-0.5 rounded-md border border-yellow-400/30">
+            {canClaimStreak ? '¡Reclamar Racha Hoy!' : `${unclaimedMissions > 0 ? `${unclaimedMissions} Misiones Listas` : '3 Misiones Activas'}`}
+          </span>
+        </button>
+
+        {/* Direct Squad Selection */}
         <button
           onClick={onStartClick}
           className="w-full py-3 bg-[#171c28] hover:bg-[#222a3d] active:scale-[0.98] text-yellow-300 font-extrabold text-xs md:text-sm rounded-xl border border-yellow-500/40 flex items-center justify-center gap-2 tracking-wide transition-all shadow-md"
@@ -128,13 +226,13 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <span>SELECCIONAR TUS 3 PERSONAJES (DIRECTO)</span>
         </button>
 
-        {/* Tutorial & Manual Táctico Button */}
+        {/* Tutorial & Manual Táctico */}
         <button
           onClick={() => setShowTutorial(true)}
-          className="w-full py-3 bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-orange-500/25 hover:brightness-125 active:scale-[0.98] text-yellow-300 font-extrabold text-xs md:text-sm rounded-xl border border-yellow-400/60 flex items-center justify-center gap-2 tracking-wide transition-all shadow-md cursor-pointer"
+          className="w-full py-2.5 bg-[#141824] hover:bg-[#1d2538] active:scale-[0.98] text-neutral-300 font-bold text-xs rounded-xl border border-[#263148] flex items-center justify-center gap-2 transition-all cursor-pointer"
         >
           <BookOpen className="w-4 h-4 text-yellow-400" />
-          <span>TUTORIAL RÁPIDO & MANUAL TÁCTICO (GDD)</span>
+          <span>Manual Táctico (50 Cartas & Clases)</span>
         </button>
 
         {/* Campaign & Pass and Play */}
@@ -178,6 +276,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
 
       {showTutorial && <InteractiveTacticalTutorial onDismiss={() => setShowTutorial(false)} />}
       {showDownloadApk && <DownloadApkModal onDismiss={() => setShowDownloadApk(false)} />}
+      {showAuraShop && <AuraShopModal onClose={() => setShowAuraShop(false)} />}
+      {showMissions && <DailyMissionsModal onClose={() => setShowMissions(false)} />}
     </div>
   );
 };

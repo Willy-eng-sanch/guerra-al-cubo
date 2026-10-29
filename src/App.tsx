@@ -23,6 +23,7 @@ import { sound } from './audio/soundManager';
 import { music } from './audio/musicManager';
 import { narrator } from './audio/narratorManager';
 import { collectionManager } from './data/collectionManager';
+import { dailyMissionsManager } from './data/dailyMissionsManager';
 
 import { TitleScreen } from './screens/TitleScreen';
 import { SetupScreen } from './screens/SetupScreen';
@@ -1089,6 +1090,13 @@ export default function App() {
             })
           );
 
+          if (!attacker.isBot && finalDamage > 0) {
+            dailyMissionsManager.recordDamage(finalDamage);
+          }
+          if (isPerfectBlock) {
+            dailyMissionsManager.recordPerfectBlock();
+          }
+
           setDeck(currentDeckState);
           setDiscardPile(currentDiscardState);
 
@@ -1296,6 +1304,7 @@ export default function App() {
     );
 
     addLog(`${attacker.name} equipó el arma: [${card.name}]`);
+    if (!attacker.isBot) dailyMissionsManager.recordCardPlayed();
     applyCardClassSynergy(attacker.id, card, selectedTargetId);
   };
 
@@ -1329,6 +1338,7 @@ export default function App() {
     );
 
     addLog(`${attacker.name} preparó la postura: [${card.name}]`, true);
+    if (!attacker.isBot) dailyMissionsManager.recordCardPlayed();
     applyCardClassSynergy(attacker.id, card, selectedTargetId);
   };
 
@@ -1342,6 +1352,7 @@ export default function App() {
     if (!card) return;
 
     sound.playCardDraw();
+    if (!attacker.isBot) dailyMissionsManager.recordCardPlayed();
     const newHand = attacker.hand.filter(c => c.id !== cardId);
     setDiscardPile(prev => [...prev, card]);
 
@@ -1525,6 +1536,9 @@ export default function App() {
         setPhase(MatchPhase.MATCH_OVER);
         addLog(`¡¡EL BANDO RIVAL (ROJO) HA DERROTADO A TODA TU ESCUADRA!!`, true, "Árbitro");
         narrator.narrateVictory("El Bando Rojo");
+        collectionManager.recordMatchResult(false);
+        dailyMissionsManager.recordMatch(false);
+        addLog(`+15 Aura de Calle obtenida por aguantar la refriega.`, true, "Aura");
         if (gameMode === GameMode.ONLINE_PVP) {
           collectionManager.addCoins(25);
           addFloatingText(playersList[0]?.id || 1, "+25 Cubi-Monedas de Consuelo", "#fbbf24");
@@ -1535,6 +1549,10 @@ export default function App() {
         setPhase(MatchPhase.MATCH_OVER);
         addLog(`¡¡VICTORIA TOTAL! TU BANDO (AZUL) HA DERROTADO A TODOS LOS RIVALES!!`, true, "Árbitro");
         narrator.narrateVictory("Tu Escuadra Azul");
+        collectionManager.recordMatchResult(true);
+        dailyMissionsManager.recordMatch(true);
+        addLog(`¡¡+35 AURA DE CALLE Y +1 CAJA DE 3 DADOS DESBLOQUEADA!!`, true, "Aura");
+        addFloatingText(playersList[0]?.id || 1, "¡+1 CAJA DE 3 DADOS!", "#ffd600");
         if (gameMode === GameMode.ONLINE_PVP) {
           collectionManager.addCoins(60);
           addFloatingText(playersList[0]?.id || 1, "¡+60 Cubi-Monedas de Victoria!", "#ffd600");
@@ -1551,10 +1569,18 @@ export default function App() {
       if (champ) {
         addLog(`¡¡${champ.name} ES EL CAMPEÓN SUPREMO DE GUERRA CUBITA!!`, true, "Árbitro");
         narrator.narrateVictory(champ.name);
-        if (gameMode === GameMode.ONLINE_PVP) {
-          if (!champ.isBot) {
+        const isHumanChamp = !champ.isBot;
+        collectionManager.recordMatchResult(isHumanChamp);
+        dailyMissionsManager.recordMatch(isHumanChamp);
+        if (isHumanChamp) {
+          addLog(`¡¡+35 AURA DE COMBATE Y +1 CAJA DE 3 DADOS GANADA!!`, true, "Aura");
+          addFloatingText(champ.id, "¡+1 CAJA DE 3 DADOS!", "#ffd600");
+          if (gameMode === GameMode.ONLINE_PVP) {
             collectionManager.addCoins(60);
-          } else {
+          }
+        } else {
+          addLog(`+15 Aura de combate disputado.`, true, "Aura");
+          if (gameMode === GameMode.ONLINE_PVP) {
             collectionManager.addCoins(25);
           }
         }

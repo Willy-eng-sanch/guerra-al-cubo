@@ -127,6 +127,26 @@
   animation: comicBrawlShake 0.28s infinite ease-in-out;
 }
 
+.animate-fairy-flutter {
+  animation: fairyWingFlutter 0.3s infinite ease-in-out alternate;
+}
+
+.animate-comic-pop {
+  animation: comicPopIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes fairyWingFlutter {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(-10deg) scale(0.92, 1.08); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes comicPopIn {
+  0% { transform: scale(0.3) rotate(-15deg); opacity: 0; }
+  60% { transform: scale(1.18) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-6deg); opacity: 1; }
+}
+
 .animate-paper-slap {
   animation: paperTapeSlap 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }

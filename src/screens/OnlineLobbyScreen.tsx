@@ -4,7 +4,10 @@ import { CHARACTER_LIST, CHARACTERS } from '../data/characters';
 import { Cube3DCanvas } from '../components/Cube3DCanvas';
 import { onlineManager, OnlineRoomState } from '../network/onlineMatchManager';
 import { collectionManager } from '../data/collectionManager';
+import { dailyMissionsManager } from '../data/dailyMissionsManager';
 import { CrateOpeningModal } from '../components/CrateOpeningModal';
+import { AuraShopModal } from '../components/AuraShopModal';
+import { DailyMissionsModal } from '../components/DailyMissionsModal';
 import { sound } from '../audio/soundManager';
 import {
   ArrowLeft,
@@ -27,7 +30,10 @@ import {
   AlertTriangle,
   Gift,
   HelpCircle,
-  RefreshCw
+  RefreshCw,
+  Crown,
+  Calendar,
+  Flame
 } from 'lucide-react';
 
 interface OnlineLobbyScreenProps {
@@ -52,6 +58,13 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
   const [copied, setCopied] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [isOpeningCrate, setIsOpeningCrate] = useState(false);
+  const [showAuraShop, setShowAuraShop] = useState(false);
+  const [showMissions, setShowMissions] = useState(false);
+  const [auraInfo, setAuraInfo] = useState(() => collectionManager.getAuraRank());
+  const [unopenedBoxes, setUnopenedBoxes] = useState(() => collectionManager.getUnopenedBoxes());
+  const [unclaimedMissions, setUnclaimedMissions] = useState(() => dailyMissionsManager.getUnclaimedMissionsCount());
+  const [streakDay, setStreakDay] = useState(() => dailyMissionsManager.getCurrentStreak());
+  const [canClaimStreak, setCanClaimStreak] = useState(() => dailyMissionsManager.canClaimStreakToday());
 
   // Collection State
   const [unlockedHeroes, setUnlockedHeroes] = useState<CharacterType[]>(() =>
@@ -78,6 +91,8 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
       const updatedUnlocked = collectionManager.getUnlockedCharacters();
       setUnlockedHeroes(updatedUnlocked);
       setCoins(collectionManager.getCoins());
+      setAuraInfo(collectionManager.getAuraRank());
+      setUnopenedBoxes(collectionManager.getUnopenedBoxes());
 
       // Auto-fill squad if squad has fewer than 3 and we now have unlocked heroes
       setSelectedSquad(prev => {
@@ -94,9 +109,16 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
       });
     });
 
+    const unsubMis = dailyMissionsManager.subscribe(() => {
+      setUnclaimedMissions(dailyMissionsManager.getUnclaimedMissionsCount());
+      setStreakDay(dailyMissionsManager.getCurrentStreak());
+      setCanClaimStreak(dailyMissionsManager.canClaimStreakToday());
+    });
+
     return () => {
       unsubNet();
       unsubCol();
+      unsubMis();
     };
   }, []);
 
@@ -108,6 +130,22 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
   }, [selectedSquad]);
 
   const hasMinimumSquad = unlockedHeroes.length >= 3;
+
+  const handlePlayDemoRandomSquad = () => {
+    sound.playDiceRoll();
+    const demoPool = [
+      CharacterType.CUBOGRO,
+      CharacterType.DRACUBON,
+      CharacterType.TRAMCUBOSO,
+      CharacterType.HADA_AL_CUBO,
+      CharacterType.GLADIACUBON,
+      CharacterType.CUBINJA
+    ];
+    const shuffled = [...demoPool].sort(() => Math.random() - 0.5);
+    const trio = [shuffled[0], shuffled[1], shuffled[2]];
+    setSelectedSquad(trio);
+    onlineManager.startQuickMatchmaking(trio);
+  };
 
   const handleHeroSelectForSlot = (hero: CharacterType) => {
     if (!collectionManager.isUnlocked(hero)) {
@@ -227,8 +265,23 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
           </p>
         </div>
 
-        {/* Currency & Crate Store Button */}
-        <div className="flex items-center gap-2">
+        {/* Aura, Cajas, Currency & Store Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Aura Rank Pill */}
+          <button
+            onClick={() => {
+              sound.playCardDraw();
+              setShowAuraShop(true);
+            }}
+            style={{ boxShadow: `0 0 12px ${auraInfo.auraGlowCss}` }}
+            className="flex items-center gap-1.5 bg-[#141923] hover:bg-[#1e2638] border border-cyan-500/60 hover:border-cyan-400 px-3 py-1.5 rounded-xl text-xs font-black shadow transition-all cursor-pointer"
+            title="Ver tu Nivel de Aura y Progresión"
+          >
+            <span className="text-[10px]">{auraInfo.badge}</span>
+            <span style={{ color: auraInfo.colorHex }}>{auraInfo.tierName}</span>
+            <span className="text-yellow-400 text-[10px] font-mono">({auraInfo.currentAura} Aura)</span>
+          </button>
+
           {/* Street Coins pill */}
           <div className="flex items-center gap-1.5 bg-[#141923] border border-amber-500/50 px-3 py-1.5 rounded-xl text-amber-300 font-black text-xs shadow">
             <Coins className="w-4 h-4 text-amber-400 animate-bounce" />
@@ -236,20 +289,36 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
             <span className="text-[10px] text-amber-400/80 font-normal">Monedas</span>
           </div>
 
-          {/* Crate Opening Trigger */}
+          {/* 3-Dice Box & Pay-What-You-Want Store Trigger */}
           <button
             onClick={() => {
               sound.playCardDraw();
-              setIsOpeningCrate(true);
+              setShowAuraShop(true);
             }}
-            className={`px-3 py-1.5 rounded-xl border font-black text-xs flex items-center gap-1.5 transition-all shadow-lg cursor-pointer ${
-              !hasMinimumSquad
-                ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-black border-yellow-300 animate-pulse'
-                : 'bg-[#1b2230] hover:bg-[#263145] text-yellow-300 border-yellow-400/50'
-            }`}
+            className="px-3 py-1.5 rounded-xl border border-yellow-300 font-black text-xs flex items-center gap-1.5 transition-all shadow-lg cursor-pointer bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500 text-black hover:brightness-110 active:scale-95"
+            title="Abrir Cajas de 3 dados o apoyar el juego con 'Paga lo que quieras'"
           >
-            <Package className="w-4 h-4 text-yellow-300" />
-            <span>{!hasMinimumSquad ? '¡Abrir Caja (3 Dados) GRATIS!' : 'Caja de 3 Dados (100🪙)'}</span>
+            <Package className="w-4 h-4 text-black animate-pulse" />
+            <span>Cajas: {unopenedBoxes}</span>
+            <span className="text-[9px] bg-black/20 text-black px-1.5 py-0.5 rounded font-black uppercase">
+              Tienda
+            </span>
+          </button>
+
+          {/* Daily Streak & Missions Button */}
+          <button
+            onClick={() => {
+              sound.playCardDraw();
+              setShowMissions(true);
+            }}
+            className="px-2.5 py-1.5 rounded-xl border border-yellow-400/50 bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 text-yellow-300 font-black text-xs flex items-center gap-1.5 transition-all shadow cursor-pointer"
+            title="Misiones Diarias y Racha de 7 Días"
+          >
+            <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400 animate-bounce" />
+            <span>Misiones</span>
+            {(canClaimStreak || unclaimedMissions > 0) && (
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+            )}
           </button>
 
           {/* Latency */}
@@ -273,23 +342,31 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                 <div className="flex items-center justify-center gap-2 text-yellow-400">
                   <AlertTriangle className="w-6 h-6 animate-bounce" />
                   <h3 className="text-base sm:text-lg font-black font-bungee tracking-wide">
-                    ¡ESCUADRÓN INCOMPLETO PARA COMBATIR ONLINE!
+                    ¡ESCUADRÓN INCOMPLETO PARA PARTIDAS CLASIFICATORIAS!
                   </h3>
                 </div>
                 <p className="text-xs sm:text-sm text-neutral-200 max-w-xl mx-auto font-medium">
-                  En el modo online normal debes tener un escuadrón completo de <strong className="text-yellow-300 font-bold">mínimo 3 dados desbloqueados</strong>.
-                  Actualmente tienes <span className="text-amber-400 font-black">{unlockedHeroes.length} de 3</span> dados requeridos.
+                  Para armar tu propio trío necesitas tener al menos <strong className="text-yellow-300 font-bold">3 dados en tu colección</strong>.
+                  ¡Abre tu caja gratuita de bienvenida o salta directo a la <span className="text-cyan-300 font-bold">Demo Aleatoria con dados de prueba</span>!
                 </p>
-                <div className="pt-1">
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
                   <button
                     onClick={() => {
                       sound.playCardDraw();
-                      setIsOpeningCrate(true);
+                      setShowAuraShop(true);
                     }}
-                    className="px-6 py-3 rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-black font-black font-bungee text-sm sm:text-base tracking-wider shadow-[0_0_25px_rgba(251,191,36,0.5)] transform hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 mx-auto cursor-pointer"
+                    className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-black font-black font-bungee text-xs sm:text-sm tracking-wider shadow-[0_0_20px_rgba(251,191,36,0.5)] transform hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Gift className="w-5 h-5 text-black animate-pulse" />
+                    <Gift className="w-4 h-4 text-black animate-pulse" />
                     <span>¡ABRIR PRIMERA CAJA DE 3 DADOS GRATIS!</span>
+                  </button>
+
+                  <button
+                    onClick={handlePlayDemoRandomSquad}
+                    className="px-5 py-2.5 rounded-2xl bg-[#004d40] hover:bg-[#00695c] border-2 border-emerald-400/80 text-emerald-200 font-black font-bungee text-xs sm:text-sm tracking-wider shadow-lg transform hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Zap className="w-4 h-4 text-emerald-300 animate-bounce" />
+                    <span>ENTRAR A LA DEMO CON DADOS DE PRUEBA</span>
                   </button>
                 </div>
               </div>
@@ -403,18 +480,22 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
 
             {/* 3 CONNECTION / MATCHMAKING OPTIONS */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Option 1: Quick Matchmaking */}
+              {/* Option 1: Quick Matchmaking / Demo Mode */}
               <button
-                onClick={handleQuickMatch}
-                disabled={!hasMinimumSquad || selectedSquad.length < 3}
-                className="p-4 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-amber-600/30 hover:from-yellow-500/30 hover:to-amber-600/40 border-2 border-yellow-400/60 disabled:opacity-40 disabled:pointer-events-none shadow-[0_0_15px_rgba(251,191,36,0.3)] transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer"
+                onClick={hasMinimumSquad && selectedSquad.length === 3 ? handleQuickMatch : handlePlayDemoRandomSquad}
+                className="p-4 rounded-2xl bg-gradient-to-br from-yellow-500/25 via-amber-600/30 to-yellow-600/20 hover:from-yellow-500/35 hover:via-amber-600/40 border-2 border-yellow-400 shadow-[0_0_20px_rgba(251,191,36,0.35)] transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer relative overflow-hidden text-center"
               >
-                <Zap className="w-8 h-8 text-yellow-300 group-hover:scale-110 transition-transform" />
+                <div className="absolute top-2 right-2 bg-yellow-400 text-black text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow">
+                  DEMO GRATIS
+                </div>
+                <Zap className="w-8 h-8 text-yellow-300 group-hover:scale-110 transition-transform animate-pulse" />
                 <span className="font-black font-bungee text-sm text-yellow-300">
-                  EMPAREJAMIENTO RÁPIDO 3 VS 3
+                  DEMO: DUELO RÁPIDO ALEATORIO
                 </span>
-                <span className="text-[10px] text-neutral-300">
-                  Buscar rival aleatorio con escuadra
+                <span className="text-[10px] text-neutral-200">
+                  {hasMinimumSquad && selectedSquad.length === 3
+                    ? 'Buscar rival aleatorio con tu trío seleccionado'
+                    : 'Jugar instantáneamente con 3 dados de prueba aleatorios'}
                 </span>
               </button>
 
@@ -796,6 +877,25 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
             setUnlockedHeroes(updated);
             setCoins(collectionManager.getCoins());
           }}
+        />
+      )}
+
+      {/* 4. Aura & Pay What You Want Store Modal */}
+      {showAuraShop && (
+        <AuraShopModal
+          onClose={() => setShowAuraShop(false)}
+          onSquadUpdated={() => {
+            const updated = collectionManager.getUnlockedCharacters();
+            setUnlockedHeroes(updated);
+            setCoins(collectionManager.getCoins());
+          }}
+        />
+      )}
+
+      {/* 5. Daily Missions & Streak Modal */}
+      {showMissions && (
+        <DailyMissionsModal
+          onClose={() => setShowMissions(false)}
         />
       )}
     </div>

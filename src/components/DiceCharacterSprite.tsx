@@ -98,7 +98,7 @@ export const DiceCharacterSprite: React.FC<DiceCharacterSpriteProps> = ({
       {/* HADA AL CUBO: Alas translúcidas detrás del dado */}
       {show.accessories && character === CharacterType.HADA_AL_CUBO && (
         <div className="absolute -inset-3 pointer-events-none z-0 flex items-center justify-between">
-          <svg className="w-8 h-12 -ml-5 opacity-90 drop-shadow-[0_0_8px_rgba(56,189,248,0.8)] animate-pulse" viewBox="0 0 100 150" fill="none">
+          <svg className="w-8 h-12 -ml-5 opacity-90 drop-shadow-[0_0_8px_rgba(56,189,248,0.8)] animate-fairy-flutter" viewBox="0 0 100 150" fill="none">
             <path d="M95 75 C40 20, 10 40, 5 80 C0 110, 45 140, 95 95 Z" fill="url(#fairyWingGrad)" stroke="#67e8f9" strokeWidth="3" />
             <path d="M90 75 Q40 60 25 85" stroke="#bae6fd" strokeWidth="2" strokeDasharray="3 3" />
             <defs>
@@ -109,7 +109,7 @@ export const DiceCharacterSprite: React.FC<DiceCharacterSpriteProps> = ({
               </linearGradient>
             </defs>
           </svg>
-          <svg className="w-8 h-12 -mr-5 opacity-90 drop-shadow-[0_0_8px_rgba(56,189,248,0.8)] scale-x-[-1] animate-pulse" viewBox="0 0 100 150" fill="none">
+          <svg className="w-8 h-12 -mr-5 opacity-90 drop-shadow-[0_0_8px_rgba(56,189,248,0.8)] scale-x-[-1] animate-fairy-flutter" viewBox="0 0 100 150" fill="none">
             <path d="M95 75 C40 20, 10 40, 5 80 C0 110, 45 140, 95 95 Z" fill="url(#fairyWingGrad)" stroke="#67e8f9" strokeWidth="3" />
             <path d="M90 75 Q40 60 25 85" stroke="#bae6fd" strokeWidth="2" strokeDasharray="3 3" />
           </svg>
