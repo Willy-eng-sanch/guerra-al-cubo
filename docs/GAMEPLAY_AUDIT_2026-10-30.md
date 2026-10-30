@@ -26,8 +26,8 @@ La rama `feat/cubinarca-orden-imperativa` implementa:
 ## Pendientes de auditoría
 
 - **Cubogro (PR #10 integrado):** Piel de Piedra fija la capacidad de mano y ranuras de equipo en cero; bloquea las rutas de robo, uso, equipamiento, reacciones y transferencias. Falta validación funcional de partida.
-- **Tramcuboso (este PR):** Selección Afortunada aplica dos cartas por cada robo del mazo global, conserva una y descarta la otra. Los bots eligen mediante una heurística basada en rareza, sinergia y espacios de equipo/postura. Dados Trucados aún requiere pruebas manuales de empates y bloqueos.
-- **Cubinja:** verificar la prohibición de cartas Truco y la regla especial de Bloqueo Perfecto que no mitiga daño.
+- **Tramcuboso (PR #11 abierto):** Selección Afortunada aplica dos cartas por cada robo del mazo global, conserva una y descarta la otra. Los bots eligen mediante una heurística basada en rareza, sinergia y espacios de equipo/postura. Dados Trucados aún requiere pruebas manuales de empates y bloqueos.
+- **Cubinja (PR #12 apilado sobre PR #11):** los manejadores de juego, la interfaz y la IA impiden preparar o activar cartas Truco. Una coincidencia de dado concede el robo de una carta, pero no pone el daño en cero, no cura, no activa el superpoder ni abre la reacción. Se ignoran posturas Truco previamente preparadas mientras Cubinja sea el personaje activo. Falta validar estos casos en partidas manuales.
 - **Gladiacubon:** comprobar la reducción de daño y la ranura adicional en todos los caminos de equipamiento.
 - **Racubitero:** comprobar el robo por daño y el robo doble cuando aparece un 5 en todos los modos.
 - **Cambiaformas:** comprobar transformación, duración, reversión y conservación de estado.
@@ -37,6 +37,6 @@ La rama `feat/cubinarca-orden-imperativa` implementa:
 
 ## Verificación técnica
 
-Las revisiones de PR #3, #4, #6, #7, #8 y #9 han incluido inspección estática y despliegues de vista previa cuando estaban disponibles. Esto no equivale a una partida manual ni confirma todas las interacciones de combate.
+Las revisiones de PR #3, #4, #6, #7, #8, #9 y #10 incluyeron inspección estática; PR #11 y PR #12 siguen siendo cambios propuestos en ramas apiladas. Las vistas previas pueden estar sujetas a límites del proveedor y no equivalen a una partida manual.
 
 Todavía se necesita ejecutar `npm run lint`, `npm run build` y una batería de pruebas manuales que cubra daño, barreras, Bloqueo Perfecto, órdenes pendientes, límites de mano, armas y cambios de turno. No considerar el juego validado funcionalmente hasta completar esas pruebas.
