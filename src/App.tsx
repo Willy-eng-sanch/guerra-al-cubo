@@ -725,7 +725,7 @@ export default function App() {
     if (kind === 'ATTACK_TARGET' && attackTargetId === undefined) return;
     const order: CubinarcaOrder = { issuerId: issuer.id, kind, attackTargetId };
     setPlayers(prev => prev.map(player => player.id === victim.id
-      ? { ...player, cubinarcaOrder: order, blocksDisabledByOrder: false }
+      ? { ...player, cubinarcaOrder: order, blocksDisabledByOrder: false, cubinarcaOrderDefiedThisTurn: false }
       : player
     ));
     addLog(`¡Discordia! ${issuer.name} impone una orden a ${victim.name}.`, true, issuer.name);
@@ -2152,7 +2152,7 @@ export default function App() {
             addLog(`${activePlayer.name} obedece la orden y desequipa [${weapon.name}].`, true, activePlayer.name);
           } else {
             setPlayers(prev => prev.map(player => player.id === activePlayer.id
-              ? { ...player, blocksDisabledByOrder: true }
+              ? { ...player, blocksDisabledByOrder: true, cubinarcaOrderDefiedThisTurn: true }
               : player
             ));
           }
