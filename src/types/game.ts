@@ -248,6 +248,7 @@ export interface ActiveDiceRoll {
   defenderRolls: number[];
   defenderFinalVal: number;
   isPerfectBlock: boolean;
+  isCubinjaCardBlock?: boolean; // Coincidencia defensiva de Cubinja: roba carta, no mitiga daño.
   damageDealt: number;
   attackerName: string;
   defenderName: string;

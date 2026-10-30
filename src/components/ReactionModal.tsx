@@ -1,5 +1,5 @@
 import React from 'react';
-import { CardType, GameCard, PlayerState, TrickTiming } from '../types/game';
+import { CardType, CharacterType, GameCard, PlayerState, TrickTiming } from '../types/game';
 import { ShieldCheck, Sword, Shield, Sparkles, X, Check } from 'lucide-react';
 
 interface ReactionModalProps {
@@ -17,6 +17,8 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
   onPrepareReaction,
   onSkipReaction
 }) => {
+  const isCubinja = (player.activeMorphCharacter || player.characterType) === CharacterType.CUBINJA;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
       <div className="relative w-full max-w-lg bg-[#141824] border-2 border-cyan-400 rounded-3xl p-5 shadow-2xl text-left space-y-4">
@@ -47,10 +49,14 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
 
         {/* Informative Explanation */}
         <div className="bg-cyan-950/40 border border-cyan-500/40 p-3 rounded-2xl text-xs text-cyan-200 leading-relaxed">
-          <p>
-            ¡Tu Bloqueo Perfecto abrió una <b className="text-white">ventana de reacción inmediata</b>!
-            Robaste del Mazo Global y tienes la oportunidad de <b className="text-yellow-300">equipar un arma</b>, <b className="text-purple-300">activar un truco</b> o <b className="text-cyan-300">preparar una postura</b> ahora mismo sin costo de turno.
-          </p>
+          {isCubinja ? (
+            <p>Avaricia permite equipar armas, pero prohíbe activar cartas Truco y preparar posturas, incluso durante una reacción.</p>
+          ) : (
+            <p>
+              ¡Tu Bloqueo Perfecto abrió una <b className="text-white">ventana de reacción inmediata</b>!
+              Robaste del Mazo Global y tienes la oportunidad de <b className="text-yellow-300">equipar un arma</b>, <b className="text-purple-300">activar un truco</b> o <b className="text-cyan-300">preparar una postura</b> ahora mismo sin costo de turno.
+            </p>
+          )}
         </div>
 
         {/* Hand Cards Available to React With */}
@@ -118,6 +124,13 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
                         >
                           <Check className="w-3.5 h-3.5" />
                           <span>EQUIPAR DE INMEDIATO</span>
+                        </button>
+                      ) : isCubinja ? (
+                        <button
+                          disabled
+                          className="w-full py-1.5 bg-neutral-800 text-neutral-500 font-black text-xs rounded-lg tracking-wider cursor-not-allowed"
+                        >
+                          PROHIBIDO PARA CUBINJA
                         </button>
                       ) : isStance ? (
                         <button

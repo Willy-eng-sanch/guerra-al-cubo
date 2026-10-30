@@ -90,7 +90,18 @@ export const DiceRollModal: React.FC<DiceRollModalProps> = ({
 
           {/* Result Outcome Banner */}
           <div className="rounded-2xl p-3.5 border my-3 transition-all">
-            {roll.isPerfectBlock ? (
+            {roll.isCubinjaCardBlock ? (
+              <div className="bg-amber-950/80 border-amber-400 text-amber-100 p-3.5 rounded-xl border-2 shadow-[0_0_20px_rgba(251,191,36,0.25)]">
+                <div className="flex items-center justify-center gap-2 text-base font-black">
+                  <ShieldCheck className="w-6 h-6 text-amber-300" />
+                  <span>¡AVARICIA: COINCIDENCIA!</span>
+                </div>
+                <p className="text-xs text-white font-bold mt-1.5 leading-relaxed">
+                  Cubinja igualó el resultado: la coincidencia no bloquea el ataque ni cura. Armaduras y barreras siguen aplicando.
+                  Robo posible: 1 carta si hay espacio. Daño final: {roll.damageDealt}.
+                </p>
+              </div>
+            ) : roll.isPerfectBlock ? (
               <div className="bg-cyan-950/80 border-cyan-400 text-cyan-200 p-3.5 rounded-xl border-2 shadow-[0_0_20px_rgba(0,229,255,0.3)]">
                 <div className="flex items-center justify-center gap-2 text-base font-black">
                   <ShieldCheck className="w-6 h-6 text-cyan-300 animate-bounce" />
