@@ -13,6 +13,8 @@ import {
   GameMode,
   MatchPhase,
   PlayerState,
+  CubinarcaOrder,
+  CubinarcaOrderKind,
   TrickTiming,
   getMaxHandSize
 } from './types/game';
@@ -35,6 +37,7 @@ import { ArenaScreen } from './screens/ArenaScreen';
 import { DraftScreen } from './screens/DraftScreen';
 import { OnlineLobbyScreen } from './screens/OnlineLobbyScreen';
 import { DiceSpecialChoiceModal } from './components/DiceSpecialChoiceModal';
+import { CubinarcaOrderModal } from './components/CubinarcaOrderModal';
 import { CombatClashData } from './components/CartoonCombatClash';
 
 const getCharacterMaxHp = (characterType: CharacterType): number =>
@@ -69,6 +72,7 @@ export default function App() {
     isAttacker: boolean;
   } | null>(null);
   const [supplyMagicOffer, setSupplyMagicOffer] = useState<{ actorId: number; cards: GameCard[] } | null>(null);
+  const [cubinarcaOrderOffer, setCubinarcaOrderOffer] = useState<{ issuerId: number; victimId: number } | null>(null);
   const matchIntroCompletedRef = useRef(true);
 
   const speedMultiplier = isFastSpeed ? 0.5 : 1;
@@ -662,6 +666,119 @@ export default function App() {
 
   const currentTurnPlayer = players[turnIndex] || null;
 
+  const issueCubinarcaOrder = (kind: CubinarcaOrderKind, attackTargetId?: number) => {
+    if (!cubinarcaOrderOffer) return;
+    const issuer = players.find(player => player.id === cubinarcaOrderOffer.issuerId);
+    const victim = players.find(player => player.id === cubinarcaOrderOffer.victimId);
+    if (!issuer || !victim || issuer.isEliminated || victim.isEliminated || victim.cubinarcaOrder) return;
+    if (kind === 'ATTACK_TARGET' && (!attackTargetId || !players.some(player =>
+      player.id === attackTargetId && player.id !== victim.id && !player.isEliminated && player.hp > 0
+    ))) return;
+    if (kind === 'TRANSFER_CARD' &&
+      (victim.hand.length === 0 || issuer.hand.length >= getMaxHandSize(issuer))) return;
+    if (kind === 'UNEQUIP_WEAPON' && victim.equippedWeapons.length === 0) return;
+
+    const order: CubinarcaOrder = { issuerId: issuer.id, kind, attackTargetId };
+    setPlayers(prev => prev.map(player => player.id === victim.id
+      ? { ...player, cubinarcaOrder: order, blocksDisabledByOrder: false }
+      : player
+    ));
+    setCubinarcaOrderOffer(null);
+    const label = kind === 'ATTACK_TARGET'
+      ? `atacar a ${players.find(player => player.id === attackTargetId)?.name ?? 'un objetivo'}`
+      : kind === 'TRANSFER_CARD'
+      ? `transferir una carta a ${issuer.name}`
+      : 'desequipar un arma';
+    addLog(`¡Discordia! ${issuer.name} ordena a ${victim.name} ${label}. Si desobedece, no podrá bloquear hasta cumplir.`, true, issuer.name);
+  };
+
+  const openCubinarcaOrder = (issuer: PlayerState, victim: PlayerState) => {
+    if (
+      issuer.id === victim.id || issuer.isEliminated || victim.isEliminated ||
+      victim.hp <= 0 || victim.cubinarcaOrder
+    ) return;
+
+    if (!issuer.isBot) {
+      setCubinarcaOrderOffer({ issuerId: issuer.id, victimId: victim.id });
+      return;
+    }
+
+    const aliveTargets = players.filter(player =>
+      player.id !== victim.id && !player.isEliminated && player.hp > 0
+    );
+    let kind: CubinarcaOrderKind;
+    let attackTargetId: number | undefined;
+    if (victim.equippedWeapons.length > 0) {
+      kind = 'UNEQUIP_WEAPON';
+    } else if (victim.hand.length > 0 && issuer.hand.length < getMaxHandSize(issuer)) {
+      kind = 'TRANSFER_CARD';
+    } else {
+      kind = 'ATTACK_TARGET';
+      const weakest = aliveTargets.reduce(
+        (best, player) => !best || player.hp < best.hp ? player : best,
+        null as PlayerState | null
+      );
+      attackTargetId = weakest?.id;
+    }
+    if (kind === 'ATTACK_TARGET' && attackTargetId === undefined) return;
+    const order: CubinarcaOrder = { issuerId: issuer.id, kind, attackTargetId };
+    setPlayers(prev => prev.map(player => player.id === victim.id
+      ? { ...player, cubinarcaOrder: order, blocksDisabledByOrder: false }
+      : player
+    ));
+    addLog(`¡Discordia! ${issuer.name} impone una orden a ${victim.name}.`, true, issuer.name);
+  };
+
+  const fulfillCubinarcaTransfer = (cardIndex: number) => {
+    const victim = currentTurnPlayer;
+    const order = victim?.cubinarcaOrder;
+    if (!victim || order?.kind !== 'TRANSFER_CARD') return;
+    const issuer = players.find(player => player.id === order.issuerId);
+    const card = victim.hand[cardIndex];
+    if (!issuer || issuer.isEliminated || !card || issuer.hand.length >= getMaxHandSize(issuer)) return;
+    setPlayers(prev => prev.map(player => {
+      if (player.id === victim.id) return {
+        ...player,
+        hand: player.hand.filter((_, index) => index !== cardIndex),
+        cubinarcaOrder: null,
+        blocksDisabledByOrder: false
+      };
+      if (player.id === issuer.id) return { ...player, hand: [...player.hand, card] };
+      return player;
+    }));
+    addLog(`${victim.name} cumple la orden y transfiere [${card.name}] a ${issuer.name}.`, true, victim.name);
+    sound.playStanceActivate();
+  };
+
+  const fulfillCubinarcaUnequip = (weaponIndex: number) => {
+    const victim = currentTurnPlayer;
+    const order = victim?.cubinarcaOrder;
+    if (!victim || order?.kind !== 'UNEQUIP_WEAPON') return;
+    const weapon = victim.equippedWeapons[weaponIndex];
+    if (!weapon) return;
+    const hasHandSpace = victim.hand.length < getMaxHandSize(victim);
+    setPlayers(prev => prev.map(player => player.id === victim.id ? {
+      ...player,
+      equippedWeapons: player.equippedWeapons.filter((_, index) => index !== weaponIndex),
+      hand: hasHandSpace ? [...player.hand, weapon] : player.hand,
+      cubinarcaOrder: null,
+      blocksDisabledByOrder: false
+    } : player));
+    if (!hasHandSpace) setDiscardPile(prev => [...prev, weapon]);
+    addLog(`${victim.name} cumple la orden y desequipa [${weapon.name}]${hasHandSpace ? ', devolviéndola a su mano.' : '; su mano está llena y el arma va al descarte.'}`, true, victim.name);
+    sound.playStanceActivate();
+  };
+
+  const defyCubinarcaOrder = () => {
+    const victim = currentTurnPlayer;
+    if (!victim?.cubinarcaOrder) return;
+    setPlayers(prev => prev.map(player => player.id === victim.id
+      ? { ...player, blocksDisabledByOrder: true }
+      : player
+    ));
+    addLog(`${victim.name} desobedece la orden de Cubinarca: Discordia le impide bloquear hasta cumplirla.`, true, victim.name);
+  };
+
   // Apply Heroic Class Synergy (Plants vs. Zombies Heroes Style)
   const applyCardClassSynergy = (actorId: number, card: GameCard, targetId?: number | null) => {
     const actor = players.find(p => p.id === actorId);
@@ -772,6 +889,10 @@ export default function App() {
     if (!attacker || attacker.actionPoints <= 0 || attacker.isFrozen) return;
     const target = players.find(p => p.id === targetId);
     if (!target || target.isEliminated || target.hp <= 0 || target.id === attacker.id) return;
+    if (attacker.cubinarcaOrder?.kind === 'ATTACK_TARGET' && attacker.cubinarcaOrder.attackTargetId !== target.id) {
+      addLog(`Discordia obliga a ${attacker.name} a atacar a ${players.find(player => player.id === attacker.cubinarcaOrder?.attackTargetId)?.name ?? 'su objetivo señalado'}.`);
+      return;
+    }
     const secondaryTarget = secondaryTargetId === undefined
       ? null
       : players.find(p => p.id === secondaryTargetId) || null;
@@ -857,7 +978,12 @@ export default function App() {
     const hasReflejoFelino = target.preparedStance?.id === 53;
     const hasElComodin = target.preparedStance?.id === 60;
 
-    if (hasReflejoFelino || hasElComodin) {
+    if (target.blocksDisabledByOrder) {
+      defenderFinalVal = 0;
+      defenderRolls.push(0);
+      isPerfectBlock = false;
+      addLog(`Discordia: ${target.name} no puede lanzar dado de bloqueo hasta obedecer la orden pendiente.`, true);
+    } else if (hasReflejoFelino || hasElComodin) {
       defenderFinalVal = attackerFinalVal;
       defenderRolls.push(defenderFinalVal);
       isPerfectBlock = true;
@@ -1203,10 +1329,13 @@ export default function App() {
                   }
                 }
 
+                const fulfilledAttackOrder = p.cubinarcaOrder?.kind === 'ATTACK_TARGET' && p.cubinarcaOrder.attackTargetId === target.id;
                 return {
                   ...p,
                   hp: attackerNewHp,
                   isEliminated: attackerNewHp <= 0,
+                  cubinarcaOrder: fulfilledAttackOrder ? null : p.cubinarcaOrder,
+                  blocksDisabledByOrder: fulfilledAttackOrder ? false : p.blocksDisabledByOrder,
                   shieldBarrier: attackerBarrierRemaining,
                   actionPoints: Math.max(0, p.actionPoints - 1),
                   hand: newHand,
@@ -1355,6 +1484,13 @@ export default function App() {
                 }
               });
             }, 350 * speedMultiplier);
+          }
+
+          // Cubinarca dicta una orden tras infligir daño efectivo o conseguir un Bloqueo Perfecto.
+          if (attackerHero === CharacterType.CUBINARCA && finalDamage > 0 && newHp > 0) {
+            openCubinarcaOrder(attacker, target);
+          } else if (defenderHero === CharacterType.CUBINARCA && isPerfectBlock && attackerNewHp > 0) {
+            openCubinarcaOrder(target, attacker);
           }
 
           // Check match victory
@@ -1777,6 +1913,14 @@ export default function App() {
   // End Turn
   const handleEndTurn = () => {
     if (players.length === 0) return;
+    const endingPlayer = players[turnIndex];
+    if (endingPlayer?.cubinarcaOrder && !endingPlayer.blocksDisabledByOrder) {
+      setPlayers(prev => prev.map(player => player.id === endingPlayer.id
+        ? { ...player, blocksDisabledByOrder: true }
+        : player
+      ));
+      addLog(`${endingPlayer.name} terminó su turno sin cumplir la orden: Discordia le quita la capacidad de bloquear.`, true, endingPlayer.name);
+    }
 
     // 1. Check if only 1 survivor or 1 team remains
     const alivePlayers = players.filter(p => !p.isEliminated && p.hp > 0);
@@ -1831,7 +1975,10 @@ export default function App() {
       p => !p.isEliminated && p.hp > 0 && p.id !== nextP.id && (!opposingTeamId || p.teamId === opposingTeamId)
     );
     if (rivals.length > 0) {
-      const best = rivals.reduce((prev, curr) => (curr.hp < prev.hp ? curr : prev));
+      const orderedTarget = nextP.cubinarcaOrder?.kind === 'ATTACK_TARGET'
+        ? updated.find(player => player.id === nextP.cubinarcaOrder?.attackTargetId && !player.isEliminated && player.hp > 0)
+        : null;
+      const best = orderedTarget || rivals.reduce((prev, curr) => (curr.hp < prev.hp ? curr : prev));
       setSelectedTargetId(best.id);
     } else {
       setSelectedTargetId(null);
@@ -2083,7 +2230,15 @@ export default function App() {
           onMatchIntroComplete={completeMatchIntro}
           reactionPlayer={reactionPlayer}
           activeClash={activeClash}
-          onSelectTarget={id => setSelectedTargetId(id)}
+          cubinarcaOrderOffer={cubinarcaOrderOffer}
+          onIssueCubinarcaOrder={issueCubinarcaOrder}
+          onFulfillCubinarcaTransfer={fulfillCubinarcaTransfer}
+          onFulfillCubinarcaUnequip={fulfillCubinarcaUnequip}
+          onDefyCubinarcaOrder={defyCubinarcaOrder}
+          onSelectTarget={id => {
+            if (currentTurnPlayer?.cubinarcaOrder?.kind === 'ATTACK_TARGET' && currentTurnPlayer.cubinarcaOrder.attackTargetId !== id) return;
+            setSelectedTargetId(id);
+          }}
           onAttack={id => handleAttack(id)}
           onEquipWeapon={id => handleEquipWeapon(id)}
           onPrepareStance={id => handlePrepareStance(id)}
