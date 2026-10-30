@@ -16,7 +16,8 @@ import {
   CubinarcaOrder,
   CubinarcaOrderKind,
   TrickTiming,
-  getMaxHandSize
+  getMaxHandSize,
+  getMaxWeaponSlots
 } from './types/game';
 import { ALL_CARDS, createShuffledDeck, generateUniqueCardUid } from './data/cards';
 import { CHARACTER_LIST, CHARACTERS } from './data/characters';
@@ -93,6 +94,15 @@ export default function App() {
   const handleApplySixChoice = (playerId: number, choice: 'CARD' | 'EXTRA_TURN') => {
     const actor = players.find(p => p.id === playerId);
     const actorName = actor ? actor.name : 'Jugador';
+    if (!actor) {
+      setSpecialSixChoice(null);
+      return;
+    }
+    if (choice === 'CARD' && getMaxHandSize(actor) === 0) {
+      addLog(`¡Piel de Piedra! ${actorName} no puede robar cartas.`, true);
+      setSpecialSixChoice(null);
+      return;
+    }
 
     if (choice === 'EXTRA_TURN') {
       setPlayers(prev => prev.map(p => {
@@ -953,7 +963,9 @@ export default function App() {
           isAttacker: true
         });
       } else {
-        const botChoice = attacker.hand.length < 2 ? 'CARD' : 'EXTRA_TURN';
+        const botChoice = getMaxHandSize(attacker) === 0
+        ? 'EXTRA_TURN'
+        : attacker.hand.length < 2 ? 'CARD' : 'EXTRA_TURN';
         handleApplySixChoice(attacker.id, botChoice);
       }
     }
@@ -1266,7 +1278,11 @@ export default function App() {
           ];
 
           let attackerCardsToAdd = 0;
-          if (crossedMultiples.length > 0 && !attacker.equippedWeapons.some(w => w.id === 6)) {
+          if (
+            crossedMultiples.length > 0 &&
+            !attacker.equippedWeapons.some(w => w.id === 6) &&
+            attacker.hand.length < getMaxHandSize(attacker)
+          ) {
             attackerCardsToAdd = crossedMultiples.length;
             triggerDeckAnimation();
             sound.playCardDraw();
@@ -1278,7 +1294,11 @@ export default function App() {
           }
 
           // Racubitero passive
-          if (attackerHero === CharacterType.RACUBITERO && finalDamage > 0) {
+          if (
+            attackerHero === CharacterType.RACUBITERO &&
+            finalDamage > 0 &&
+            attacker.hand.length < getMaxHandSize(attacker)
+          ) {
             const stealCount = attackerRolls.includes(5) ? 2 : 1;
             attackerCardsToAdd += stealCount;
             triggerDeckAnimation();
@@ -1290,17 +1310,23 @@ export default function App() {
           let defenderCardsToAdd = 0;
           let defenderHpHeal = 0;
           if (isPerfectBlock) {
-            defenderCardsToAdd = 1;
+            defenderCardsToAdd = target.hand.length < getMaxHandSize(target) ? 1 : 0;
             defenderHpHeal = 2; // Recuperación heroica por Super-Bloqueo
-            triggerDeckAnimation();
-            sound.playCardDraw();
+            if (defenderCardsToAdd > 0) {
+              triggerDeckAnimation();
+              sound.playCardDraw();
+            }
             const targetHeroDef = CHARACTERS[defenderHero];
             if (target.equippedWeapons.some(w => w.id === 2)) {
               defenderHpHeal += 1;
               addLog(`${target.name} cura +1 HP extra con su Tapa de Alcantarilla al bloquear.`);
             }
             addLog(
-              `🛡️⚡ ¡¡SUPER-BLOQUEO HEROICO!! ${target.name} igualó el número del atacante (${defenderFinalVal})! Anula el 100% del daño y desata su Superpoder [${targetHeroDef.signatureSuperpowerName}]: ${targetHeroDef.signatureSuperpowerDesc}! Recupera +${defenderHpHeal} HP y roba 1 carta del Mazo Global.`,
+              `🛡️⚡ ¡¡SUPER-BLOQUEO HEROICO!! ${target.name} igualó el número del atacante (${defenderFinalVal})! Anula el 100% del daño y desata su Superpoder [${targetHeroDef.signatureSuperpowerName}]: ${targetHeroDef.signatureSuperpowerDesc}! Recupera +${defenderHpHeal} HP${defenderCardsToAdd > 0
+                ? ' y roba 1 carta del Mazo Global.'
+                : getMaxHandSize(target) === 0
+                ? '. Piel de Piedra impide robar cartas.'
+                : ', pero no tiene espacio en la mano para robar.'}`,
               true
             );
             narrator.narrateSuperBlock(target.name, defenderFinalVal, targetHeroDef.signatureSuperpowerName);
@@ -1319,12 +1345,7 @@ export default function App() {
             prevPlayers.map(p => {
               if (p.id === attacker.id) {
                 const newHand = [...p.hand];
-                const maxH =
-                  p.characterType === CharacterType.HADA_AL_CUBO
-                    ? 4
-                    : p.equippedWeapons.some(w => w.id === 13)
-                    ? 3
-                    : 2;
+                const maxH = getMaxHandSize(p);
 
                 let attackerDrawnCount = 0;
                 for (let i = 0; i < attackerCardsToAdd; i++) {
@@ -1358,12 +1379,7 @@ export default function App() {
                 };
               } else if (p.id === target.id) {
                 const newHand = [...p.hand];
-                const maxH =
-                  p.characterType === CharacterType.HADA_AL_CUBO
-                    ? 4
-                    : p.equippedWeapons.some(w => w.id === 13)
-                    ? 3
-                    : 2;
+                const maxH = getMaxHandSize(p);
 
                 let defenderDrawnCount = 0;
                 for (let i = 0; i < defenderCardsToAdd; i++) {
@@ -1463,7 +1479,10 @@ export default function App() {
             setTimeout(() => {
               setPlayers(latestPlayers => {
                 const defender = latestPlayers.find(p => p.id === target.id);
-                if (!defender || defender.isEliminated || defender.hand.length === 0) return latestPlayers;
+                if (
+                  !defender || defender.isEliminated || defender.hand.length === 0 ||
+                  getMaxHandSize(defender) === 0
+                ) return latestPlayers;
 
                 if (!defender.isBot) {
                   setReactionPlayer(defender);
@@ -1471,9 +1490,9 @@ export default function App() {
                 } else {
                   const weapon = defender.hand.find(c => c.type === CardType.WEAPON);
                   const stance = defender.hand.find(c => c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE);
-                  const maxSlots = defender.characterType === CharacterType.CUBINJA ? 99 : 1;
+                  const maxSlots = getMaxWeaponSlots(defender);
 
-                  if (weapon && defender.equippedWeapons.length < maxSlots) {
+                  if (weapon && maxSlots > 0 && defender.equippedWeapons.length < maxSlots) {
                     sound.playCardDraw();
                     addLog(`¡Reacción! ${defender.name} aprovecha su Bloqueo Perfecto y equipa [${weapon.name}] de inmediato!`, true);
                     return latestPlayers.map(p => p.id === defender.id ? {
@@ -1514,19 +1533,14 @@ export default function App() {
 
   // Reaction handlers for Perfect Block
   const handleEquipReaction = (cardId: number) => {
-    if (!reactionPlayer) return;
+    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0) return;
     const card = reactionPlayer.hand.find(c => c.id === cardId && c.type === CardType.WEAPON);
     if (!card) return;
     sound.playCardDraw();
     const newHand = reactionPlayer.hand.filter(c => c.id !== cardId);
     const newWeapons = [...reactionPlayer.equippedWeapons];
-    const maxSlots =
-      reactionPlayer.characterType === CharacterType.CUBINJA
-        ? 99
-        : reactionPlayer.characterType === CharacterType.HADA_AL_CUBO ||
-          reactionPlayer.characterType === CharacterType.GLADIACUBON
-        ? 2
-        : 1;
+    const maxSlots = getMaxWeaponSlots(reactionPlayer);
+    if (maxSlots === 0) return;
 
     let discarded: GameCard | null = null;
     if (newWeapons.length >= maxSlots) {
@@ -1548,7 +1562,7 @@ export default function App() {
   };
 
   const handleActivateReaction = (cardId: number) => {
-    if (!reactionPlayer) return;
+    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0) return;
     const card = reactionPlayer.hand.find(
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION
     );
@@ -1575,7 +1589,7 @@ export default function App() {
   };
 
   const handlePrepareReaction = (cardId: number) => {
-    if (!reactionPlayer) return;
+    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0) return;
     const card = reactionPlayer.hand.find(
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
     );
@@ -1605,7 +1619,7 @@ export default function App() {
   // Equip Weapon
   const handleEquipWeapon = (cardId: number) => {
     const attacker = currentTurnPlayer;
-    if (!attacker || attacker.actionPoints <= 0) return;
+    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
     const card = attacker.hand.find(c => c.id === cardId && c.type === CardType.WEAPON);
     if (!card) return;
 
@@ -1614,13 +1628,8 @@ export default function App() {
     const newHand = attacker.hand.filter(c => c.id !== cardId);
     const newWeapons = [...attacker.equippedWeapons];
 
-    const maxSlots =
-      attacker.characterType === CharacterType.CUBINJA
-        ? 99
-        : attacker.characterType === CharacterType.HADA_AL_CUBO ||
-          attacker.characterType === CharacterType.GLADIACUBON
-        ? 2
-        : 1;
+    const maxSlots = getMaxWeaponSlots(attacker);
+    if (maxSlots === 0) return;
 
     let discarded: GameCard | null = null;
     if (newWeapons.length >= maxSlots) {
@@ -1653,7 +1662,7 @@ export default function App() {
   // Prepare Stance
   const handlePrepareStance = (cardId: number) => {
     const attacker = currentTurnPlayer;
-    if (!attacker || attacker.actionPoints <= 0) return;
+    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
     const card = attacker.hand.find(
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
     );
@@ -1687,7 +1696,7 @@ export default function App() {
   // Play Action Trick
   const handlePlayActionTrick = (cardId: number, targetId?: number) => {
     const attacker = currentTurnPlayer;
-    if (!attacker || attacker.actionPoints <= 0) return;
+    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
     const card = attacker.hand.find(
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION
     );
@@ -2117,7 +2126,11 @@ export default function App() {
           }
         } else if (pendingOrder.kind === 'TRANSFER_CARD') {
           const card = activePlayer.hand[0];
-          if (issuer && !issuer.isEliminated && card && issuer.hand.length < getMaxHandSize(issuer)) {
+          if (
+            issuer && !issuer.isEliminated && card &&
+            getMaxHandSize(activePlayer) > 0 &&
+            issuer.hand.length < getMaxHandSize(issuer)
+          ) {
             setPlayers(prev => prev.map(player => {
               if (player.id === activePlayer.id) return {
                 ...player,
@@ -2187,13 +2200,7 @@ export default function App() {
         c => c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
       );
 
-      const maxSlots =
-        activePlayer.characterType === CharacterType.CUBINJA
-          ? 99
-          : activePlayer.characterType === CharacterType.HADA_AL_CUBO ||
-            activePlayer.characterType === CharacterType.GLADIACUBON
-          ? 2
-          : 1;
+      const maxSlots = getMaxWeaponSlots(activePlayer);
 
       if (weapon && activePlayer.equippedWeapons.length < maxSlots && activePlayer.actionPoints > 0) {
         handleEquipWeapon(weapon.id);
@@ -2362,6 +2369,7 @@ export default function App() {
         <DiceSpecialChoiceModal
           actorName={specialSixChoice.actorName}
           isAttacker={specialSixChoice.isAttacker}
+          canDrawCard={players.some(p => p.id === specialSixChoice.playerId && getMaxHandSize(p) > 0)}
           onChoose={(choice) => handleApplySixChoice(specialSixChoice.playerId, choice)}
         />
       )}
