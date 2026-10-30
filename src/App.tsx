@@ -1141,7 +1141,7 @@ export default function App() {
       defenderFinalVal = r;
       isCubinjaCardBlock = attackerRolls.includes(r) || r === attackerFinalVal;
       if (isCubinjaCardBlock) {
-        addLog(`¡Avaricia! ${target.name} iguala el ataque con ${r}; recibe el daño completo y solo roba una carta.`, true, target.name);
+        addLog(`¡Avaricia! ${target.name} iguala el ataque con ${r}; la coincidencia no bloquea el daño y solo concede el robo de una carta.`, true, target.name);
       }
     } else if (defenderHero === CharacterType.TRAMCUBOSO) {
       const r1 = Math.floor(Math.random() * 6) + 1;
@@ -1468,7 +1468,7 @@ export default function App() {
             }
             addLog(
               defenderCardsToAdd > 0
-                ? `Avaricia: ${target.name} roba 1 carta por coincidir en defensa, pero recibe el daño sin mitigación.`
+                ? `Avaricia: ${target.name} roba 1 carta por coincidir en defensa; la coincidencia no reduce el daño, aunque las protecciones externas siguen aplicando.`
                 : `Avaricia: ${target.name} iguala el ataque, pero su mano está llena; recibe el daño y no roba carta.`,
               true,
               target.name
