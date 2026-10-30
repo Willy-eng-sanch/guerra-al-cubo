@@ -1038,6 +1038,9 @@ export default function App() {
       ? findGladiacubonCovering(players, secondaryTarget.id)
       : null;
     const secondaryDamageRecipient = secondaryCoverGuardian || secondaryTarget;
+    const secondarySharesPrimaryRecipient = Boolean(
+      secondaryDamageRecipient && secondaryDamageRecipient.id === target.id
+    );
 
     // 1. Pre-calculate Attacker Roll
     const attackerHero = attacker.activeMorphCharacter || attacker.characterType;
@@ -1219,14 +1222,25 @@ export default function App() {
       addFloatingText(target.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
     }
 
+    // Consume posturas antes del segundo impacto para evitar que una misma postura
+    // absorba dos ataques cuando el protector también sea el primer objetivo.
+    let updatedTargetStance = target.preparedStance;
+    if (target.preparedStance && [35, 53, 55, 57, 59, 60].includes(target.preparedStance.id)) {
+      updatedTargetStance = null;
+    }
+
     // Aliento comparte una tirada de bloqueo, pero cada impacto se asigna a su
     // destinatario real. Si el segundo objetivo está cubierto, el daño pasa a Gladiacubon.
     let secondaryFinalDamage = 0;
-    let secondaryBarrierRemaining = secondaryDamageRecipient?.shieldBarrier || 0;
-    let updatedSecondaryStance = secondaryDamageRecipient?.preparedStance ?? null;
+    let secondaryBarrierRemaining = secondarySharesPrimaryRecipient
+      ? targetBarrierRemaining
+      : (secondaryDamageRecipient?.shieldBarrier || 0);
+    let updatedSecondaryStance = secondarySharesPrimaryRecipient
+      ? updatedTargetStance
+      : (secondaryDamageRecipient?.preparedStance ?? null);
     if (useDracubonBreath && secondaryTarget && secondaryDamageRecipient && !isPerfectBlock) {
       secondaryFinalDamage = modifiedAttackDamage;
-      if (secondaryDamageRecipient.preparedStance?.id === 35) {
+      if (updatedSecondaryStance?.id === 35) {
         secondaryFinalDamage = 0;
         updatedSecondaryStance = null;
         addLog(`${secondaryDamageRecipient.name} se desvanece en su Humo de Vape preparado!`);
@@ -1302,18 +1316,9 @@ export default function App() {
       Math.max(0, attacker.hp - reflectedDamageTaken) + attackerLifeStealHeal
     );
 
-    // Consume posture
-    let updatedTargetStance = target.preparedStance;
-    if (target.preparedStance && [35, 53, 55, 57, 59, 60].includes(target.preparedStance.id)) {
-      updatedTargetStance = null;
-    }
-
     const dracubonTrueDamage = useDracubonBreath && attacker.nextBreathBonus ? 1 : 0;
     const primaryDamageTotal = finalDamage + dracubonTrueDamage;
     const secondaryDamageTotal = secondaryFinalDamage + dracubonTrueDamage;
-    const secondarySharesPrimaryRecipient = Boolean(
-      secondaryDamageRecipient && secondaryDamageRecipient.id === target.id
-    );
     const oldHp = target.hp;
     const damageAssignedToPrimaryRecipient = primaryDamageTotal + (secondarySharesPrimaryRecipient ? secondaryDamageTotal : 0);
     const newHp = Math.max(0, oldHp - damageAssignedToPrimaryRecipient);
@@ -1550,8 +1555,8 @@ export default function App() {
                     ? true
                     : p.nextBreathBonus,
                   hand: newHand,
-                  preparedStance: updatedTargetStance,
-                  shieldBarrier: targetBarrierRemaining,
+                  preparedStance: secondarySharesPrimaryRecipient ? updatedSecondaryStance : updatedTargetStance,
+                  shieldBarrier: secondarySharesPrimaryRecipient ? secondaryBarrierRemaining : targetBarrierRemaining,
                   guardingAllyId: wasInterceptedByGladiacubon && (isPerfectBlock || newHp <= 0) ? null : p.guardingAllyId,
                   isEliminated: newHp <= 0,
                   perfectBlocks: (p.perfectBlocks || 0) + (isPerfectBlock ? 1 : 0),
