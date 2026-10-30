@@ -893,6 +893,12 @@ export default function App() {
       addLog(`Discordia obliga a ${attacker.name} a atacar a ${players.find(player => player.id === attacker.cubinarcaOrder?.attackTargetId)?.name ?? 'su objetivo señalado'}.`);
       return;
     }
+    if (attacker.cubinarcaOrder?.kind === 'ATTACK_TARGET') {
+      setPlayers(prev => prev.map(player => player.id === attacker.id
+        ? { ...player, cubinarcaOrder: null, blocksDisabledByOrder: false }
+        : player
+      ));
+    }
     const secondaryTarget = secondaryTargetId === undefined
       ? null
       : players.find(p => p.id === secondaryTargetId) || null;
