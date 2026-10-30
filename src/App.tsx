@@ -1500,7 +1500,7 @@ export default function App() {
           const racubiteroChainDisarmedPlayerIds = new Set<number>();
           let attackerHandAfterRacubitero = [...attacker.hand];
           let attackerWeaponsAfterRacubitero = [...attacker.equippedWeapons];
-          let racubiteroChainBonusDraws = 0;
+          let racubiteroChainDrawCount = 0;
           let racubiteroChainRoll: number | null = null;
 
           if (isRacubiteroPerfectBlock) {
@@ -1572,7 +1572,7 @@ export default function App() {
                 racubiteroDiscardedCards.push(...enemy.hand);
               });
 
-              racubiteroChainBonusDraws = 2;
+              racubiteroChainDrawCount = 2;
               addLog(
                 `¡Desarme en Cadena culmina con un 5! Toda la mesa enemiga pierde la mano: ${additionalDiscardCount} carta(s) adicionales van al descarte. ${target.name} podrá robar hasta 2 cartas del Mazo Global, sujeto al espacio libre.`,
                 true,
@@ -1631,9 +1631,12 @@ export default function App() {
               getMaxHandSize(target) - defenderHandAfterVaciado
             );
             const standardPerfectBlockDraw = defenderFreeSlotsAfterVaciado > 0 ? 1 : 0;
+            const requestedPerfectBlockDraws = racubiteroChainDrawCount > 0
+              ? racubiteroChainDrawCount
+              : standardPerfectBlockDraw;
             defenderCardsToAdd = Math.min(
               defenderFreeSlotsAfterVaciado,
-              standardPerfectBlockDraw + racubiteroChainBonusDraws
+              requestedPerfectBlockDraws
             );
             defenderHpHeal = 2; // Recuperación heroica por Super-Bloqueo
             if (defenderCardsToAdd > 0) {
@@ -1813,7 +1816,7 @@ export default function App() {
             addLog(
               defenderDrawResult.drawnCount > 0
                 ? `Vaciado de Bolsillo: ${target.name} roba ${defenderDrawResult.drawnCount} carta(s) del Mazo Global tras completar la cadena.`
-                : `Desarme en Cadena: ${target.name} no pudo robar las 2 cartas adicionales por falta de espacio o cartas disponibles.`,
+                : `Desarme en Cadena: ${target.name} no pudo robar hasta 2 cartas por falta de espacio o cartas disponibles.`,
               true,
               target.name
             );
