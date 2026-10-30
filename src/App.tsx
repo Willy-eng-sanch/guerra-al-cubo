@@ -52,6 +52,16 @@ interface TramcubosoCardChoice {
 const getCharacterMaxHp = (characterType: CharacterType): number =>
   characterType === CharacterType.CUBOGRO ? 25 : 20;
 
+// While Intercepción is active, any damage aimed at the protected ally is
+// assigned to the living Gladiacubon, including damage that bypasses dice.
+const findGladiacubonCovering = (players: PlayerState[], protectedPlayerId: number): PlayerState | null =>
+  players.find(player =>
+    player.guardingAllyId === protectedPlayerId &&
+    !player.isEliminated &&
+    player.hp > 0 &&
+    (player.activeMorphCharacter || player.characterType) === CharacterType.GLADIACUBON
+  ) || null;
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<CurrentScreen>(CurrentScreen.TITLE);
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.QUICK_BATTLE);
@@ -1007,13 +1017,7 @@ export default function App() {
     }
 
     // A live Gladiacubon covering this ally becomes the actual defender and rolls its own die.
-    const coveringGladiacubon = players.find(player =>
-      player.id !== attacker.id &&
-      player.guardingAllyId === intendedTarget.id &&
-      !player.isEliminated &&
-      player.hp > 0 &&
-      (player.activeMorphCharacter || player.characterType) === CharacterType.GLADIACUBON
-    ) || null;
+    const coveringGladiacubon = findGladiacubonCovering(players, intendedTarget.id);
     const target = coveringGladiacubon || intendedTarget;
     const wasInterceptedByGladiacubon = Boolean(coveringGladiacubon);
     if (wasInterceptedByGladiacubon) {
