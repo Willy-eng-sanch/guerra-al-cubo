@@ -20,14 +20,14 @@ Los otros diez personajes pasan por una rama genérica que solo registra el nomb
 - **Gladiacubon:** reducción de daño >=3 y ranura extra aparecen implementadas.
 - **Racubitero:** robo al causar daño y robo doble con resultado 5 aparecen implementados.
 - **Hada al Cubo:** límite de mano y dos ranuras contemplados; Suministro Mágico pendiente.
-- **Flaucubista:** Acorde Violento no aparece conectado al daño recibido ni al siguiente ataque en el flujo inspeccionado.
+- **Flaucubista:** Acorde Violento ya acumula +1 al siguiente ataque cuando recibe daño de combate o autodaño por fallar su apuesta. El bono se consume al realizar el siguiente ataque. Daños causados por otras fuentes todavía requieren una auditoría global.
 - **Dracubon, Cubinarca, Cubícula y Cambiaformas:** sus efectos de ficha no se encontraron conectados en el flujo de ataque/defensa inspeccionado.
 
 ## Corrección incluida
 La apuesta del Flaucubista selecciona y tira valores 1–5. Se elimina el disparador de Cara Especial 6 para esta habilidad. El D6 general del combate permanece intacto.
 
 ## Próximas tareas
-1. Implementar y probar Acorde Violento, incluido el autodaño.
+1. Extender y probar Acorde Violento para todas las fuentes de daño, no solo ataques y autodaño de la apuesta.
 2. Implementar Suministro Mágico con selección de aliado y transferencia real de carta.
 3. Resolver Dracubon, Cubícula y Cambiaformas con pruebas de ataque/bloqueo.
 4. Implementar órdenes y penalización de Cubinarca con estado persistente.
