@@ -160,6 +160,35 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   );
 
   const selectedTarget = players.find(p => p.id === selectedTargetId);
+  const validAllies = currentTurnPlayer?.teamId !== undefined
+    ? players.filter(p =>
+        p.id !== currentTurnPlayer.id &&
+        p.teamId === currentTurnPlayer.teamId &&
+        !p.isEliminated &&
+        p.hp > 0
+      )
+    : [];
+  const hasPendingInterception = currentTurnPlayer?.guardingAllyId != null;
+  const interceptionCooldown = (currentTurnPlayer?.interceptionAvailableRound || 0) > round;
+  const canUseInterception = Boolean(
+    currentTurnPlayer &&
+    currentTurnPlayer.actionPoints > 0 &&
+    !currentTurnPlayer.isFrozen &&
+    validAllies.length > 0 &&
+    !hasPendingInterception &&
+    !interceptionCooldown
+  );
+  const interceptionUnavailableReason = !currentTurnPlayer || currentTurnPlayer.actionPoints <= 0
+    ? 'Necesitas 1 Punto de Acción para activar Intercepción.'
+    : currentTurnPlayer.isFrozen
+    ? 'No puedes activar habilidades mientras estás congelado.'
+    : hasPendingInterception
+    ? 'Ya hay una cobertura pendiente. Debe interceptar un ataque contra el aliado antes de volver a activarla.'
+    : interceptionCooldown
+    ? `Intercepción estará disponible en la ronda ${currentTurnPlayer.interceptionAvailableRound}.`
+    : validAllies.length === 0
+    ? 'Necesitas un aliado vivo de tu mismo escuadrón.'
+    : '';
   const supplyMagicAllies = currentTurnPlayer?.teamId !== undefined
     ? players.filter(p => {
         const allyHero = p.activeMorphCharacter || p.characterType;
@@ -682,6 +711,9 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           selectedTargetId={selectedTargetId}
           canUseSupplyMagic={canUseSupplyMagic}
           supplyMagicUnavailableReason={supplyMagicUnavailableReason}
+          validAllies={validAllies}
+          canUseInterception={canUseInterception}
+          interceptionUnavailableReason={interceptionUnavailableReason}
           onClose={() => setShowAbilityModal(false)}
           onActivate={(targetId, extraOption) => {
             setShowAbilityModal(false);
