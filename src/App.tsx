@@ -897,12 +897,6 @@ export default function App() {
       addLog(`Discordia obliga a ${attacker.name} a atacar a ${players.find(player => player.id === attacker.cubinarcaOrder?.attackTargetId)?.name ?? 'su objetivo señalado'}.`);
       return;
     }
-    if (attacker.cubinarcaOrder?.kind === 'ATTACK_TARGET') {
-      setPlayers(prev => prev.map(player => player.id === attacker.id
-        ? { ...player, cubinarcaOrder: null, blocksDisabledByOrder: false, cubinarcaOrderDefiedThisTurn: false }
-        : player
-      ));
-    }
     const secondaryTarget = secondaryTargetId === undefined
       ? null
       : players.find(p => p.id === secondaryTargetId) || null;
@@ -921,6 +915,12 @@ export default function App() {
     const opposingTeamId = attacker.teamId === 1 ? 2 : attacker.teamId === 2 ? 1 : null;
     if (secondaryTarget && opposingTeamId !== null && secondaryTarget.teamId !== opposingTeamId) return;
     const useDracubonBreath = attackerHero === CharacterType.DRACUBON && secondaryTarget !== null;
+    if (attacker.cubinarcaOrder?.kind === 'ATTACK_TARGET') {
+      setPlayers(prev => prev.map(player => player.id === attacker.id
+        ? { ...player, cubinarcaOrder: null, blocksDisabledByOrder: false, cubinarcaOrderDefiedThisTurn: false }
+        : player
+      ));
+    }
     const attackerRolls: number[] = [];
     let attackerFinalVal: number;
 
