@@ -744,7 +744,7 @@ export default function App() {
   const fulfillCubinarcaTransfer = (cardIndex: number) => {
     const victim = currentTurnPlayer;
     const order = victim?.cubinarcaOrder;
-    if (!victim || order?.kind !== 'TRANSFER_CARD') return;
+    if (!victim || order?.kind !== 'TRANSFER_CARD' || getMaxHandSize(victim) === 0) return;
     const issuer = players.find(player => player.id === order.issuerId);
     const card = victim.hand[cardIndex];
     if (!issuer || issuer.isEliminated || !card || issuer.hand.length >= getMaxHandSize(issuer)) return;
