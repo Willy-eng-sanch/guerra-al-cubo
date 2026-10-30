@@ -28,7 +28,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ onDismiss }) => {
               <span>1. Objetivos y Puntos de Acción (AP)</span>
             </h4>
             <p>
-              Cada jugador inicia con <b className="text-white">20 HP</b> y recibe <b className="text-yellow-400">2 Acciones</b> al inicio de cada turno.
+              Cada personaje inicia con sus HP máximos (20 HP por defecto; Cubogro inicia con 25 HP) y recibe <b className="text-yellow-400">2 Acciones</b> al inicio de cada turno.
               Gana el último personaje o cubo que quede con vida en la arena.
             </p>
           </div>
@@ -36,10 +36,10 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ onDismiss }) => {
           {/* Rule 2 */}
           <div className="bg-[#1b2130] p-3 rounded-xl border border-[#2b354c]">
             <h4 className="font-extrabold text-sm text-red-400 mb-1 flex items-center gap-1.5">
-              <span>2. El Dado D5 y Bloqueo Perfecto</span>
+              <span>2. El Dado D6 y Bloqueo Perfecto</span>
             </h4>
             <p>
-              Los ataques y defensas se resuelven con dados de 5 caras (D5, valores del 1 al 5).
+              Los ataques y defensas normales se resuelven con dados de 6 caras (D6, valores del 1 al 6). Excepción: la apuesta especial del Flaucubista usa D5 (valores del 1 al 5).
               Si el defensor saca <b>exactamente el mismo número</b> que el atacante, logra un <b className="text-cyan-300">¡Bloqueo Perfecto!</b> (0 daño recibido y roba 1 carta del mazo).
             </p>
           </div>
@@ -76,7 +76,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ onDismiss }) => {
               <span>5. 13 Personajes Únicos</span>
             </h4>
             <p>
-              Cada cubo tiene habilidades distintivas (ej: <b>Tramcuboso</b> tira 2D5 y escoge el mejor, <b>Cubinja</b> suma 2D5 en ataque y equipa armas infinitas, <b>Cubogro</b> duplica daños de 1, 2 y 3).
+              Cada cubo tiene habilidades distintivas (ej: <b>Tramcuboso</b> tira 2D6 y escoge el mejor, <b>Cubinja</b> suma 2D6 en ataque y equipa armas infinitas, <b>Cubogro</b> duplica daños de 1, 2 y 3).
             </p>
           </div>
         </div>
