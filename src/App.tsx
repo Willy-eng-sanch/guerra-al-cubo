@@ -2062,23 +2062,39 @@ export default function App() {
       sound.playDiceRoll();
 
       if (roll === chosenNum) {
-        const affectedEnemies = players.filter(p => p.id !== actor.id && !p.isEliminated).length;
-        setPlayers(prev =>
-          prev.map(p => {
-            if (p.id === actor.id) {
-              return {
-                ...p,
-                hp: Math.min(p.maxHp, p.hp + 2),
-                damageDealt: (p.damageDealt || 0) + (affectedEnemies * 2)
-              };
-            }
-            if (!p.isEliminated) {
-              const nhp = Math.max(0, p.hp - 2);
-              return { ...p, hp: nhp, isEliminated: nhp <= 0 };
-            }
-            return p;
-          })
-        );
+        const affectedPlayers = players.filter(p => p.id !== actor.id && !p.isEliminated);
+        const damageByRecipient = new Map<number, number>();
+        const interceptedDamageByGuardian = new Map<number, { name: string; protectedNames: string[] }>();
+        affectedPlayers.forEach(protectedPlayer => {
+          const guardian = findGladiacubonCovering(players, protectedPlayer.id);
+          const recipientId = guardian?.id ?? protectedPlayer.id;
+          damageByRecipient.set(recipientId, (damageByRecipient.get(recipientId) || 0) + 2);
+          if (guardian) {
+            const entry = interceptedDamageByGuardian.get(guardian.id) || { name: guardian.name, protectedNames: [] };
+            entry.protectedNames.push(protectedPlayer.name);
+            interceptedDamageByGuardian.set(guardian.id, entry);
+          }
+        });
+        setPlayers(prev => prev.map(p => {
+          if (p.id === actor.id) {
+            return {
+              ...p,
+              hp: Math.min(p.maxHp, p.hp + 2),
+              damageDealt: (p.damageDealt || 0) + (affectedPlayers.length * 2)
+            };
+          }
+          const incomingDamage = damageByRecipient.get(p.id) || 0;
+          if (incomingDamage <= 0) return p;
+          const nhp = Math.max(0, p.hp - incomingDamage);
+          return { ...p, hp: nhp, isEliminated: nhp <= 0 };
+        }));
+        interceptedDamageByGuardian.forEach((entry, guardianId) => {
+          addLog(`¡Intercepción! ${entry.name} absorbe 2 de daño ineludible por cada protegido alcanzado (${entry.protectedNames.join(", ")}). El daño también se suma al impacto que reciba directamente.`, true, entry.name);
+          addFloatingText(guardianId, `+${entry.protectedNames.length * 2} DAÑO ABSORBIDO`, "#60a5fa");
+        });
+        damageByRecipient.forEach((damage, recipientId) => {
+          addFloatingText(recipientId, `-${damage} DAÑO INELUDIBLE`, "#ff1744");
+        });
         addLog(`¡Flaucubista acertó su número apostado (${chosenNum}) con un ${roll}! 2 de daño ineludible a todos y se cura 2 HP.`, true);
       } else {
         const selfDamage = Math.max(1, Math.floor(roll / 2));
