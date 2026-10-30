@@ -246,6 +246,7 @@ export interface ActiveDiceRoll {
   defenderRolls: number[];
   defenderFinalVal: number;
   isPerfectBlock: boolean;
+  isCubinjaCardBlock?: boolean; // Coincidencia que solo concede una carta y no mitiga daño.
   damageDealt: number;
   attackerName: string;
   defenderName: string;
