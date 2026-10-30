@@ -2085,12 +2085,15 @@ export default function App() {
     if (!activePlayer || !activePlayer.isBot || activePlayer.isEliminated || activePlayer.hp <= 0) return;
 
     const timer = setTimeout(() => {
+      if (botOrderTurnRef.current === turnIndex) return;
+      if (botOrderTurnRef.current !== null && botOrderTurnRef.current !== turnIndex) botOrderTurnRef.current = null;
       const activeHero = activePlayer.activeMorphCharacter || activePlayer.characterType;
 
       // Los bots obedecen las órdenes al comenzar su turno. Si no pueden cumplirlas,
       // conservan la orden y pierden la capacidad de bloquear hasta resolverla.
       const pendingOrder = activePlayer.cubinarcaOrder;
       if (pendingOrder) {
+        botOrderTurnRef.current = turnIndex;
         const issuer = players.find(player => player.id === pendingOrder.issuerId);
         if (pendingOrder.kind === 'ATTACK_TARGET') {
           const orderedTarget = players.find(player =>
@@ -2121,7 +2124,8 @@ export default function App() {
                 ...player,
                 hand: player.hand.slice(1),
                 cubinarcaOrder: null,
-                blocksDisabledByOrder: false
+                blocksDisabledByOrder: false,
+                cubinarcaOrderDefiedThisTurn: false
               };
               if (player.id === issuer.id) return { ...player, hand: [...player.hand, card] };
               return player;
@@ -2129,7 +2133,7 @@ export default function App() {
             addLog(`${activePlayer.name} obedece la orden y entrega [${card.name}] a ${issuer.name}.`, true, activePlayer.name);
           } else {
             setPlayers(prev => prev.map(player => player.id === activePlayer.id
-              ? { ...player, blocksDisabledByOrder: true }
+              ? { ...player, blocksDisabledByOrder: true, cubinarcaOrderDefiedThisTurn: true }
               : player
             ));
           }
@@ -2142,7 +2146,8 @@ export default function App() {
               equippedWeapons: player.equippedWeapons.slice(1),
               hand: hasSpace ? [...player.hand, weapon] : player.hand,
               cubinarcaOrder: null,
-              blocksDisabledByOrder: false
+              blocksDisabledByOrder: false,
+              cubinarcaOrderDefiedThisTurn: false
             } : player));
             if (!hasSpace) setDiscardPile(prev => [...prev, weapon]);
             addLog(`${activePlayer.name} obedece la orden y desequipa [${weapon.name}].`, true, activePlayer.name);
