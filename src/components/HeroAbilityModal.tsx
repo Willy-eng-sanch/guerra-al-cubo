@@ -9,6 +9,8 @@ interface HeroAbilityModalProps {
   selectedTargetId: number | null;
   onClose: () => void;
   onActivate: (targetId?: number, extraOption?: number) => void;
+  canUseSupplyMagic: boolean;
+  supplyMagicUnavailableReason: string;
 }
 
 export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
@@ -17,7 +19,9 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   validTargets,
   selectedTargetId,
   onClose,
-  onActivate
+  onActivate,
+  canUseSupplyMagic,
+  supplyMagicUnavailableReason
 }) => {
   const [currentTargetId, setCurrentTargetId] = useState<number | null>(
     selectedTargetId || (validTargets.length > 0 ? validTargets[0].id : null)
@@ -32,8 +36,9 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   const needsTarget = heroType === CharacterType.CUBITO_DE_HIELO || heroType === CharacterType.PIRATA;
   // Does this ability have a betting mechanic?
   const isFlute = heroType === CharacterType.FLAUCUBISTA_DESAFINADO;
+  const isSupplyMagic = heroType === CharacterType.HADA_AL_CUBO;
 
-  const canActivate = !isCooldown && !isFrozen && (!needsTarget || currentTargetId !== null);
+  const canActivate = !isCooldown && !isFrozen && (!needsTarget || currentTargetId !== null) && (!isSupplyMagic || canUseSupplyMagic);
 
   const handleConfirmActivate = () => {
     if (!canActivate) return;
@@ -144,6 +149,12 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
             </p>
           </div>
 
+          {isSupplyMagic && !canUseSupplyMagic && !isCooldown && !isFrozen && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 p-3 text-xs text-amber-200">
+              {supplyMagicUnavailableReason}
+            </div>
+          )}
+
           {/* Interactive Input 1: Flaucubista Lucky Number Bet */}
           {isFlute && !isCooldown && !isFrozen && (
             <div className="bg-[#151c2b] border-2 border-yellow-500/50 p-4 rounded-xl space-y-2.5">
@@ -247,6 +258,8 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                 ? `HABILIDAD EN RECARGA (${player.abilityCooldownRemaining})`
                 : isFrozen
                 ? 'NO DISPONIBLE (CONGELADO)'
+                : isSupplyMagic && !canUseSupplyMagic
+                ? 'SUMINISTRO NO DISPONIBLE'
                 : '¡ACTIVAR HABILIDAD AHORA!'}
             </span>
           </button>
