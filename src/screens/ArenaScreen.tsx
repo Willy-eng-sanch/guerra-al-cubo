@@ -12,7 +12,8 @@ import {
   CardCategory,
   CharacterType,
   CATEGORY_INFO,
-  getMaxHandSize
+  getMaxHandSize,
+  getMaxPreparedStanceSlots
 } from '../types/game';
 import { CHARACTERS } from '../data/characters';
 import { ArenaRing } from '../components/ArenaRing';
@@ -56,7 +57,6 @@ interface ArenaScreenProps {
   onFulfillCubinarcaUnequip: (weaponIndex: number) => void;
   onDefyCubinarcaOrder: () => void;
   deckCount: number;
-  discardPileCount: number;
   log: CombatLogEntry[];
   phase: MatchPhase;
   activeDiceRoll: ActiveDiceRoll | null;
@@ -74,7 +74,8 @@ interface ArenaScreenProps {
   onEquipWeapon: (cardId: number) => void;
   onPrepareStance: (cardId: number) => void;
   onPlayActionTrick: (cardId: number, targetId?: number) => void;
-  onUseHeroAbility: (targetId?: number, extraOption?: number) => void;
+  onUseHeroAbility: (targetId?: number, extraOption?: number, mode?: 'DRAIN' | 'DONATE') => void;
+  onTransferTrick: (cardId: number) => void;
   onEndTurn: () => void;
   onDismissDiceRoll: () => void;
   onToggleSpeed: () => void;
@@ -99,7 +100,6 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   onFulfillCubinarcaUnequip,
   onDefyCubinarcaOrder,
   deckCount,
-  discardPileCount,
   log,
   phase,
   activeDiceRoll,
@@ -118,6 +118,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   onPrepareStance,
   onPlayActionTrick,
   onUseHeroAbility,
+  onTransferTrick,
   onEndTurn,
   onDismissDiceRoll,
   onToggleSpeed,
@@ -187,7 +188,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
     ? players.find(p => p.id === currentTurnPlayer.guardingAllyId)?.name
     : null;
   const interceptionUnavailableReason = !currentTurnPlayer || currentTurnPlayer.actionPoints <= 0
-    ? 'Necesitas 1 Punto de Acción para activar Intercepción.'
+    ? 'Necesitas 1 Cúbit para activar Intercepción.'
     : currentTurnPlayer.isFrozen
     ? 'No puedes activar habilidades mientras estás congelado.'
     : hasPendingInterception
@@ -209,16 +210,16 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
       })
     : [];
   const hasSupplyMagicHandSpace = Boolean(currentTurnPlayer && currentTurnPlayer.actionPoints > 0 && currentTurnPlayer.hand.length < getMaxHandSize(currentTurnPlayer));
-  const hasTwoSupplyCards = deckCount + discardPileCount >= 2;
+  const hasTwoSupplyCards = deckCount >= 2;
   const canUseSupplyMagic = hasSupplyMagicHandSpace && supplyMagicAllies.length > 0 && hasTwoSupplyCards;
   const supplyMagicUnavailableReason = !currentTurnPlayer || currentTurnPlayer.actionPoints <= 0
-    ? 'Necesitas al menos 1 Punto de Acción para usar Suministro Mágico.'
+    ? 'Necesitas al menos 1 Cúbit para usar Suministro Mágico.'
     : currentTurnPlayer.hand.length >= getMaxHandSize(currentTurnPlayer)
     ? 'Deja al menos un espacio libre en la mano de Hada al Cubo para conservar la carta que no entregues.'
     : supplyMagicAllies.length === 0
     ? 'Necesitas un compañero vivo de tu mismo escuadrón con espacio disponible en su mano.'
     : !hasTwoSupplyCards
-    ? 'Se necesitan dos cartas disponibles entre el mazo y el descarte.'
+    ? 'Se necesitan dos cartas disponibles en la Pila General.'
     : '';
   const supplyMagicActor = supplyMagicOffer ? players.find(p => p.id === supplyMagicOffer.actorId) : null;
 
@@ -269,14 +270,12 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           </div>
         </div>
 
-        {/* Deck, Discard, Audio and Speed Toggle */}
+        {/* Pila General, Audio and Speed Toggle */}
         <div className="flex items-center gap-2 text-xs">
           <AudioControlBar />
 
           <div className="hidden lg:flex items-center gap-2 text-[11px] text-neutral-400 bg-[#121620] px-2.5 py-1 rounded-lg border border-[#21293a]">
-            <span>Mazo: <b className="text-white">{deckCount}</b>/60</span>
-            <span>|</span>
-            <span>Descarte: <b className="text-white">{discardPileCount}</b></span>
+            <span>Pila General: <b className="text-white">{deckCount}</b> cartas</span>
           </div>
 
           <button
@@ -315,7 +314,6 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
         <div className="w-full flex justify-between items-center px-1 mb-2">
           <GlobalDeckView
             deckCount={deckCount}
-            discardPileCount={discardPileCount}
             isDrawingAnimation={isDeckDrawing}
             className="w-full sm:w-auto"
           />
@@ -487,6 +485,19 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
               </div>
             )}
 
+            {(currentTurnPlayer.preparedStance || currentTurnPlayer.preparedStanceSecondary) && (
+              <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-cyan-900/50 bg-cyan-950/20 p-2">
+                <span className="text-[9px] font-black uppercase tracking-wider text-cyan-300">Activables preparados</span>
+                {[currentTurnPlayer.preparedStance, currentTurnPlayer.preparedStanceSecondary].filter(Boolean).map((stance, index) => (
+                  <span key={stance!.uid || stance!.id} className="rounded-md border border-cyan-600/40 bg-slate-900 px-2 py-1 text-[10px] text-cyan-100">
+                    {index + 1}. {stance!.name}
+                  </span>
+                ))}
+                <span className="text-[9px] text-neutral-500">
+                  ({[currentTurnPlayer.preparedStance, currentTurnPlayer.preparedStanceSecondary].filter(Boolean).length}/{getMaxPreparedStanceSlots(currentTurnPlayer)} espacios)
+                </span>
+              </div>
+            )}
             {/* Hand Cards Horizontal Carousel with PvZ Heroes Class & Synergy System */}
             <div>
               <div className="flex items-center justify-between text-[11px] text-neutral-400 font-semibold mb-1.5 px-1">
@@ -494,7 +505,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                   TUS CARTAS EN MANO ({currentTurnPlayer.hand.length}/{getMaxHandSize(currentTurnPlayer)})
                 </span>
                 <span className="text-yellow-400">
-                  Acciones restantes: <b>{currentTurnPlayer.actionPoints} AP</b>
+                  Cúbits disponibles: <b>{currentTurnPlayer.actionPoints}</b>
                 </span>
               </div>
               {isCubinjaTurn && (
@@ -600,10 +611,11 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                             </button>
                           ) : isCubinjaTurn ? (
                             <button
-                              disabled
-                              className="w-full py-1 bg-neutral-800 text-neutral-500 font-black text-[10px] rounded-lg tracking-wider cursor-not-allowed"
+                              disabled={currentTurnPlayer.actionPoints <= 0}
+                              onClick={() => onTransferTrick(card.id)}
+                              className="w-full py-1 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-40 text-white font-black text-[10px] rounded-lg tracking-wider"
                             >
-                              PROHIBIDO
+                              TRANSFERIR · 1 CÚBIT
                             </button>
                           ) : isStance ? (
                             <button
@@ -746,9 +758,9 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           canUseInterception={canUseInterception}
           interceptionUnavailableReason={interceptionUnavailableReason}
           onClose={() => setShowAbilityModal(false)}
-          onActivate={(targetId, extraOption) => {
+          onActivate={(targetId, extraOption, mode) => {
             setShowAbilityModal(false);
-            onUseHeroAbility(targetId, extraOption);
+            onUseHeroAbility(targetId, extraOption, mode);
           }}
         />
       )}

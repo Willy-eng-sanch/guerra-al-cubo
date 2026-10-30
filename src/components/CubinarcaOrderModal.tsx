@@ -76,8 +76,8 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
             >
               <Swords className="w-5 h-5 text-red-300" />
               <span className="flex-1">
-                <b className="block text-sm">Atacar a alguien</b>
-                <span className="text-[11px] text-neutral-400">Incluso puede ser un aliado de la víctima.</span>
+                <b className="block text-sm">Ordenar un ataque</b>
+                <span className="text-[11px] text-neutral-400">Puede designar a un rival o a un aliado: fuego amigo exclusivamente bajo este mandato.</span>
               </span>
             </button>
             {selectedKind === 'ATTACK_TARGET' && canAttack && (
@@ -118,7 +118,7 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
               <ShieldOff className="w-5 h-5 text-amber-300" />
               <span className="flex-1">
                 <b className="block text-sm">Desequipar un arma</b>
-                <span className="text-[11px] text-neutral-400">La víctima retira un arma de su mesa y la devuelve a su mano.</span>
+                <span className="text-[11px] text-neutral-400">La víctima retira un arma de su mesa y la devuelve a su mano; si no cabe, vuelve a la Pila General.</span>
               </span>
             </button>
 
@@ -136,10 +136,16 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
               <AlertTriangle className="w-5 h-5 text-amber-300 shrink-0" />
               <p className="text-xs text-amber-100">
                 {order?.kind === 'ATTACK_TARGET'
-                  ? `Ataca a ${players.find(player => player.id === order.attackTargetId)?.name ?? 'el objetivo señalado'}.`
+                  ? (() => {
+                      const target = players.find(player => player.id === order.attackTargetId);
+                      const friendlyFire = target && victim.teamId !== undefined && target.teamId === victim.teamId;
+                      return friendlyFire
+                        ? `MANDATO DE FUEGO AMIGO: ataca a ${target.name}. Solo esta orden permite atacar a un aliado.`
+                        : `Ataca a ${target?.name ?? 'el objetivo señalado'}.`;
+                    })()
                   : order?.kind === 'TRANSFER_CARD'
                   ? `Entrega una carta de tu mano a ${issuer.name}.`
-                  : `Retira un arma equipada y devuélvela a tu mano (si está llena, irá al descarte).`}
+                  : `Retira un arma equipada y devuélvela a tu mano; si está llena, vuelve a la Pila General.`}
                 {victim.blocksDisabledByOrder && ' Discordia ya te impide bloquear.'}
               </p>
             </div>
@@ -151,7 +157,11 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
                 onClick={onFulfillAttack}
                 className="w-full p-3 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 font-black text-sm flex items-center justify-center gap-2"
               >
-                Atacar a {players.find(player => player.id === order.attackTargetId)?.name ?? 'objetivo'}
+                {(() => {
+                  const target = players.find(player => player.id === order.attackTargetId);
+                  const friendlyFire = target && victim.teamId !== undefined && target.teamId === victim.teamId;
+                  return friendlyFire ? `Cumplir mandato: atacar aliado ${target.name}` : `Atacar a ${target?.name ?? 'objetivo'}`;
+                })()}
                 <ArrowRight className="w-4 h-4" />
               </button>
             )}
