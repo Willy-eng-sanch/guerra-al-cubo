@@ -26,9 +26,9 @@ La rama `feat/cubinarca-orden-imperativa` implementa:
 ## Pendientes de auditoría
 
 - **Cubogro (PR #10 integrado):** Piel de Piedra fija la capacidad de mano y ranuras de equipo en cero; bloquea las rutas de robo, uso, equipamiento, reacciones y transferencias. Falta validación funcional de partida.
-- **Tramcuboso (este PR):** Selección Afortunada aplica dos cartas por cada robo del mazo global, conserva una y descarta la otra. Los bots eligen mediante una heurística basada en rareza, sinergia y espacios de equipo/postura. Dados Trucados aún requiere pruebas manuales de empates y bloqueos.
-- **Cubinja:** verificar la prohibición de cartas Truco y la regla especial de Bloqueo Perfecto que no mitiga daño.
-- **Gladiacubon:** comprobar la reducción de daño y la ranura adicional en todos los caminos de equipamiento.
+- **Tramcuboso (PR #11 integrado):** Selección Afortunada aplica dos cartas por cada robo del mazo global, conserva una y descarta la otra. Los bots eligen mediante una heurística basada en rareza, sinergia y espacios de equipo/postura. Dados Trucados aún requiere pruebas manuales de empates y bloqueos.
+- **Cubinja (PR #12 abierto):** se bloquea el uso de cartas Truco y posturas; su coincidencia defensiva concede una carta pero no mitiga daño. PR permanece abierto en borrador y requiere pruebas.
+- **Gladiacubon (este PR):** Coraza ya reduce daño de ataques directos y como segundo objetivo de Aliento; este cambio extiende la reducción al daño reflejado que recibe como atacante. La ranura extra está centralizada en `getMaxWeaponSlots`: inicia con un arma y puede equipar dos por los caminos normal y de reacción; la IA respeta el mismo límite. **Intercepción no está implementada:** el modal y el handler no tienen selección/protección de aliado; faltan reglas de duración y coste para definirla sin inventar comportamiento.
 - **Racubitero:** comprobar el robo por daño y el robo doble cuando aparece un 5 en todos los modos.
 - **Cambiaformas:** comprobar transformación, duración, reversión y conservación de estado.
 - **Cubito de Hielo y Pirata:** verificar exactamente cuánto dura la congelación/anulación de turno y sus efectos sobre bloqueo.
@@ -37,6 +37,6 @@ La rama `feat/cubinarca-orden-imperativa` implementa:
 
 ## Verificación técnica
 
-Las revisiones de PR #3, #4, #6, #7, #8 y #9 han incluido inspección estática y despliegues de vista previa cuando estaban disponibles. Esto no equivale a una partida manual ni confirma todas las interacciones de combate.
+Las revisiones de PR #3, #4, #6, #7, #8, #9, #10 y #11 están integradas en `main`. PR #12 permanece abierto; este cambio propone PR #13. Las vistas previas recientes de Vercel se vieron limitadas por cuota de despliegue, y la revisión estática no equivale a una partida manual ni confirma todas las interacciones.
 
 Todavía se necesita ejecutar `npm run lint`, `npm run build` y una batería de pruebas manuales que cubra daño, barreras, Bloqueo Perfecto, órdenes pendientes, límites de mano, armas y cambios de turno. No considerar el juego validado funcionalmente hasta completar esas pruebas.
