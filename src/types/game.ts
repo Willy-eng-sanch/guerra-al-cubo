@@ -183,6 +183,7 @@ export interface PlayerState {
   perfectBlocks?: number; // Bloqueos perfectos realizados
   cardsDrawn?: number; // Cartas totales robadas del mazo
   nextAttackBonus?: number; // Bonificación acumulada de Acorde Violento
+  nextBreathBonus?: boolean; // Llamarada Doble: +1 de daño ineludible a ambos en el siguiente Aliento
 }
 
 export function getMaxHandSize(player: PlayerState): number {

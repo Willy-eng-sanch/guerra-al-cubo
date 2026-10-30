@@ -27,22 +27,38 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
     selectedTargetId || (validTargets.length > 0 ? validTargets[0].id : null)
   );
   const [fluteBet, setFluteBet] = useState<number>(3);
+  const [dracubonBlockerId, setDracubonBlockerId] = useState<number | null>(() =>
+    validTargets.find(target => target.id === selectedTargetId)?.id ?? validTargets[0]?.id ?? null
+  );
+  const [dracubonSecondTargetId, setDracubonSecondTargetId] = useState<number | null>(() =>
+    validTargets.find(target => target.id !== dracubonBlockerId)?.id ?? null
+  );
 
   const heroType = character.type;
   const isCooldown = player.abilityCooldownRemaining > 0;
   const isFrozen = player.isFrozen;
+  const isDracubon = heroType === CharacterType.DRACUBON;
 
   // Does this ability require choosing a rival?
   const needsTarget = heroType === CharacterType.CUBITO_DE_HIELO || heroType === CharacterType.PIRATA || heroType === CharacterType.CUBICULA;
-  const needsActionPoint = heroType === CharacterType.CUBICULA;
+  const needsActionPoint = heroType === CharacterType.CUBICULA || isDracubon;
   // Does this ability have a betting mechanic?
   const isFlute = heroType === CharacterType.FLAUCUBISTA_DESAFINADO;
   const isSupplyMagic = heroType === CharacterType.HADA_AL_CUBO;
 
-  const canActivate = !isCooldown && !isFrozen && (!needsTarget || currentTargetId !== null) && (!needsActionPoint || player.actionPoints > 0) && (!isSupplyMagic || canUseSupplyMagic);
+  const canActivate = !isCooldown && !isFrozen &&
+    (!needsTarget || currentTargetId !== null) &&
+    (!isDracubon || (validTargets.length >= 2 && dracubonBlockerId !== null && dracubonSecondTargetId !== null && dracubonBlockerId !== dracubonSecondTargetId)) &&
+    (!needsActionPoint || player.actionPoints > 0) &&
+    (!isSupplyMagic || canUseSupplyMagic);
 
   const handleConfirmActivate = () => {
     if (!canActivate) return;
+    if (isDracubon) {
+      // targetId = quien tira bloqueo por ambos; extraOption = segundo rival alcanzado.
+      onActivate(dracubonBlockerId ?? undefined, dracubonSecondTargetId ?? undefined);
+      return;
+    }
     onActivate(
       needsTarget ? (currentTargetId || undefined) : undefined,
       isFlute ? fluteBet : undefined
@@ -187,6 +203,73 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
             </div>
           )}
 
+          {/* Aliento: dos rivales y un defensor designado para una tirada compartida */}
+          {isDracubon && !isCooldown && !isFrozen && (
+            <div className="bg-[#151c2b] border-2 border-red-500/50 p-4 rounded-xl space-y-3">
+              <div className="space-y-1">
+                <span className="text-xs font-black text-red-300 flex items-center gap-1.5">
+                  <Swords className="w-4 h-4 text-red-400" />
+                  <span>Elige los dos rivales alcanzados por Aliento:</span>
+                </span>
+                <p className="text-[11px] text-neutral-300">Solo uno de ellos realizará la tirada de bloqueo; ese resultado se aplicará a ambos.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase text-amber-300">1. Rival que bloquea por ambos</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {validTargets.map(target => {
+                    const selected = dracubonBlockerId === target.id;
+                    return (
+                      <button
+                        key={`dracubon-blocker-${target.id}`}
+                        type="button"
+                        onClick={() => {
+                          setDracubonBlockerId(target.id);
+                          if (dracubonSecondTargetId === target.id) {
+                            setDracubonSecondTargetId(validTargets.find(candidate => candidate.id !== target.id)?.id ?? null);
+                          }
+                        }}
+                        className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${selected ? 'bg-red-950/80 border-red-400 ring-1 ring-red-400' : 'bg-[#1b2230] border-[#293448] hover:bg-[#232c3f]'}`}
+                      >
+                        <div>
+                          <span className="text-xs font-black block text-white">{target.name}</span>
+                          <span className="text-[10px] text-neutral-400">{target.hp} / {target.maxHp} HP</span>
+                        </div>
+                        {selected && <span className="text-[9px] font-black text-red-200">TIRA</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase text-cyan-300">2. Segundo rival alcanzado</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {validTargets.filter(target => target.id !== dracubonBlockerId).map(target => {
+                    const selected = dracubonSecondTargetId === target.id;
+                    return (
+                      <button
+                        key={`dracubon-second-${target.id}`}
+                        type="button"
+                        onClick={() => setDracubonSecondTargetId(target.id)}
+                        className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${selected ? 'bg-cyan-950/80 border-cyan-400 ring-1 ring-cyan-400' : 'bg-[#1b2230] border-[#293448] hover:bg-[#232c3f]'}`}
+                      >
+                        <div>
+                          <span className="text-xs font-black block text-white">{target.name}</span>
+                          <span className="text-[10px] text-neutral-400">{target.hp} / {target.maxHp} HP</span>
+                        </div>
+                        {selected && <Check className="w-4 h-4 text-cyan-300" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {validTargets.length < 2 && (
+                <p className="text-[11px] text-amber-200">Se necesitan al menos dos rivales vivos para usar Aliento.</p>
+              )}
+            </div>
+          )}
+
           {/* Interactive Input 2: Target Selection (Cubito de Hielo / Pirata) */}
           {needsTarget && !isCooldown && !isFrozen && (
             <div className="bg-[#151c2b] border-2 border-cyan-500/50 p-4 rounded-xl space-y-2.5">
@@ -261,6 +344,8 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                 ? 'NO DISPONIBLE (CONGELADO)'
                 : isSupplyMagic && !canUseSupplyMagic
                 ? 'SUMINISTRO NO DISPONIBLE'
+                : isDracubon && validTargets.length < 2
+                ? 'SE NECESITAN 2 RIVALES VIVOS'
                 : needsActionPoint && player.actionPoints <= 0
                 ? 'SIN ACCIONES (0 AP)'
                 : '¡ACTIVAR HABILIDAD AHORA!'}
