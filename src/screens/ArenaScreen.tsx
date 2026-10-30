@@ -9,6 +9,7 @@ import {
   TrickTiming,
   CardType,
   CardCategory,
+  CharacterType,
   CATEGORY_INFO,
   getMaxHandSize
 } from '../types/game';
@@ -20,6 +21,7 @@ import { GlobalDeckView } from '../components/GlobalDeckView';
 import { ReactionModal } from '../components/ReactionModal';
 import { InteractiveTacticalTutorial } from '../components/InteractiveTacticalTutorial';
 import { HeroAbilityModal } from '../components/HeroAbilityModal';
+import { SupplyMagicModal } from '../components/SupplyMagicModal';
 import { PostMatchStatsModal } from '../components/PostMatchStatsModal';
 import { AudioControlBar } from '../components/AudioControlBar';
 import { FTUECombatGuide } from '../components/FTUECombatGuide';
@@ -44,6 +46,8 @@ interface ArenaScreenProps {
   players: PlayerState[];
   currentTurnPlayer: PlayerState | null;
   selectedTargetId: number | null;
+  supplyMagicOffer: { actorId: number; cards: GameCard[] } | null;
+  onConfirmSupplyMagic: (cardIndex: number, allyId: number) => void;
   deckCount: number;
   discardPileCount: number;
   log: CombatLogEntry[];
@@ -80,6 +84,8 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   players,
   currentTurnPlayer,
   selectedTargetId,
+  supplyMagicOffer,
+  onConfirmSupplyMagic,
   deckCount,
   discardPileCount,
   log,
@@ -142,6 +148,30 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   );
 
   const selectedTarget = players.find(p => p.id === selectedTargetId);
+  const supplyMagicAllies = currentTurnPlayer?.teamId !== undefined
+    ? players.filter(p => {
+        const allyHero = p.activeMorphCharacter || p.characterType;
+        return p.id !== currentTurnPlayer.id &&
+          p.teamId === currentTurnPlayer.teamId &&
+          !p.isEliminated &&
+          p.hp > 0 &&
+          allyHero !== CharacterType.CUBOGRO &&
+          p.hand.length < getMaxHandSize(p);
+      })
+    : [];
+  const hasSupplyMagicHandSpace = Boolean(currentTurnPlayer && currentTurnPlayer.actionPoints > 0 && currentTurnPlayer.hand.length < getMaxHandSize(currentTurnPlayer));
+  const hasTwoSupplyCards = deckCount + discardPileCount >= 2;
+  const canUseSupplyMagic = hasSupplyMagicHandSpace && supplyMagicAllies.length > 0 && hasTwoSupplyCards;
+  const supplyMagicUnavailableReason = !currentTurnPlayer || currentTurnPlayer.actionPoints <= 0
+    ? 'Necesitas al menos 1 Punto de Acción para usar Suministro Mágico.'
+    : currentTurnPlayer.hand.length >= getMaxHandSize(currentTurnPlayer)
+    ? 'Deja al menos un espacio libre en la mano de Hada al Cubo para conservar la carta que no entregues.'
+    : supplyMagicAllies.length === 0
+    ? 'Necesitas un compañero vivo de tu mismo escuadrón con espacio disponible en su mano.'
+    : !hasTwoSupplyCards
+    ? 'Se necesitan dos cartas disponibles entre el mazo y el descarte.'
+    : '';
+  const supplyMagicActor = supplyMagicOffer ? players.find(p => p.id === supplyMagicOffer.actorId) : null;
 
   const isHumanTurn = currentTurnPlayer && !currentTurnPlayer.isBot && !currentTurnPlayer.isEliminated;
 
@@ -634,11 +664,31 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           player={currentTurnPlayer}
           validTargets={validTargets}
           selectedTargetId={selectedTargetId}
+          canUseSupplyMagic={canUseSupplyMagic}
+          supplyMagicUnavailableReason={supplyMagicUnavailableReason}
           onClose={() => setShowAbilityModal(false)}
           onActivate={(targetId, extraOption) => {
             setShowAbilityModal(false);
             onUseHeroAbility(targetId, extraOption);
           }}
+        />
+      )}
+
+      {supplyMagicOffer && supplyMagicActor && (
+        <SupplyMagicModal
+          actor={supplyMagicActor}
+          cards={supplyMagicOffer.cards}
+          allies={players.filter(p => {
+            const allyHero = p.activeMorphCharacter || p.characterType;
+            return p.id !== supplyMagicActor.id &&
+              p.teamId === supplyMagicActor.teamId &&
+              supplyMagicActor.teamId !== undefined &&
+              !p.isEliminated &&
+              p.hp > 0 &&
+              allyHero !== 'CUBOGRO' &&
+              p.hand.length < getMaxHandSize(p);
+          })}
+          onConfirm={onConfirmSupplyMagic}
         />
       )}
 
