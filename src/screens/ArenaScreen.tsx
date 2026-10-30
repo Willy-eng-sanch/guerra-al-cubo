@@ -9,6 +9,7 @@ import {
   TrickTiming,
   CardType,
   CardCategory,
+  CharacterType,
   CATEGORY_INFO,
   getMaxHandSize
 } from '../types/game';
@@ -154,7 +155,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           p.teamId === currentTurnPlayer.teamId &&
           !p.isEliminated &&
           p.hp > 0 &&
-          allyHero !== 'CUBOGRO' &&
+          allyHero !== CharacterType.CUBOGRO &&
           p.hand.length < getMaxHandSize(p);
       })
     : [];
