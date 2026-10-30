@@ -55,6 +55,21 @@ const getCharacterMaxHp = (characterType: CharacterType): number =>
 const isCubinjaHero = (player: PlayerState): boolean =>
   (player.activeMorphCharacter || player.characterType) === CharacterType.CUBINJA;
 
+// Devuelve al Gladiacubon vivo que cubre a un aliado, sin permitir que el atacante
+// se redirija daño a sí mismo mediante una cobertura propia.
+const findGladiacubonCovering = (
+  players: PlayerState[],
+  protectedPlayerId: number,
+  excludedPlayerId?: number
+): PlayerState | null =>
+  players.find(player =>
+    player.id !== excludedPlayerId &&
+    player.guardingAllyId === protectedPlayerId &&
+    !player.isEliminated &&
+    player.hp > 0 &&
+    (player.activeMorphCharacter || player.characterType) === CharacterType.GLADIACUBON
+  ) || null;
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<CurrentScreen>(CurrentScreen.TITLE);
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.QUICK_BATTLE);
@@ -936,16 +951,22 @@ export default function App() {
         const target = (targetId ? players.find(p => p.id === targetId && !p.isEliminated && p.id !== actorId) : null) ||
                        players.find(p => !p.isEliminated && p.id !== actorId && (!opposingTeam || p.teamId === opposingTeam));
         if (target) {
+          const coverageGuardian = findGladiacubonCovering(players, target.id, actorId);
+          const damageRecipient = coverageGuardian || target;
           setPlayers(prev => prev.map(p => {
             if (p.id === actorId) {
               return { ...p, damageDealt: (p.damageDealt || 0) + 1 };
             }
-            if (p.id !== target.id) return p;
+            if (p.id !== damageRecipient.id) return p;
             const newHp = Math.max(0, p.hp - 1);
             return { ...p, hp: newHp, isEliminated: newHp <= 0 };
           }));
-          addLog(`⚡ ¡Sinergia Kaboom de ${heroDef.displayName}! Dispara una chispa explosiva de 1 daño a ${target.name}.`, true, actor.name);
-          addFloatingText(target.id, "-1 DAÑO KABOOM", "#f97316");
+          if (coverageGuardian) {
+            addLog(`⚡ ¡Sinergia Kaboom! La cobertura de ${coverageGuardian.name} recibe el daño ineludible destinado a ${target.name}.`, true, coverageGuardian.name);
+          } else {
+            addLog(`⚡ ¡Sinergia Kaboom de ${heroDef.displayName}! Dispara una chispa explosiva de 1 daño a ${target.name}.`, true, actor.name);
+          }
+          addFloatingText(damageRecipient.id, "-1 DAÑO KABOOM", "#f97316");
           sound.playPunchHit();
         }
         break;
@@ -1010,13 +1031,7 @@ export default function App() {
     }
 
     // A live Gladiacubon covering this ally becomes the actual defender and rolls its own die.
-    const coveringGladiacubon = players.find(player =>
-      player.id !== attacker.id &&
-      player.guardingAllyId === intendedTarget.id &&
-      !player.isEliminated &&
-      player.hp > 0 &&
-      (player.activeMorphCharacter || player.characterType) === CharacterType.GLADIACUBON
-    ) || null;
+    const coveringGladiacubon = findGladiacubonCovering(players, intendedTarget.id, attacker.id);
     const target = coveringGladiacubon || intendedTarget;
     const wasInterceptedByGladiacubon = Boolean(coveringGladiacubon);
     if (wasInterceptedByGladiacubon) {
@@ -1027,6 +1042,13 @@ export default function App() {
     const secondaryTarget = secondaryTargetId === undefined
       ? null
       : players.find(p => p.id === secondaryTargetId) || null;
+    const secondaryCoverGuardian = secondaryTarget
+      ? findGladiacubonCovering(players, secondaryTarget.id, attacker.id)
+      : null;
+    const secondaryDamageRecipient = secondaryCoverGuardian || secondaryTarget;
+    const secondarySharesPrimaryRecipient = Boolean(
+      secondaryDamageRecipient && secondaryDamageRecipient.id === target.id
+    );
 
     // 1. Pre-calculate Attacker Roll
     const attackerHero = attacker.activeMorphCharacter || attacker.characterType;
@@ -1219,36 +1241,47 @@ export default function App() {
       addFloatingText(target.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
     }
 
-    // Aliento usa la misma tirada y el mismo resultado de bloqueo para ambos rivales;
-    // cada objetivo conserva sus propias reducciones y su propia Barrera de Escudo.
+    // Aliento conserva una sola tirada defensiva compartida, pero el daño del
+    // segundo objetivo también se redirige a su Gladiacubon si tiene cobertura.
+    // Cuando ambos impactos llegan al mismo guardián, se consumen barrera y postura
+    // de forma secuencial, sin aplicar dos veces una protección de un solo uso.
     let secondaryFinalDamage = 0;
-    let secondaryBarrierRemaining = secondaryTarget?.shieldBarrier || 0;
-    let updatedSecondaryStance = secondaryTarget?.preparedStance ?? null;
-    const activeSecondaryStance = secondaryTarget && !isCubinjaHero(secondaryTarget)
-      ? secondaryTarget.preparedStance
+    let secondaryBarrierRemaining = secondarySharesPrimaryRecipient
+      ? targetBarrierRemaining
+      : (secondaryDamageRecipient?.shieldBarrier || 0);
+    let updatedSecondaryStance = secondarySharesPrimaryRecipient
+      ? updatedTargetStance
+      : (secondaryDamageRecipient?.preparedStance ?? null);
+    const activeSecondaryStance = secondaryDamageRecipient &&
+      !secondarySharesPrimaryRecipient &&
+      !isCubinjaHero(secondaryDamageRecipient)
+      ? secondaryDamageRecipient.preparedStance
       : null;
-    if (useDracubonBreath && secondaryTarget && !isPerfectBlock) {
+    if (useDracubonBreath && secondaryTarget && secondaryDamageRecipient && !isPerfectBlock) {
       secondaryFinalDamage = modifiedAttackDamage;
       if (activeSecondaryStance?.id === 17) { // La Cortina de Mugre (Vape)
         secondaryFinalDamage = 0;
         updatedSecondaryStance = null;
-        addLog(`${secondaryTarget.name} se desvanece en su Humo de Vape preparado!`);
+        addLog(`${secondaryDamageRecipient.name} se desvanece en su Humo de Vape preparado!`);
       }
-      if (secondaryFinalDamage === 1 && secondaryTarget.equippedWeapons.some(w => w.id === 4)) {
+      if (secondaryFinalDamage === 1 && secondaryDamageRecipient.equippedWeapons.some(w => w.id === 4)) {
         secondaryFinalDamage = 0;
-        addLog(`La Chaqueta de Cuero de ${secondaryTarget.name} anuló el daño de 1.`);
+        addLog(`La Chaqueta de Cuero de ${secondaryDamageRecipient.name} anuló el daño de 1.`);
       }
-      const secondaryHero = secondaryTarget.activeMorphCharacter || secondaryTarget.characterType;
+      const secondaryHero = secondaryDamageRecipient.activeMorphCharacter || secondaryDamageRecipient.characterType;
       if (secondaryHero === CharacterType.GLADIACUBON && secondaryFinalDamage >= 3) {
         secondaryFinalDamage = Math.max(1, Math.floor(secondaryFinalDamage / 2));
-        addLog(`Gladiacubon de ${secondaryTarget.name} mitiga el impacto a ${secondaryFinalDamage} de daño.`);
+        addLog(`Coraza de ${secondaryDamageRecipient.name} mitiga el impacto a ${secondaryFinalDamage} de daño.`);
       }
       if (secondaryFinalDamage > 0 && secondaryBarrierRemaining > 0) {
         const absorbed = Math.min(secondaryBarrierRemaining, secondaryFinalDamage);
         secondaryBarrierRemaining -= absorbed;
         secondaryFinalDamage -= absorbed;
-        addLog(`🛡️ ¡La Barrera de Escudo de ${secondaryTarget.name} absorbió ${absorbed} de daño! (Quedan: ${secondaryBarrierRemaining})`);
-        addFloatingText(secondaryTarget.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
+        addLog(`🛡️ ¡La Barrera de Escudo de ${secondaryDamageRecipient.name} absorbió ${absorbed} de daño! (Quedan: ${secondaryBarrierRemaining})`);
+        addFloatingText(secondaryDamageRecipient.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
+      }
+      if (secondaryCoverGuardian) {
+        addLog(`¡Intercepción! ${secondaryCoverGuardian.name} recibe el daño de Aliento dirigido a ${secondaryTarget.name}.`, true, secondaryCoverGuardian.name);
       }
     }
 
@@ -1312,10 +1345,14 @@ export default function App() {
     const dracubonTrueDamage = useDracubonBreath && attacker.nextBreathBonus ? 1 : 0;
     const primaryDamageTotal = finalDamage + dracubonTrueDamage;
     const secondaryDamageTotal = secondaryFinalDamage + dracubonTrueDamage;
+    const damageAssignedToPrimaryRecipient = primaryDamageTotal +
+      (secondarySharesPrimaryRecipient ? secondaryDamageTotal : 0);
     const oldHp = target.hp;
-    const newHp = Math.max(0, oldHp - primaryDamageTotal);
-    const secondaryOldHp = secondaryTarget?.hp || 0;
-    const secondaryNewHp = secondaryTarget
+    const newHp = Math.max(0, oldHp - damageAssignedToPrimaryRecipient);
+    const secondaryOldHp = secondaryDamageRecipient && !secondarySharesPrimaryRecipient
+      ? secondaryDamageRecipient.hp
+      : 0;
+    const secondaryNewHp = secondaryDamageRecipient && !secondarySharesPrimaryRecipient
       ? Math.max(0, secondaryOldHp - secondaryDamageTotal)
       : 0;
 
