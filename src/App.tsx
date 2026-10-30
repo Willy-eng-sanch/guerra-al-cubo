@@ -56,6 +56,7 @@ interface TramcubosoCardChoice {
 interface PendingDiceReroll {
   tramcubosoId: number;
   attackerId: number;
+  defenderId: number;
   targetId: number;
   secondaryTargetId?: number;
   isCubiculaAbility: boolean;
@@ -122,6 +123,11 @@ export default function App() {
     actorName: string;
     isAttacker: boolean;
   } | null>(null);
+  const [specialSixQueue, setSpecialSixQueue] = useState<Array<{
+    playerId: number;
+    actorName: string;
+    isAttacker: boolean;
+  }>>([]);
   const [supplyMagicOffer, setSupplyMagicOffer] = useState<{ actorId: number; cards: GameCard[] } | null>(null);
   const [tramcubosoCardChoices, setTramcubosoCardChoices] = useState<TramcubosoCardChoice[]>([]);
   const [cubinarcaOrderOffer, setCubinarcaOrderOffer] = useState<{ issuerId: number; victimId: number } | null>(null);
@@ -1110,6 +1116,11 @@ export default function App() {
     const secondarySharesPrimaryRecipient = Boolean(
       secondaryDamageRecipient && secondaryDamageRecipient.id === target.id
     );
+    const attackerCombatWeapons = [...attacker.equippedWeapons, ...(attacker.borrowedEquipmentEffects || [])];
+    const targetCombatWeapons = [...target.equippedWeapons, ...(target.borrowedEquipmentEffects || [])];
+    const secondaryCombatWeapons = secondaryDamageRecipient
+      ? [...secondaryDamageRecipient.equippedWeapons, ...(secondaryDamageRecipient.borrowedEquipmentEffects || [])]
+      : [];
 
     // 1. Pre-calculate Attacker Roll
     const attackerHero = attacker.activeMorphCharacter || attacker.characterType;
@@ -1168,13 +1179,13 @@ export default function App() {
     let modifiedAttackDamage = isCubogroAbility
       ? Math.max(1, Math.floor(target.hp / 2))
       : attackerFinalVal;
-    if (!isCubogroAbility && attacker.equippedWeapons.some(w => w.id === 1) && modifiedAttackDamage >= 3) {
+    if (!isCubogroAbility && attackerCombatWeapons.some(w => w.id === 1) && modifiedAttackDamage >= 3) {
       modifiedAttackDamage += 1; // Bate de aluminio
     }
-    if (!isCubogroAbility && attacker.equippedWeapons.some(w => w.id === 6)) {
+    if (!isCubogroAbility && attackerCombatWeapons.some(w => w.id === 6)) {
       modifiedAttackDamage += 2; // Puño de hierro
     }
-    if (!isCubogroAbility && attacker.equippedWeapons.some(w => w.id === 22)) {
+    if (!isCubogroAbility && attackerCombatWeapons.some(w => w.id === 22)) {
       modifiedAttackDamage += 1; // Batería de coche
     }
 
@@ -1209,6 +1220,16 @@ export default function App() {
       defenderRolls.push(defenderFinalVal);
       isPerfectBlock = true;
       addLog(`¡${target.name} activa El Esquive de Callejón y consigue un Bloqueo Perfecto!`, true, target.name);
+    } else if (target.isFrozen) {
+      if (diceOverride) {
+        defenderRolls.push(...diceOverride.defenderRolls);
+        defenderFinalVal = defenderRolls[0] ?? 0;
+      } else {
+        const r = Math.floor(Math.random() * 6) + 1;
+        defenderRolls.push(r);
+        defenderFinalVal = r;
+      }
+      isPerfectBlock = false; // Congelado no puede bloquear aunque se relancen los dados.
     } else if (diceOverride) {
       defenderRolls.push(...diceOverride.defenderRolls);
       if (defenderHero === CharacterType.TRAMCUBOSO) {
@@ -1223,12 +1244,7 @@ export default function App() {
         else isPerfectBlock = matchedAttack;
         if (isCubinjaCardBlock) addLog(`¡Arsenal Ilimitado! ${target.name} coincide en defensa: obtiene una carta, pero el daño no se bloquea ni se reduce.`, true, target.name);
       }
-    } else if (target.isFrozen) {
-      const r = Math.floor(Math.random() * 6) + 1;
-      defenderRolls.push(r);
-      defenderFinalVal = r;
-      isPerfectBlock = false; // Congelado no puede bloquear
-    } else if (defenderHero === CharacterType.CUBINJA) {
+    } else if (defenderHero === CharacterType.CUBINJA) {    } else if (defenderHero === CharacterType.CUBINJA) {
       const r = Math.floor(Math.random() * 6) + 1;
       defenderRolls.push(r);
       defenderFinalVal = r;
@@ -1262,7 +1278,7 @@ export default function App() {
 
     const tramcubosoCandidate =
       attackerHero === CharacterType.TRAMCUBOSO &&
-      attacker.actionPoints > 0 &&
+      attacker.actionPoints > 1 &&
       attacker.abilityCooldownRemaining === 0 &&
       !attacker.isFrozen
         ? attacker
@@ -1278,6 +1294,7 @@ export default function App() {
       setPendingDiceReroll({
         tramcubosoId: tramcubosoCandidate.id,
         attackerId: attacker.id,
+        defenderId: target.id,
         targetId: intendedTarget.id,
         secondaryTargetId,
         isCubiculaAbility,
@@ -1289,19 +1306,27 @@ export default function App() {
       return;
     }
 
+    const sixChoices: Array<{ playerId: number; actorName: string; isAttacker: boolean }> = [];
     const attackerShowsSix = attackerHero === CharacterType.TRAMCUBOSO
       ? attackerFinalVal === 6
       : attackerRolls.includes(6);
     const defenderShowsSix = defenderHero === CharacterType.TRAMCUBOSO
       ? defenderFinalVal === 6
       : defenderRolls.includes(6);
+
     if (attackerShowsSix) {
-      if (!attacker.isBot) setSpecialSixChoice({ playerId: attacker.id, actorName: attacker.name, isAttacker: true });
-      else handleApplySixChoice(attacker.id, getMaxHandSize(attacker) === 0 || attacker.hand.length >= getMaxHandSize(attacker) ? 'EXTRA_TURN' : 'CARD');
+      if (attacker.isBot) {
+        handleApplySixChoice(attacker.id, getMaxHandSize(attacker) === 0 || attacker.hand.length >= getMaxHandSize(attacker) ? 'EXTRA_TURN' : 'CARD');
+      } else sixChoices.push({ playerId: attacker.id, actorName: attacker.name, isAttacker: true });
     }
     if (defenderShowsSix) {
-      if (!target.isBot) setSpecialSixChoice({ playerId: target.id, actorName: target.name, isAttacker: false });
-      else handleApplySixChoice(target.id, target.hand.length < getMaxHandSize(target) ? 'CARD' : 'EXTRA_TURN');
+      if (target.isBot) {
+        handleApplySixChoice(target.id, target.hand.length < getMaxHandSize(target) ? 'CARD' : 'EXTRA_TURN');
+      } else sixChoices.push({ playerId: target.id, actorName: target.name, isAttacker: false });
+    }
+    if (sixChoices.length > 0) {
+      setSpecialSixChoice(sixChoices[0]);
+      setSpecialSixQueue(previous => [...previous, ...sixChoices.slice(1)]);
     }
 
     if (wasInterceptedByGladiacubon) {
@@ -1309,20 +1334,6 @@ export default function App() {
         addLog(`¡Cobertura cumplida! ${target.name} consiguió el Bloqueo Perfecto usando su propio dado y protegió a ${intendedTarget.name}. La cobertura queda liberada.`, true, target.name);
       } else {
         addLog(`La cobertura de ${target.name} sobre ${intendedTarget.name} continúa activa: aún debe conseguir un Bloqueo Perfecto para liberarla.`, false, target.name);
-      }
-    }
-
-    // Special Face 6 Effect check for Defender
-    if (defenderRolls.includes(6)) {
-      if (!target.isBot) {
-        setSpecialSixChoice({
-          playerId: target.id,
-          actorName: target.name,
-          isAttacker: false
-        });
-      } else {
-        const botChoice = target.hand.length < 2 ? 'CARD' : 'EXTRA_TURN';
-        handleApplySixChoice(target.id, botChoice);
       }
     }
 
@@ -1334,7 +1345,7 @@ export default function App() {
       addLog(`${target.name} se desvanece en su Humo de Vape preparado!`);
     }
 
-    if (finalDamage === 1 && target.equippedWeapons.some(w => w.id === 4)) {
+    if (finalDamage === 1 && targetCombatWeapons.some(w => w.id === 4)) {
       finalDamage = 0;
       addLog(`La Chaqueta de Cuero de ${target.name} anuló el daño de 1.`);
     }
@@ -1384,7 +1395,7 @@ export default function App() {
         updatedSecondaryStance = null;
         addLog(`${secondaryDamageRecipient.name} se desvanece en su Humo de Vape preparado!`);
       }
-      if (secondaryFinalDamage === 1 && secondaryDamageRecipient.equippedWeapons.some(w => w.id === 4)) {
+      if (secondaryFinalDamage === 1 && secondaryCombatWeapons.some(w => w.id === 4)) {
         secondaryFinalDamage = 0;
         addLog(`La Chaqueta de Cuero de ${secondaryDamageRecipient.name} anuló el daño de 1.`);
       }
@@ -1677,7 +1688,7 @@ export default function App() {
               sound.playCardDraw();
             }
             const targetHeroDef = CHARACTERS[defenderHero];
-            if (target.equippedWeapons.some(w => w.id === 2)) {
+            if (targetCombatWeapons.some(w => w.id === 2)) {
               defenderHpHeal += 1;
               addLog(`${target.name} cura +1 HP extra con su Tapa de Alcantarilla al bloquear.`);
             }
@@ -2117,7 +2128,7 @@ export default function App() {
     const newHand = attacker.hand.filter(c => c.id !== cardId);
 
     if (attacker.preparedStance) {
-      setDiscardPile(prev => [...prev, attacker.preparedStance!]);
+      returnCardsToGlobalPile([attacker.preparedStance!]);
     }
 
     setPlayers(prev =>
@@ -2821,7 +2832,7 @@ export default function App() {
 
     const discardedCards = plans.flatMap(plan => plan.discardedCards);
     if (discardedCards.length > 0) {
-      setDiscardPile(previous => [...previous, ...discardedCards]);
+      returnCardsToGlobalPile(discardedCards);
     }
 
     plans.forEach(plan => {
@@ -2927,7 +2938,7 @@ export default function App() {
               blocksDisabledByOrder: false,
               cubinarcaOrderDefiedThisTurn: false
             } : player));
-            if (!hasSpace) setDiscardPile(prev => [...prev, weapon]);
+            if (!hasSpace) returnCardsToGlobalPile([weapon]);
             addLog(`${activePlayer.name} obedece la orden y desequipa [${weapon.name}].`, true, activePlayer.name);
           } else {
             setPlayers(prev => prev.map(player => player.id === activePlayer.id
@@ -3161,7 +3172,7 @@ export default function App() {
           <TramcubosoRerollModal
             actorName={tram.name}
             attackerName={attacker.name}
-            defenderName={defender?.name || 'Defensor'}
+            defenderName={players.find(player => player.id === pendingDiceReroll.defenderId)?.name || 'Defensor'}
             attackerRolls={pendingDiceReroll.attackerRolls}
             defenderRolls={pendingDiceReroll.defenderRolls}
             onKeep={() => resolveTramcubosoReroll(false)}
@@ -3188,7 +3199,12 @@ export default function App() {
           actorName={specialSixChoice.actorName}
           isAttacker={specialSixChoice.isAttacker}
           canDrawCard={players.some(p => p.id === specialSixChoice.playerId && p.hand.length < getMaxHandSize(p))}
-          onChoose={(choice) => handleApplySixChoice(specialSixChoice.playerId, choice)}
+          onChoose={(choice) => {
+            handleApplySixChoice(specialSixChoice.playerId, choice);
+            const nextChoice = specialSixQueue[0];
+            setSpecialSixQueue(previous => previous.slice(1));
+            if (nextChoice) setSpecialSixChoice(nextChoice);
+          }}
         />
       )}
       {!specialSixChoice && tramcubosoCardChoices.length > 0 && (
