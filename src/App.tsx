@@ -1711,7 +1711,12 @@ export default function App() {
             );
             if (target) {
               setSelectedTargetId(target.id);
-              handleAttack(target.id);
+              const activeHero = currentP.activeMorphCharacter || currentP.characterType;
+              if (activeHero === CharacterType.CUBICULA && currentP.actionPoints >= 2) {
+                handleUseHeroAbility(target.id);
+              } else {
+                handleAttack(target.id);
+              }
             }
           }
         }
