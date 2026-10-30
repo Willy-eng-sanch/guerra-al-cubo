@@ -6,6 +6,7 @@ import {
   GameCard,
   MatchPhase,
   PlayerState,
+  CubinarcaOrderKind,
   TrickTiming,
   CardType,
   CardCategory,
@@ -22,6 +23,7 @@ import { ReactionModal } from '../components/ReactionModal';
 import { InteractiveTacticalTutorial } from '../components/InteractiveTacticalTutorial';
 import { HeroAbilityModal } from '../components/HeroAbilityModal';
 import { SupplyMagicModal } from '../components/SupplyMagicModal';
+import { CubinarcaOrderModal } from '../components/CubinarcaOrderModal';
 import { PostMatchStatsModal } from '../components/PostMatchStatsModal';
 import { AudioControlBar } from '../components/AudioControlBar';
 import { FTUECombatGuide } from '../components/FTUECombatGuide';
@@ -48,6 +50,11 @@ interface ArenaScreenProps {
   selectedTargetId: number | null;
   supplyMagicOffer: { actorId: number; cards: GameCard[] } | null;
   onConfirmSupplyMagic: (cardIndex: number, allyId: number) => void;
+  cubinarcaOrderOffer: { issuerId: number; victimId: number } | null;
+  onIssueCubinarcaOrder: (kind: CubinarcaOrderKind, attackTargetId?: number) => void;
+  onFulfillCubinarcaTransfer: (cardIndex: number) => void;
+  onFulfillCubinarcaUnequip: (weaponIndex: number) => void;
+  onDefyCubinarcaOrder: () => void;
   deckCount: number;
   discardPileCount: number;
   log: CombatLogEntry[];
@@ -86,6 +93,11 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   selectedTargetId,
   supplyMagicOffer,
   onConfirmSupplyMagic,
+  cubinarcaOrderOffer,
+  onIssueCubinarcaOrder,
+  onFulfillCubinarcaTransfer,
+  onFulfillCubinarcaUnequip,
+  onDefyCubinarcaOrder,
   deckCount,
   discardPileCount,
   log,
@@ -673,6 +685,40 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           }}
         />
       )}
+
+      {cubinarcaOrderOffer && (() => {
+        const issuer = players.find(player => player.id === cubinarcaOrderOffer.issuerId);
+        const victim = players.find(player => player.id === cubinarcaOrderOffer.victimId);
+        return issuer && victim ? (
+          <CubinarcaOrderModal
+            mode="ISSUE"
+            issuer={issuer}
+            victim={victim}
+            players={players}
+            onIssue={onIssueCubinarcaOrder}
+          />
+        ) : null;
+      })()}
+
+      {!cubinarcaOrderOffer && currentTurnPlayer?.cubinarcaOrder && !currentTurnPlayer.isBot && !currentTurnPlayer.cubinarcaOrderDefiedThisTurn && !(currentTurnPlayer.cubinarcaOrder.kind === 'ATTACK_TARGET' && currentTurnPlayer.actionPoints <= 0) && (() => {
+        const issuer = players.find(player => player.id === currentTurnPlayer.cubinarcaOrder?.issuerId);
+        return issuer ? (
+          <CubinarcaOrderModal
+            mode="FULFILL"
+            issuer={issuer}
+            victim={currentTurnPlayer}
+            players={players}
+            order={currentTurnPlayer.cubinarcaOrder}
+            onFulfillAttack={() => {
+              const targetId = currentTurnPlayer.cubinarcaOrder?.attackTargetId;
+              if (targetId !== undefined) onAttack(targetId);
+            }}
+            onTransferCard={onFulfillCubinarcaTransfer}
+            onUnequipWeapon={onFulfillCubinarcaUnequip}
+            onDefy={onDefyCubinarcaOrder}
+          />
+        ) : null;
+      })()}
 
       {supplyMagicOffer && supplyMagicActor && (
         <SupplyMagicModal

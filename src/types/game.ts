@@ -159,6 +159,14 @@ export interface CharacterDef {
   selectionQuote?: string;
 }
 
+export type CubinarcaOrderKind = 'ATTACK_TARGET' | 'TRANSFER_CARD' | 'UNEQUIP_WEAPON';
+
+export interface CubinarcaOrder {
+  issuerId: number;
+  kind: CubinarcaOrderKind;
+  attackTargetId?: number;
+}
+
 export interface PlayerState {
   id: number;
   name: string;
@@ -184,6 +192,9 @@ export interface PlayerState {
   cardsDrawn?: number; // Cartas totales robadas del mazo
   nextAttackBonus?: number; // Bonificación acumulada de Acorde Violento
   nextBreathBonus?: boolean; // Llamarada Doble: +1 de daño ineludible a ambos en el siguiente Aliento
+  cubinarcaOrder?: CubinarcaOrder | null; // Orden pendiente dictada por Cubinarca
+  blocksDisabledByOrder?: boolean; // Penalización de Discordia mientras desobedezca
+  cubinarcaOrderDefiedThisTurn?: boolean; // Oculta el aviso hasta el siguiente turno tras desobedecer
 }
 
 export function getMaxHandSize(player: PlayerState): number {
