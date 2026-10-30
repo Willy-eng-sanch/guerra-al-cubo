@@ -148,7 +148,15 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
 
   const selectedTarget = players.find(p => p.id === selectedTargetId);
   const supplyMagicAllies = currentTurnPlayer?.teamId !== undefined
-    ? players.filter(p => p.id !== currentTurnPlayer.id && p.teamId === currentTurnPlayer.teamId && !p.isEliminated && p.hp > 0 && p.hand.length < getMaxHandSize(p))
+    ? players.filter(p => {
+        const allyHero = p.activeMorphCharacter || p.characterType;
+        return p.id !== currentTurnPlayer.id &&
+          p.teamId === currentTurnPlayer.teamId &&
+          !p.isEliminated &&
+          p.hp > 0 &&
+          allyHero !== 'CUBOGRO' &&
+          p.hand.length < getMaxHandSize(p);
+      })
     : [];
   const hasSupplyMagicHandSpace = Boolean(currentTurnPlayer && currentTurnPlayer.actionPoints > 0 && currentTurnPlayer.hand.length < getMaxHandSize(currentTurnPlayer));
   const canUseSupplyMagic = hasSupplyMagicHandSpace && supplyMagicAllies.length > 0;
@@ -666,7 +674,16 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
         <SupplyMagicModal
           actor={supplyMagicActor}
           cards={supplyMagicOffer.cards}
-          allies={players.filter(p => p.id !== supplyMagicActor.id && p.teamId === supplyMagicActor.teamId && supplyMagicActor.teamId !== undefined && !p.isEliminated && p.hp > 0 && p.hand.length < getMaxHandSize(p))}
+          allies={players.filter(p => {
+            const allyHero = p.activeMorphCharacter || p.characterType;
+            return p.id !== supplyMagicActor.id &&
+              p.teamId === supplyMagicActor.teamId &&
+              supplyMagicActor.teamId !== undefined &&
+              !p.isEliminated &&
+              p.hp > 0 &&
+              allyHero !== 'CUBOGRO' &&
+              p.hand.length < getMaxHandSize(p);
+          })}
           onConfirm={onConfirmSupplyMagic}
         />
       )}
