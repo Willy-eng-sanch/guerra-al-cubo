@@ -1392,7 +1392,7 @@ export default function App() {
       defenderRolls,
       defenderFinalVal,
       isPerfectBlock,
-      damageDealt: primaryDamageTotal,
+      damageDealt: damageAssignedToPrimaryRecipient,
       phase: 'RUSH_TO_CENTER'
     });
 
@@ -1409,18 +1409,26 @@ export default function App() {
         if (isPerfectBlock) {
           sound.playPerfectBlock();
           addFloatingText(target.id, "¡SUPER-BLOQUEO HEROICO!", "#00e5ff");
-        } else if (primaryDamageTotal > 0) {
+        } else if (damageAssignedToPrimaryRecipient > 0) {
           sound.playPunchHit();
-          addFloatingText(target.id, `-${primaryDamageTotal} HP`, "#ff1744");
+          const primaryCoverageLabel = wasInterceptedByGladiacubon ||
+            (secondarySharesPrimaryRecipient && Boolean(secondaryCoverGuardian))
+            ? " · COBERTURA"
+            : "";
+          addFloatingText(target.id, `-${damageAssignedToPrimaryRecipient} HP${primaryCoverageLabel}`, primaryCoverageLabel ? "#60a5fa" : "#ff1744");
         } else {
           sound.playCartoonBoing(260);
           addFloatingText(target.id, "¡EVADIDO!", "#7c4dff");
         }
-        if (useDracubonBreath && secondaryTarget) {
+        if (useDracubonBreath && secondaryTarget && secondaryDamageRecipient && !secondarySharesPrimaryRecipient) {
           addFloatingText(
-            secondaryTarget.id,
-            secondaryDamageTotal > 0 ? `-${secondaryDamageTotal} HP ALIENTO` : `¡BLOQUEADO POR ${target.name}!`,
-            secondaryDamageTotal > 0 ? "#ff1744" : "#7c4dff"
+            secondaryDamageRecipient.id,
+            secondaryDamageTotal > 0
+              ? `-${secondaryDamageTotal} HP${secondaryCoverGuardian ? " · COBERTURA" : " ALIENTO"}`
+              : `¡BLOQUEADO POR ${target.name}!`,
+            secondaryDamageTotal > 0
+              ? (secondaryCoverGuardian ? "#60a5fa" : "#ff1744")
+              : "#7c4dff"
           );
         }
         if (dracubonReflectTriggered) {
@@ -1451,7 +1459,7 @@ export default function App() {
             defenderFinalVal,
             isPerfectBlock,
             isCubinjaCardBlock,
-            damageDealt: primaryDamageTotal,
+            damageDealt: damageAssignedToPrimaryRecipient,
             attackerName: attacker.name,
             defenderName: useDracubonBreath ? `${target.name} (bloquea por ambos)` : target.name
           });
@@ -1460,8 +1468,8 @@ export default function App() {
           const multiplesOf5 = [20, 15, 10, 5];
           const crossedMultiples = [
             ...multiplesOf5.filter(m => oldHp >= m && newHp < m).map(m => `${m} HP (${target.name})`),
-            ...(secondaryTarget
-              ? multiplesOf5.filter(m => secondaryOldHp >= m && secondaryNewHp < m).map(m => `${m} HP (${secondaryTarget.name})`)
+            ...(secondaryDamageRecipient && !secondarySharesPrimaryRecipient
+              ? multiplesOf5.filter(m => secondaryOldHp >= m && secondaryNewHp < m).map(m => `${m} HP (${secondaryDamageRecipient.name})`)
               : [])
           ];
 
@@ -1475,7 +1483,7 @@ export default function App() {
             triggerDeckAnimation();
             sound.playCardDraw();
             addLog(
-              `¡Umbral de vida quebrado! ${attacker.name} cruzó múltiplos de 5 de ${target.name}${secondaryTarget ? ` y ${secondaryTarget.name}` : ""} (umbrales: ${crossedMultiples.join(', ')}) y roba ${attackerCardsToAdd} carta(s) del Mazo Global.`,
+              `¡Umbral de vida quebrado! ${attacker.name} cruzó múltiplos de 5 de ${target.name}${secondaryDamageRecipient && !secondarySharesPrimaryRecipient ? ` y ${secondaryDamageRecipient.name}` : ""} (umbrales: ${crossedMultiples.join(', ')}) y roba ${attackerCardsToAdd} carta(s) del Mazo Global.`,
               true
             );
             addFloatingText(attacker.id, `+${attackerCardsToAdd} CARTA MAZO`, "#ffd600");
@@ -1528,8 +1536,8 @@ export default function App() {
             if (defenderHero === CharacterType.DRACUBON) {
               addLog(`¡Llamarada Doble preparada! El próximo Aliento de ${target.name} hará 1 de daño ineludible a ambos objetivos.`, true, target.name);
             }
-          } else if (primaryDamageTotal > 0) {
-            narrator.narrateAttack(attacker.name, target.name, primaryDamageTotal, attackerFinalVal);
+          } else if (damageAssignedToPrimaryRecipient > 0) {
+            narrator.narrateAttack(attacker.name, target.name, damageAssignedToPrimaryRecipient, attackerFinalVal);
           }
 
           // Resolve card rewards outside the React state updater to keep deck mutations deterministic.
@@ -1625,20 +1633,30 @@ export default function App() {
                     : p.nextBreathBonus,
                   hand: newHand,
                   preparedStance: updatedTargetStance,
-                  shieldBarrier: targetBarrierRemaining,
-                  guardingAllyId: wasInterceptedByGladiacubon && (isPerfectBlock || newHp <= 0) ? null : p.guardingAllyId,
+                  shieldBarrier: secondarySharesPrimaryRecipient ? secondaryBarrierRemaining : targetBarrierRemaining,
+                  guardingAllyId: (
+                    wasInterceptedByGladiacubon ||
+                    (secondarySharesPrimaryRecipient && Boolean(secondaryCoverGuardian))
+                  ) && (isPerfectBlock || newHp <= 0)
+                    ? null
+                    : p.guardingAllyId,
                   isEliminated: newHp <= 0,
                   perfectBlocks: (p.perfectBlocks || 0) + (isPerfectBlock || isCubinjaCardBlock ? 1 : 0),
                   cardsDrawn: (p.cardsDrawn || 0) + defenderDrawResult.drawnCount
                 };
-              } else if (secondaryTarget && p.id === secondaryTarget.id) {
-                const secondaryHero = secondaryTarget.activeMorphCharacter || secondaryTarget.characterType;
+              } else if (
+                secondaryDamageRecipient &&
+                !secondarySharesPrimaryRecipient &&
+                p.id === secondaryDamageRecipient.id
+              ) {
+                const secondaryHero = secondaryDamageRecipient.activeMorphCharacter || secondaryDamageRecipient.characterType;
                 return {
                   ...p,
                   hp: secondaryNewHp,
                   isEliminated: secondaryNewHp <= 0,
                   shieldBarrier: secondaryBarrierRemaining,
                   preparedStance: updatedSecondaryStance,
+                  guardingAllyId: secondaryCoverGuardian && secondaryNewHp <= 0 ? null : p.guardingAllyId,
                   nextAttackBonus: secondaryHero === CharacterType.FLAUCUBISTA_DESAFINADO && secondaryDamageTotal > 0
                     ? (p.nextAttackBonus || 0) + 1
                     : p.nextAttackBonus
@@ -1669,10 +1687,14 @@ export default function App() {
             narrator.narrateElimination(attacker.name);
           }
 
-          if (secondaryTarget && secondaryNewHp <= 0) {
+          if (
+            secondaryDamageRecipient &&
+            !secondarySharesPrimaryRecipient &&
+            secondaryNewHp <= 0
+          ) {
             sound.playElimination();
-            addLog(`¡K.O.! ${secondaryTarget.name} ha sido eliminado por el segundo impacto de Aliento.`, true);
-            narrator.narrateElimination(secondaryTarget.name);
+            addLog(`¡K.O.! ${secondaryDamageRecipient.name} ha sido eliminado por el segundo impacto de Aliento.`, true);
+            narrator.narrateElimination(secondaryDamageRecipient.name);
           }
 
           if (newHp <= 0) {
@@ -2153,23 +2175,46 @@ export default function App() {
       sound.playDiceRoll();
 
       if (roll === chosenNum) {
-        const affectedEnemies = players.filter(p => p.id !== actor.id && !p.isEliminated).length;
-        setPlayers(prev =>
-          prev.map(p => {
-            if (p.id === actor.id) {
-              return {
-                ...p,
-                hp: Math.min(p.maxHp, p.hp + 2),
-                damageDealt: (p.damageDealt || 0) + (affectedEnemies * 2)
-              };
-            }
-            if (!p.isEliminated) {
-              const nhp = Math.max(0, p.hp - 2);
-              return { ...p, hp: nhp, isEliminated: nhp <= 0 };
-            }
-            return p;
-          })
-        );
+        const affectedPlayers = players.filter(p => p.id !== actor.id && !p.isEliminated);
+        const damageByRecipient = new Map<number, number>();
+        const interceptedDamageByGuardian = new Map<number, { name: string; protectedNames: string[] }>();
+        affectedPlayers.forEach(protectedPlayer => {
+          const guardian = findGladiacubonCovering(players, protectedPlayer.id, actor.id);
+          const recipientId = guardian?.id ?? protectedPlayer.id;
+          damageByRecipient.set(recipientId, (damageByRecipient.get(recipientId) || 0) + 2);
+          if (guardian) {
+            const entry = interceptedDamageByGuardian.get(guardian.id) || {
+              name: guardian.name,
+              protectedNames: []
+            };
+            entry.protectedNames.push(protectedPlayer.name);
+            interceptedDamageByGuardian.set(guardian.id, entry);
+          }
+        });
+        setPlayers(prev => prev.map(p => {
+          if (p.id === actor.id) {
+            return {
+              ...p,
+              hp: Math.min(p.maxHp, p.hp + 2),
+              damageDealt: (p.damageDealt || 0) + (affectedPlayers.length * 2)
+            };
+          }
+          const incomingDamage = damageByRecipient.get(p.id) || 0;
+          if (incomingDamage <= 0) return p;
+          const nextHp = Math.max(0, p.hp - incomingDamage);
+          return { ...p, hp: nextHp, isEliminated: nextHp <= 0 };
+        }));
+        interceptedDamageByGuardian.forEach((entry, guardianId) => {
+          addLog(
+            `¡Intercepción! ${entry.name} recibe 2 de daño ineludible por cada protegido alcanzado (${entry.protectedNames.join(", ")}); se acumula con el impacto directo que también reciba.`,
+            true,
+            entry.name
+          );
+          addFloatingText(guardianId, `+${entry.protectedNames.length * 2} DAÑO INTERCEPTADO`, "#60a5fa");
+        });
+        damageByRecipient.forEach((damage, recipientId) => {
+          addFloatingText(recipientId, `-${damage} DAÑO INELUDIBLE`, "#ff1744");
+        });
         addLog(`¡Flaucubista acertó su número apostado (${chosenNum}) con un ${roll}! 2 de daño ineludible a todos y se cura 2 HP.`, true);
       } else {
         const selfDamage = Math.max(1, Math.floor(roll / 2));
