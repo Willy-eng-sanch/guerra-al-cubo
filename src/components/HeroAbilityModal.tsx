@@ -154,6 +154,11 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                   <Snowflake className="w-3 h-3" />
                   Congelado
                 </span>
+              ) : isRacubitero ? (
+                <span className="bg-amber-950 text-amber-200 border border-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Zap className="w-3 h-3" />
+                  Automática
+                </span>
               ) : (
                 <span className="bg-emerald-950 text-emerald-300 border border-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                   <Check className="w-3 h-3" />
