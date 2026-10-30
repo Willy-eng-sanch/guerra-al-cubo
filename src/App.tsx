@@ -763,14 +763,33 @@ export default function App() {
   };
 
   // Execute Attack
-  const handleAttack = (targetId: number, isCubiculaAbility: boolean = false) => {
+  const handleAttack = (
+    targetId: number,
+    isCubiculaAbility: boolean = false,
+    secondaryTargetId?: number
+  ) => {
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || attacker.isFrozen) return;
     const target = players.find(p => p.id === targetId);
-    if (!target || target.isEliminated || target.id === attacker.id) return;
+    if (!target || target.isEliminated || target.hp <= 0 || target.id === attacker.id) return;
+    const secondaryTarget = secondaryTargetId === undefined
+      ? null
+      : players.find(p => p.id === secondaryTargetId) || null;
 
     // 1. Pre-calculate Attacker Roll
     const attackerHero = attacker.activeMorphCharacter || attacker.characterType;
+    if (
+      secondaryTargetId !== undefined &&
+      (attackerHero !== CharacterType.DRACUBON ||
+        !secondaryTarget ||
+        secondaryTarget.id === target.id ||
+        secondaryTarget.id === attacker.id ||
+        secondaryTarget.isEliminated ||
+        secondaryTarget.hp <= 0)
+    ) return;
+    const opposingTeamId = attacker.teamId === 1 ? 2 : attacker.teamId === 2 ? 1 : null;
+    if (secondaryTarget && opposingTeamId !== null && secondaryTarget.teamId !== opposingTeamId) return;
+    const useDracubonBreath = attackerHero === CharacterType.DRACUBON && secondaryTarget !== null;
     const attackerRolls: number[] = [];
     let attackerFinalVal: number;
 
@@ -916,6 +935,36 @@ export default function App() {
       addFloatingText(target.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
     }
 
+    // Aliento usa la misma tirada y el mismo resultado de bloqueo para ambos rivales;
+    // cada objetivo conserva sus propias reducciones y su propia Barrera de Escudo.
+    let secondaryFinalDamage = 0;
+    let secondaryBarrierRemaining = secondaryTarget?.shieldBarrier || 0;
+    let updatedSecondaryStance = secondaryTarget?.preparedStance ?? null;
+    if (useDracubonBreath && secondaryTarget && !isPerfectBlock) {
+      secondaryFinalDamage = modifiedAttackDamage;
+      if (secondaryTarget.preparedStance?.id === 35) {
+        secondaryFinalDamage = 0;
+        updatedSecondaryStance = null;
+        addLog(`${secondaryTarget.name} se desvanece en su Humo de Vape preparado!`);
+      }
+      if (secondaryFinalDamage === 1 && secondaryTarget.equippedWeapons.some(w => w.id === 4)) {
+        secondaryFinalDamage = 0;
+        addLog(`La Chaqueta de Cuero de ${secondaryTarget.name} anuló el daño de 1.`);
+      }
+      const secondaryHero = secondaryTarget.activeMorphCharacter || secondaryTarget.characterType;
+      if (secondaryHero === CharacterType.GLADIACUBON && secondaryFinalDamage >= 3) {
+        secondaryFinalDamage = Math.max(1, Math.floor(secondaryFinalDamage / 2));
+        addLog(`Gladiacubon de ${secondaryTarget.name} mitiga el impacto a ${secondaryFinalDamage} de daño.`);
+      }
+      if (secondaryFinalDamage > 0 && secondaryBarrierRemaining > 0) {
+        const absorbed = Math.min(secondaryBarrierRemaining, secondaryFinalDamage);
+        secondaryBarrierRemaining -= absorbed;
+        secondaryFinalDamage -= absorbed;
+        addLog(`🛡️ ¡La Barrera de Escudo de ${secondaryTarget.name} absorbió ${absorbed} de daño! (Quedan: ${secondaryBarrierRemaining})`);
+        addFloatingText(secondaryTarget.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
+      }
+    }
+
     // Shared reflection and life-steal resolution (Dracubon + Cubícula).
     let attackerBarrierRemaining = attacker.shieldBarrier || 0;
     let dracubonReflectedTaken = dracubonReflectTriggered ? finalDamage : 0;
@@ -962,8 +1011,26 @@ export default function App() {
       updatedTargetStance = null;
     }
 
+    const dracubonTrueDamage = useDracubonBreath && attacker.nextBreathBonus ? 1 : 0;
+    const primaryDamageTotal = finalDamage + dracubonTrueDamage;
+    const secondaryDamageTotal = secondaryFinalDamage + dracubonTrueDamage;
     const oldHp = target.hp;
-    const newHp = Math.max(0, oldHp - finalDamage);
+    const newHp = Math.max(0, oldHp - primaryDamageTotal);
+    const secondaryOldHp = secondaryTarget?.hp || 0;
+    const secondaryNewHp = secondaryTarget
+      ? Math.max(0, secondaryOldHp - secondaryDamageTotal)
+      : 0;
+
+    if (useDracubonBreath && secondaryTarget) {
+      addLog(
+        `¡ALIENTO! ${attacker.name} alcanza a ${target.name} y ${secondaryTarget.name} con una sola tirada. ${target.name} realiza el bloqueo por ambos${isPerfectBlock ? " y detiene el daño normal" : ""}.`,
+        true,
+        attacker.name
+      );
+      if (dracubonTrueDamage > 0) {
+        addLog(`¡Llamarada Doble! El bono ineludible añade 1 de daño a cada rival.`, true, attacker.name);
+      }
+    }
 
     // =========================================================================
     // MULTI-STAGE CARTOON CLASH ANIMATION SEQUENCE
@@ -990,7 +1057,8 @@ export default function App() {
       defenderRolls,
       defenderFinalVal,
       isPerfectBlock,
-      damageDealt: finalDamage,
+      damageDealt: primaryDamageTotal,
+      defenderName: useDracubonBreath ? `${target.name} (bloquea por ambos)` : target.name,
       phase: 'RUSH_TO_CENTER'
     });
 
@@ -1007,12 +1075,19 @@ export default function App() {
         if (isPerfectBlock) {
           sound.playPerfectBlock();
           addFloatingText(target.id, "¡SUPER-BLOQUEO HEROICO!", "#00e5ff");
-        } else if (finalDamage > 0) {
+        } else if (primaryDamageTotal > 0) {
           sound.playPunchHit();
-          addFloatingText(target.id, `-${finalDamage} HP`, "#ff1744");
+          addFloatingText(target.id, `-${primaryDamageTotal} HP`, "#ff1744");
         } else {
           sound.playCartoonBoing(260);
           addFloatingText(target.id, "¡EVADIDO!", "#7c4dff");
+        }
+        if (useDracubonBreath && secondaryTarget) {
+          addFloatingText(
+            secondaryTarget.id,
+            secondaryDamageTotal > 0 ? `-${secondaryDamageTotal} HP ALIENTO` : `¡BLOQUEADO POR ${target.name}!`,
+            secondaryDamageTotal > 0 ? "#ff1744" : "#7c4dff"
+          );
         }
         if (dracubonReflectTriggered) {
           addFloatingText(target.id, "¡ESCAMAS: REFLEJO!", "#fb923c");
@@ -1041,14 +1116,19 @@ export default function App() {
             defenderRolls,
             defenderFinalVal,
             isPerfectBlock,
-            damageDealt: finalDamage,
+            damageDealt: primaryDamageTotal,
             attackerName: attacker.name,
-            defenderName: target.name
+            defenderName: useDracubonBreath ? `${target.name} (bloquea por ambos)` : target.name
           });
 
           // Threshold check: multiples of 5 (20, 15, 10, 5)
           const multiplesOf5 = [20, 15, 10, 5];
-          const crossedMultiples = multiplesOf5.filter(m => oldHp >= m && newHp < m);
+          const crossedMultiples = [
+            ...multiplesOf5.filter(m => oldHp >= m && newHp < m).map(m => `${m} HP (${target.name})`),
+            ...(secondaryTarget
+              ? multiplesOf5.filter(m => secondaryOldHp >= m && secondaryNewHp < m).map(m => `${m} HP (${secondaryTarget.name})`)
+              : [])
+          ];
 
           let attackerCardsToAdd = 0;
           if (crossedMultiples.length > 0 && !attacker.equippedWeapons.some(w => w.id === 6)) {
@@ -1056,7 +1136,7 @@ export default function App() {
             triggerDeckAnimation();
             sound.playCardDraw();
             addLog(
-              `¡Umbral de vida quebrado! ${attacker.name} baja la vida de ${target.name} por debajo de múltiplo de 5 (cruzó: ${crossedMultiples.join(', ')} HP) y roba ${attackerCardsToAdd} carta(s) del Mazo Global.`,
+              `¡Umbral de vida quebrado! ${attacker.name} cruzó múltiplos de 5 de ${target.name}${secondaryTarget ? ` y ${secondaryTarget.name}` : ""} (umbrales: ${crossedMultiples.join(', ')}) y roba ${attackerCardsToAdd} carta(s) del Mazo Global.`,
               true
             );
             addFloatingText(attacker.id, `+${attackerCardsToAdd} CARTA MAZO`, "#ffd600");
@@ -1089,8 +1169,11 @@ export default function App() {
               true
             );
             narrator.narrateSuperBlock(target.name, defenderFinalVal, targetHeroDef.signatureSuperpowerName);
-          } else if (finalDamage > 0) {
-            narrator.narrateAttack(attacker.name, target.name, finalDamage, attackerFinalVal);
+            if (defenderHero === CharacterType.DRACUBON) {
+              addLog(`¡Llamarada Doble preparada! El próximo Aliento de ${target.name} hará 1 de daño ineludible a ambos objetivos.`, true, target.name);
+            }
+          } else if (primaryDamageTotal > 0) {
+            narrator.narrateAttack(attacker.name, target.name, primaryDamageTotal, attackerFinalVal);
           }
 
           // Update state
@@ -1128,7 +1211,8 @@ export default function App() {
                   shieldBarrier: attackerBarrierRemaining,
                   actionPoints: Math.max(0, p.actionPoints - 1),
                   hand: newHand,
-                  damageDealt: (p.damageDealt || 0) + finalDamage,
+                  damageDealt: (p.damageDealt || 0) + primaryDamageTotal + secondaryDamageTotal,
+                  nextBreathBonus: useDracubonBreath && p.nextBreathBonus ? false : p.nextBreathBonus,
                   cardsDrawn: (p.cardsDrawn || 0) + attackerDrawnCount,
                   nextAttackBonus: attackerHero === CharacterType.FLAUCUBISTA_DESAFINADO && flaucubistaBonus > 0
                     ? 0
@@ -1160,9 +1244,12 @@ export default function App() {
                   ...p,
                   hp: Math.min(p.maxHp, newHp + defenderHpHeal + cubiculaReflectHeal),
                   damageDealt: (p.damageDealt || 0) + reflectedDamageTaken,
-                  nextAttackBonus: defenderHero === CharacterType.FLAUCUBISTA_DESAFINADO && finalDamage > 0
+                  nextAttackBonus: defenderHero === CharacterType.FLAUCUBISTA_DESAFINADO && primaryDamageTotal > 0
                     ? (p.nextAttackBonus || 0) + 1
                     : p.nextAttackBonus,
+                  nextBreathBonus: defenderHero === CharacterType.DRACUBON && isPerfectBlock
+                    ? true
+                    : p.nextBreathBonus,
                   hand: newHand,
                   preparedStance: updatedTargetStance,
                   shieldBarrier: targetBarrierRemaining,
@@ -1170,13 +1257,26 @@ export default function App() {
                   perfectBlocks: (p.perfectBlocks || 0) + (isPerfectBlock ? 1 : 0),
                   cardsDrawn: (p.cardsDrawn || 0) + defenderDrawnCount
                 };
+              } else if (secondaryTarget && p.id === secondaryTarget.id) {
+                const secondaryHero = secondaryTarget.activeMorphCharacter || secondaryTarget.characterType;
+                return {
+                  ...p,
+                  hp: secondaryNewHp,
+                  isEliminated: secondaryNewHp <= 0,
+                  shieldBarrier: secondaryBarrierRemaining,
+                  preparedStance: updatedSecondaryStance,
+                  nextAttackBonus: secondaryHero === CharacterType.FLAUCUBISTA_DESAFINADO && secondaryDamageTotal > 0
+                    ? (p.nextAttackBonus || 0) + 1
+                    : p.nextAttackBonus
+                };
               }
               return p;
             })
           );
 
-          if (!attacker.isBot && finalDamage > 0) {
-            dailyMissionsManager.recordDamage(finalDamage);
+          const alientoDamageTotal = primaryDamageTotal + secondaryDamageTotal;
+          if (!attacker.isBot && alientoDamageTotal > 0) {
+            dailyMissionsManager.recordDamage(alientoDamageTotal);
           }
           if (isPerfectBlock) {
             dailyMissionsManager.recordPerfectBlock();
@@ -1189,6 +1289,12 @@ export default function App() {
             sound.playElimination();
             addLog(`¡K.O.! ${attacker.name} cayó por el daño devuelto por ${dracubonReflectTriggered ? "las Escamas de Dracubon" : "el Reflejo de Noche de Cubícula"}.`, true);
             narrator.narrateElimination(attacker.name);
+          }
+
+          if (secondaryTarget && secondaryNewHp <= 0) {
+            sound.playElimination();
+            addLog(`¡K.O.! ${secondaryTarget.name} ha sido eliminado por el segundo impacto de Aliento.`, true);
+            narrator.narrateElimination(secondaryTarget.name);
           }
 
           if (newHp <= 0) {
@@ -1608,6 +1714,17 @@ export default function App() {
         })
       );
       addLog(`¡${actor.name} usó [Abordaje Cúbico] sobre ${target.name}! Anula su próximo turno.`, true);
+    } else if (hero === CharacterType.DRACUBON) {
+      const blocker = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
+      const secondTarget = players.find(p => p.id === extraOption && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
+      const opposingTeamId = actor.teamId === 1 ? 2 : actor.teamId === 2 ? 1 : null;
+      const validEnemy = (p: PlayerState | undefined): p is PlayerState => Boolean(
+        p && !p.isEliminated && p.hp > 0 && p.id !== actor.id &&
+        (opposingTeamId === null || p.teamId === opposingTeamId)
+      );
+      if (actor.actionPoints <= 0 || !validEnemy(blocker) || !validEnemy(secondTarget) || blocker.id === secondTarget.id) return;
+      addLog(`¡${actor.name} activa [Aliento]! ${blocker.name} realizará una única tirada de bloqueo para proteger a ambos rivales.`, true, actor.name);
+      handleAttack(blocker.id, false, secondTarget.id);
     } else if (hero === CharacterType.CUBICULA) {
       const target = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
       if (!target || actor.actionPoints <= 0) return;
@@ -1863,7 +1980,11 @@ export default function App() {
             if (target) {
               setSelectedTargetId(target.id);
               const activeHero = currentP.activeMorphCharacter || currentP.characterType;
-              if (activeHero === CharacterType.CUBICULA && currentP.actionPoints >= 2) {
+              if (activeHero === CharacterType.DRACUBON && rivals.length >= 2) {
+                const secondTarget = rivals.find(p => p.id !== target.id);
+                if (secondTarget) handleUseHeroAbility(target.id, secondTarget.id);
+                else handleAttack(target.id);
+              } else if (activeHero === CharacterType.CUBICULA && currentP.actionPoints >= 2) {
                 handleUseHeroAbility(target.id);
               } else {
                 handleAttack(target.id);
