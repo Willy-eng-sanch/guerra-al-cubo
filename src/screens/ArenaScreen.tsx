@@ -452,7 +452,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
 
               {getMaxHandSize(currentTurnPlayer) === 0 ? (
                 <div className="bg-[#12151e] border border-dashed border-[#242b3b] rounded-xl p-3 text-center text-xs text-stone-300">
-                  Piel de Piedra: Cubogro no puede usar, robar ni equipar cartas.
+                  Piel de Piedra: este personaje no puede usar, robar ni equipar cartas.
                 </div>
               ) : currentTurnPlayer.hand.length === 0 ? (
                 <div className="bg-[#12151e] border border-dashed border-[#242b3b] rounded-xl p-3 text-center text-xs text-neutral-500">
