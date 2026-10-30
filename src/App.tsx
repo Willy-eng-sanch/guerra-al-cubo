@@ -1311,10 +1311,16 @@ export default function App() {
     const dracubonTrueDamage = useDracubonBreath && attacker.nextBreathBonus ? 1 : 0;
     const primaryDamageTotal = finalDamage + dracubonTrueDamage;
     const secondaryDamageTotal = secondaryFinalDamage + dracubonTrueDamage;
+    const secondarySharesPrimaryRecipient = Boolean(
+      secondaryDamageRecipient && secondaryDamageRecipient.id === target.id
+    );
     const oldHp = target.hp;
-    const newHp = Math.max(0, oldHp - primaryDamageTotal);
-    const secondaryOldHp = secondaryTarget?.hp || 0;
-    const secondaryNewHp = secondaryTarget
+    const damageAssignedToPrimaryRecipient = primaryDamageTotal + (secondarySharesPrimaryRecipient ? secondaryDamageTotal : 0);
+    const newHp = Math.max(0, oldHp - damageAssignedToPrimaryRecipient);
+    const secondaryOldHp = secondaryDamageRecipient && !secondarySharesPrimaryRecipient
+      ? secondaryDamageRecipient.hp
+      : 0;
+    const secondaryNewHp = secondaryDamageRecipient && !secondarySharesPrimaryRecipient
       ? Math.max(0, secondaryOldHp - secondaryDamageTotal)
       : 0;
 
@@ -1378,11 +1384,13 @@ export default function App() {
           sound.playCartoonBoing(260);
           addFloatingText(target.id, "¡EVADIDO!", "#7c4dff");
         }
-        if (useDracubonBreath && secondaryTarget) {
+        if (useDracubonBreath && secondaryTarget && secondaryDamageRecipient && !secondarySharesPrimaryRecipient) {
           addFloatingText(
-            secondaryTarget.id,
-            secondaryDamageTotal > 0 ? `-${secondaryDamageTotal} HP ALIENTO` : `¡BLOQUEADO POR ${target.name}!`,
-            secondaryDamageTotal > 0 ? "#ff1744" : "#7c4dff"
+            secondaryDamageRecipient.id,
+            secondaryDamageTotal > 0
+              ? (secondaryCoverGuardian ? `-${secondaryDamageTotal} HP · COBERTURA` : `-${secondaryDamageTotal} HP ALIENTO`)
+              : `¡BLOQUEADO POR ${target.name}!`,
+            secondaryDamageTotal > 0 ? (secondaryCoverGuardian ? "#60a5fa" : "#ff1744") : "#7c4dff"
           );
         }
         if (dracubonReflectTriggered) {
@@ -1421,8 +1429,8 @@ export default function App() {
           const multiplesOf5 = [20, 15, 10, 5];
           const crossedMultiples = [
             ...multiplesOf5.filter(m => oldHp >= m && newHp < m).map(m => `${m} HP (${target.name})`),
-            ...(secondaryTarget
-              ? multiplesOf5.filter(m => secondaryOldHp >= m && secondaryNewHp < m).map(m => `${m} HP (${secondaryTarget.name})`)
+            ...(secondaryDamageRecipient && !secondarySharesPrimaryRecipient
+              ? multiplesOf5.filter(m => secondaryOldHp >= m && secondaryNewHp < m).map(m => `${m} HP (${secondaryDamageRecipient.name})`)
               : [])
           ];
 
@@ -1549,8 +1557,8 @@ export default function App() {
                   perfectBlocks: (p.perfectBlocks || 0) + (isPerfectBlock ? 1 : 0),
                   cardsDrawn: (p.cardsDrawn || 0) + defenderDrawResult.drawnCount
                 };
-              } else if (secondaryTarget && p.id === secondaryTarget.id) {
-                const secondaryHero = secondaryTarget.activeMorphCharacter || secondaryTarget.characterType;
+              } else if (secondaryDamageRecipient && !secondarySharesPrimaryRecipient && p.id === secondaryDamageRecipient.id) {
+                const secondaryHero = secondaryDamageRecipient.activeMorphCharacter || secondaryDamageRecipient.characterType;
                 return {
                   ...p,
                   hp: secondaryNewHp,
