@@ -1697,7 +1697,7 @@ export default function App() {
 
           const attackerWithStolenCards: PlayerState = {
             ...attacker,
-            hand: [...attacker.hand, ...stolenCards]
+            hand: [...attackerHandAfterRacubitero, ...stolenCards]
           };
           const defenderAfterTheft: PlayerState = {
             ...target,
