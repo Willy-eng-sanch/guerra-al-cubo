@@ -180,6 +180,7 @@ export interface PlayerState {
   isBot: boolean;
   isFrozen: boolean;
   skipNextTurn: boolean;
+  cannotUseCardsThisTurn?: boolean; // Restricción de Cubito de Hielo en el turno que congela.
   forcedTargetPlayerId: number | null;
   abilityCooldownRemaining: number;
   isEliminated: boolean;
