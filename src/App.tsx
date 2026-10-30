@@ -2070,6 +2070,77 @@ export default function App() {
 
     const timer = setTimeout(() => {
       const activeHero = activePlayer.activeMorphCharacter || activePlayer.characterType;
+
+      // Los bots obedecen las órdenes al comenzar su turno. Si no pueden cumplirlas,
+      // conservan la orden y pierden la capacidad de bloquear hasta resolverla.
+      const pendingOrder = activePlayer.cubinarcaOrder;
+      if (pendingOrder) {
+        const issuer = players.find(player => player.id === pendingOrder.issuerId);
+        if (pendingOrder.kind === 'ATTACK_TARGET') {
+          const orderedTarget = players.find(player =>
+            player.id === pendingOrder.attackTargetId && player.id !== activePlayer.id &&
+            !player.isEliminated && player.hp > 0
+          ) || players.find(player =>
+            player.id !== activePlayer.id && !player.isEliminated && player.hp > 0
+          );
+          if (orderedTarget && activePlayer.actionPoints > 0) {
+            if (orderedTarget.id !== pendingOrder.attackTargetId) {
+              setPlayers(prev => prev.map(player => player.id === activePlayer.id
+                ? { ...player, cubinarcaOrder: { ...pendingOrder, attackTargetId: orderedTarget.id } }
+                : player
+              ));
+            }
+            handleAttack(orderedTarget.id);
+          } else {
+            setPlayers(prev => prev.map(player => player.id === activePlayer.id
+              ? { ...player, blocksDisabledByOrder: true }
+              : player
+            ));
+          }
+        } else if (pendingOrder.kind === 'TRANSFER_CARD') {
+          const card = activePlayer.hand[0];
+          if (issuer && !issuer.isEliminated && card && issuer.hand.length < getMaxHandSize(issuer)) {
+            setPlayers(prev => prev.map(player => {
+              if (player.id === activePlayer.id) return {
+                ...player,
+                hand: player.hand.slice(1),
+                cubinarcaOrder: null,
+                blocksDisabledByOrder: false
+              };
+              if (player.id === issuer.id) return { ...player, hand: [...player.hand, card] };
+              return player;
+            }));
+            addLog(`${activePlayer.name} obedece la orden y entrega [${card.name}] a ${issuer.name}.`, true, activePlayer.name);
+          } else {
+            setPlayers(prev => prev.map(player => player.id === activePlayer.id
+              ? { ...player, blocksDisabledByOrder: true }
+              : player
+            ));
+          }
+        } else if (pendingOrder.kind === 'UNEQUIP_WEAPON') {
+          const weapon = activePlayer.equippedWeapons[0];
+          if (weapon) {
+            const hasSpace = activePlayer.hand.length < getMaxHandSize(activePlayer);
+            setPlayers(prev => prev.map(player => player.id === activePlayer.id ? {
+              ...player,
+              equippedWeapons: player.equippedWeapons.slice(1),
+              hand: hasSpace ? [...player.hand, weapon] : player.hand,
+              cubinarcaOrder: null,
+              blocksDisabledByOrder: false
+            } : player));
+            if (!hasSpace) setDiscardPile(prev => [...prev, weapon]);
+            addLog(`${activePlayer.name} obedece la orden y desequipa [${weapon.name}].`, true, activePlayer.name);
+          } else {
+            setPlayers(prev => prev.map(player => player.id === activePlayer.id
+              ? { ...player, blocksDisabledByOrder: true }
+              : player
+            ));
+          }
+        }
+        setTimeout(() => handleEndTurn(), pendingOrder.kind === 'ATTACK_TARGET' ? 3600 * speedMultiplier : 900 * speedMultiplier);
+        return;
+      }
+
       const botHasSupplyAlly = activePlayer.teamId !== undefined && players.some(p => {
         const allyHero = p.activeMorphCharacter || p.characterType;
         return p.id !== activePlayer.id &&
