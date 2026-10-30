@@ -12,7 +12,8 @@ import {
   CardCategory,
   CharacterType,
   CATEGORY_INFO,
-  getMaxHandSize
+  getMaxHandSize,
+  getMaxPreparedStanceSlots
 } from '../types/game';
 import { CHARACTERS } from '../data/characters';
 import { ArenaRing } from '../components/ArenaRing';
@@ -56,7 +57,6 @@ interface ArenaScreenProps {
   onFulfillCubinarcaUnequip: (weaponIndex: number) => void;
   onDefyCubinarcaOrder: () => void;
   deckCount: number;
-  discardPileCount: number;
   log: CombatLogEntry[];
   phase: MatchPhase;
   activeDiceRoll: ActiveDiceRoll | null;
@@ -100,7 +100,6 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   onFulfillCubinarcaUnequip,
   onDefyCubinarcaOrder,
   deckCount,
-  discardPileCount,
   log,
   phase,
   activeDiceRoll,
@@ -276,9 +275,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           <AudioControlBar />
 
           <div className="hidden lg:flex items-center gap-2 text-[11px] text-neutral-400 bg-[#121620] px-2.5 py-1 rounded-lg border border-[#21293a]">
-            <span>Mazo: <b className="text-white">{deckCount}</b>/60</span>
-            <span>|</span>
-            <span>Descarte: <b className="text-white">{discardPileCount}</b></span>
+            <span>Pila General: <b className="text-white">{deckCount}</b> cartas</span>
           </div>
 
           <button
@@ -317,7 +314,6 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
         <div className="w-full flex justify-between items-center px-1 mb-2">
           <GlobalDeckView
             deckCount={deckCount}
-            discardPileCount={discardPileCount}
             isDrawingAnimation={isDeckDrawing}
             className="w-full sm:w-auto"
           />
@@ -489,6 +485,19 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
               </div>
             )}
 
+            {(currentTurnPlayer.preparedStance || currentTurnPlayer.preparedStanceSecondary) && (
+              <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-cyan-900/50 bg-cyan-950/20 p-2">
+                <span className="text-[9px] font-black uppercase tracking-wider text-cyan-300">Activables preparados</span>
+                {[currentTurnPlayer.preparedStance, currentTurnPlayer.preparedStanceSecondary].filter(Boolean).map((stance, index) => (
+                  <span key={stance!.uid || stance!.id} className="rounded-md border border-cyan-600/40 bg-slate-900 px-2 py-1 text-[10px] text-cyan-100">
+                    {index + 1}. {stance!.name}
+                  </span>
+                ))}
+                <span className="text-[9px] text-neutral-500">
+                  ({[currentTurnPlayer.preparedStance, currentTurnPlayer.preparedStanceSecondary].filter(Boolean).length}/{getMaxPreparedStanceSlots(currentTurnPlayer)} espacios)
+                </span>
+              </div>
+            )}
             {/* Hand Cards Horizontal Carousel with PvZ Heroes Class & Synergy System */}
             <div>
               <div className="flex items-center justify-between text-[11px] text-neutral-400 font-semibold mb-1.5 px-1">
@@ -749,9 +758,9 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           canUseInterception={canUseInterception}
           interceptionUnavailableReason={interceptionUnavailableReason}
           onClose={() => setShowAbilityModal(false)}
-          onActivate={(targetId, extraOption) => {
+          onActivate={(targetId, extraOption, mode) => {
             setShowAbilityModal(false);
-            onUseHeroAbility(targetId, extraOption);
+            onUseHeroAbility(targetId, extraOption, mode);
           }}
         />
       )}

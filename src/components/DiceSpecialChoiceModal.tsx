@@ -63,10 +63,10 @@ export const DiceSpecialChoiceModal: React.FC<DiceSpecialChoiceModalProps> = ({
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <span className="font-black text-white text-sm group-hover:text-cyan-300 transition-colors">
-                  ROBAR 1 CARTA DEL MAZO
+                  ROBAR 1 CARTA DE LA PILA GENERAL
                 </span>
                 <span className="text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/50 px-2 py-0.5 rounded-full">
-                  MAZO GLOBAL
+                  PILA GENERAL
                 </span>
               </div>
               <p className="text-[11px] text-neutral-300 mt-0.5">

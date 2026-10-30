@@ -179,6 +179,7 @@ export interface PlayerState {
   hand: GameCard[];
   equippedWeapons: GameCard[];
   preparedStance: GameCard | null;
+  preparedStanceSecondary?: GameCard | null;
   isBot: boolean;
   isFrozen: boolean;
   skipNextTurn: boolean;
@@ -205,14 +206,22 @@ export interface PlayerState {
   borrowedEquipmentEffects?: GameCard[]; // Efectos prestados temporalmente por Cubinja.
   borrowedEquipmentSourceId?: number | null;
   morphFormsUsed?: CharacterType[]; // Formas ya copiadas durante la partida.
+  morphExhausted?: boolean; // Ya utilizó las otras doce formas y conserva la última.
 }
 
 export function getMaxHandSize(player: PlayerState): number {
   const activeChar = player.activeMorphCharacter || player.characterType;
   if (activeChar === CharacterType.CUBOGRO) return 0; // Piel de Piedra: sin mano ni cartas.
   if (activeChar === CharacterType.HADA_AL_CUBO) return 4;
+  if (activeChar === CharacterType.CUBINJA) return 2; // Su mano permanece limitada a dos cartas.
   if (player.equippedWeapons.some(w => w.id === 13)) return 3; // Mochila de Repartidor
   return 2;
+}
+
+export function getMaxPreparedStanceSlots(player: PlayerState): number {
+  const activeChar = player.activeMorphCharacter || player.characterType;
+  if (activeChar === CharacterType.CUBOGRO || activeChar === CharacterType.CUBINJA) return 0;
+  return activeChar === CharacterType.HADA_AL_CUBO ? 2 : 1;
 }
 
 export function getMaxWeaponSlots(player: PlayerState): number {

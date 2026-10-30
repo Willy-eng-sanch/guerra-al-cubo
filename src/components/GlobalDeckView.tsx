@@ -3,14 +3,12 @@ import { Layers, Sparkles, ShieldCheck } from 'lucide-react';
 
 interface GlobalDeckViewProps {
   deckCount: number;
-  discardPileCount: number;
   isDrawingAnimation?: boolean;
   className?: string;
 }
 
 export const GlobalDeckView: React.FC<GlobalDeckViewProps> = ({
   deckCount,
-  discardPileCount,
   isDrawingAnimation = false,
   className = ""
 }) => {
@@ -41,7 +39,7 @@ export const GlobalDeckView: React.FC<GlobalDeckViewProps> = ({
             </div>
 
             <div className="text-[7px] text-yellow-200 font-extrabold uppercase tracking-tighter">
-              MAZO
+              PILA
             </div>
           </div>
 
@@ -75,7 +73,7 @@ export const GlobalDeckView: React.FC<GlobalDeckViewProps> = ({
             <span className="hidden sm:inline text-neutral-600">•</span>
             <span className="flex items-center gap-1 text-cyan-300 font-semibold">
               <ShieldCheck className="w-3 h-3" />
-              <span>Robas + reacción por Bloqueo Perfecto</span>
+              <span>Bloqueo Perfecto: hasta 2 cartas adicionales</span>
             </span>
           </div>
         </div>

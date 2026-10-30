@@ -118,7 +118,7 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
               <ShieldOff className="w-5 h-5 text-amber-300" />
               <span className="flex-1">
                 <b className="block text-sm">Desequipar un arma</b>
-                <span className="text-[11px] text-neutral-400">La víctima retira un arma de su mesa y la devuelve a su mano.</span>
+                <span className="text-[11px] text-neutral-400">La víctima retira un arma de su mesa y la devuelve a su mano; si no cabe, vuelve a la Pila General.</span>
               </span>
             </button>
 
@@ -145,7 +145,7 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
                     })()
                   : order?.kind === 'TRANSFER_CARD'
                   ? `Entrega una carta de tu mano a ${issuer.name}.`
-                  : `Retira un arma equipada y devuélvela a tu mano (si está llena, irá al descarte).`}
+                  : `Retira un arma equipada y devuélvela a tu mano; si está llena, vuelve a la Pila General.`}
                 {victim.blocksDisabledByOrder && ' Discordia ya te impide bloquear.'}
               </p>
             </div>

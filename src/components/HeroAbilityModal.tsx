@@ -54,7 +54,9 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   const isCubicula = heroType === CharacterType.CUBICULA;
   const isCubinja = heroType === CharacterType.CUBINJA;
   const isTramcuboso = heroType === CharacterType.TRAMCUBOSO;
-  const abilityTargets = isGladiacubon || isCubicula || isCubinja ? validAllies : validTargets;
+  const abilityTargets = isCubinja
+    ? validAllies.filter(target => !target.borrowedEquipmentEffects?.length)
+    : isGladiacubon || isCubicula ? validAllies : validTargets;
 
   // Does this ability require choosing a rival or an ally?
   const needsTarget = heroType === CharacterType.CUBITO_DE_HIELO || heroType === CharacterType.PIRATA || isCubicula || isGladiacubon || isCubogro || isCubinja;
@@ -170,7 +172,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
               ) : isRacubitero ? (
                 <span className="bg-amber-950 text-amber-200 border border-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                   <Zap className="w-3 h-3" />
-                  Automática
+                  Lista para usar
                 </span>
               ) : (
                 <span className="bg-emerald-950 text-emerald-300 border border-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -214,7 +216,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
           {isRacubitero && (
             <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 p-3 text-xs text-amber-100 space-y-1">
               <p className="font-black text-amber-200">Saqueo Colectivo · Coste: 1 Cúbit · Enfriamiento: 3 rondas</p>
-              <p>Lanza un D6. Con 6, reúne las cartas de la mano de todos los rivales para conservar hasta dos, repartir una a cada aliado con espacio y devolver el resto a la Pila General. Con 1–5, recibe ese número como daño.</p>
+              <p>Lanza un D6. Con 6, reúne las cartas de la mano de todos los rivales para conservar hasta dos, repartir una a cada aliado con espacio y devolver el resto a la Pila General. Con 1–5, el efecto falla sin daño adicional.</p>
             </div>
           )}
           {isCubogro && (
@@ -429,7 +431,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                 : isGladiacubon && !canUseInterception
                 ? 'INTERCEPCIÓN NO DISPONIBLE'
                 : isRacubitero
-                ? 'PASIVA AUTOMÁTICA'
+                ? 'ACTIVAR SAQUEO COLECTIVO'
                 : isDracubon && validTargets.length < 2
                 ? 'SE NECESITAN 2 RIVALES VIVOS'
                 : needsActionPoint && player.actionPoints <= 0

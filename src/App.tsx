@@ -18,6 +18,7 @@ import {
   TrickTiming,
   CubiculaMode,
   getMaxHandSize,
+  getMaxPreparedStanceSlots,
   getMaxWeaponSlots
 } from './types/game';
 import { ALL_CARDS, createShuffledDeck, generateUniqueCardUid } from './data/cards';
@@ -43,6 +44,8 @@ import { TramcubosoCardChoiceModal } from './components/TramcubosoCardChoiceModa
 import { TramcubosoRerollModal } from './components/TramcubosoRerollModal';
 import { RacubiteroLootModal } from './components/RacubiteroLootModal';
 import { CubinjaTransferModal } from './components/CubinjaTransferModal';
+import { MorphFormSelectionModal } from './components/MorphFormSelectionModal';
+import { MorphInventoryChoiceModal } from './components/MorphInventoryChoiceModal';
 import { CombatClashData } from './components/CartoonCombatClash';
 
 interface TramcubosoCardChoice {
@@ -134,9 +137,17 @@ export default function App() {
   const [pendingDiceReroll, setPendingDiceReroll] = useState<PendingDiceReroll | null>(null);
   const [racubiteroLootOffer, setRacubiteroLootOffer] = useState<{ actorId: number; cards: GameCard[] } | null>(null);
   const [cubinjaTransferOffer, setCubinjaTransferOffer] = useState<{ actorId: number; card: GameCard } | null>(null);
+  const [morphSelectionPlayerId, setMorphSelectionPlayerId] = useState<number | null>(null);
+  const [morphInventoryOffer, setMorphInventoryOffer] = useState<{
+    playerId: number; form: CharacterType; hand: GameCard[]; weapons: GameCard[];
+    stances: GameCard[]; handLimit: number; weaponLimit: number; stanceLimit: number;
+  } | null>(null);
+  const eliminatedInventoryReturnedRef = useRef<Set<number>>(new Set());
   const botOrderTurnRef = useRef<number | null>(null);
   const playersRef = useRef<PlayerState[]>([]);
+  const deckRef = useRef<GameCard[]>([]);
   useEffect(() => { playersRef.current = players; }, [players]);
+  useEffect(() => { deckRef.current = deck; }, [deck]);
 
   // Pila única: toda carta consumida, reemplazada o desequipada vuelve a mezclarse aquí.
   const returnCardsToGlobalPile = (cards: GameCard[]) => {
@@ -144,6 +155,29 @@ export default function App() {
     setDeck(previous => [...previous, ...cards].sort(() => Math.random() - 0.5));
     setDiscardPile([]);
   };
+
+  useEffect(() => {
+    const eliminated = players.filter(player =>
+      (player.isEliminated || player.hp <= 0) &&
+      !eliminatedInventoryReturnedRef.current.has(player.id) &&
+      (player.hand.length > 0 || player.equippedWeapons.length > 0 || player.preparedStance || player.preparedStanceSecondary)
+    );
+    if (eliminated.length === 0) return;
+    eliminated.forEach(player => eliminatedInventoryReturnedRef.current.add(player.id));
+    const ids = new Set(eliminated.map(player => player.id));
+    const returned = eliminated.flatMap(player => [
+      ...player.hand,
+      ...player.equippedWeapons,
+      ...(player.preparedStance ? [player.preparedStance] : []),
+      ...(player.preparedStanceSecondary ? [player.preparedStanceSecondary] : [])
+    ]);
+    setPlayers(previous => previous.map(player => ids.has(player.id) ? {
+      ...player, hand: [], equippedWeapons: [], preparedStance: null, preparedStanceSecondary: null,
+      borrowedEquipmentEffects: [], borrowedEquipmentSourceId: null
+    } : player));
+    returnCardsToGlobalPile(returned);
+    eliminated.forEach(player => addLog("El inventario de " + player.name + " regresa a la Pila General tras su eliminación.", true, "Árbitro"));
+  }, [players]);
 
   // Release a stale cover if its ally was eliminated or the guardian changed into another hero.
   useEffect(() => {
@@ -178,7 +212,8 @@ export default function App() {
   };
 
   const handleApplySixChoice = (playerId: number, choice: 'CARD' | 'EXTRA_TURN') => {
-    const actor = players.find(p => p.id === playerId);
+    const latestPlayers = playersRef.current.length > 0 ? playersRef.current : players;
+    const actor = latestPlayers.find(p => p.id === playerId);
     const actorName = actor ? actor.name : 'Jugador';
     if (!actor) {
       setSpecialSixChoice(null);
@@ -200,7 +235,7 @@ export default function App() {
       sound.playStanceActivate();
       narrator.narrateSpecialFaceSix(actorName, "Acción adicional");
     } else {
-      const drawResult = drawForPlayer(actor, deck, discardPile, "Cara Especial 6");
+      const drawResult = drawForPlayer(actor, deckRef.current, [], "Cara Especial 6");
       if (drawResult.cards.length === 0) {
         addLog("La Pila General está vacía.", true);
       } else {
@@ -215,7 +250,7 @@ export default function App() {
           setTramcubosoCardChoices(prev => [...prev, ...drawResult.choices]);
         }
         addFloatingText(playerId, "+1 CARTA MAZO", "#00e5ff");
-        addLog("¡Cara Especial 6! " + actorName + " roba del Mazo Global.", true);
+        addLog("¡Cara Especial 6! " + actorName + " roba del Pila General.", true);
         triggerDeckAnimation();
         sound.playCardDraw();
         narrator.narrateSpecialFaceSix(actorName, "Robar Carta");
@@ -235,7 +270,7 @@ export default function App() {
     if (hero === CharacterType.GLADIACUBON) {
       const idx = deckArr.findIndex(c => c.type === CardType.WEAPON);
       if (idx !== -1) {
-        const weapon = deckArr[idx];
+        const weapon = { ...deckArr[idx], uid: generateUniqueCardUid(deckArr[idx].id) };
         return [{
           ...weapon,
           uid: generateUniqueCardUid(weapon.id)
@@ -273,33 +308,13 @@ export default function App() {
     setLog(prev => [entry, ...prev.slice(0, 35)]);
   };
 
-  // Draw card helper
-  const drawCardFromDeck = (currentDeck: GameCard[], currentDiscard: GameCard[]): { card: GameCard | null; newDeck: GameCard[]; newDiscard: GameCard[] } => {
-    let d = [...currentDeck];
-    let disc = [...currentDiscard];
-
-    if (d.length === 0) {
-      if (disc.length > 0) {
-        d = disc
-          .map(c => ({
-            ...c,
-            uid: generateUniqueCardUid(c.id)
-          }))
-          .sort(() => Math.random() - 0.5);
-        disc = [];
-      } else {
-        return { card: null, newDeck: d, newDiscard: disc };
-      }
-    }
-
-    const rawCard = d.shift() || null;
-    const card: GameCard | null = rawCard
-      ? {
-          ...rawCard,
-          uid: generateUniqueCardUid(rawCard.id)
-        }
-      : null;
-    return { card, newDeck: d, newDiscard: disc };
+  // La Pila General es única: no existe zona de descarte separada.
+  const drawCardFromDeck = (currentDeck: GameCard[], _currentDiscard: GameCard[]): { card: GameCard | null; newDeck: GameCard[]; newDiscard: GameCard[] } => {
+    const cards = [...currentDeck];
+    if (cards.length === 0) return { card: null, newDeck: cards, newDiscard: [] };
+    const rawCard = cards.shift() || null;
+    const card = rawCard ? { ...rawCard, uid: generateUniqueCardUid(rawCard.id) } : null;
+    return { card, newDeck: cards, newDiscard: [] };
   };
 
   // Tramcuboso's Selección Afortunada applies to each draw from the global pile.
@@ -310,7 +325,10 @@ export default function App() {
     const heroDef = CHARACTERS[activeHero];
     if (heroDef && heroDef.classes.includes(card.category)) score += 1.5;
     if (card.type === CardType.WEAPON) score += player.equippedWeapons.length < getMaxWeaponSlots(player) ? 2 : -1;
-    if (card.type === CardType.TRICK && card.timing === TrickTiming.PREPARED_STANCE) score += player.preparedStance ? -0.5 : 2;
+    if (card.type === CardType.TRICK && card.timing === TrickTiming.PREPARED_STANCE) {
+      const occupied = [player.preparedStance, player.preparedStanceSecondary].filter(Boolean).length;
+      score += occupied < getMaxPreparedStanceSlots(player) ? 2 : -0.5;
+    }
     return score;
   };
 
@@ -341,7 +359,7 @@ export default function App() {
     const chooseAlternative = scoreTramcubosoCard(player, second.card) > scoreTramcubosoCard(player, first.card);
     const selectedCard = chooseAlternative ? second.card : first.card;
     const discardedCard = chooseAlternative ? first.card : second.card;
-    return { cards: [selectedCard], choices: [], newDeck: second.newDeck, newDiscard: [...second.newDiscard, discardedCard] };
+    return { cards: [selectedCard], choices: [], newDeck: [...second.newDeck, discardedCard].sort(() => Math.random() - 0.5), newDiscard: [] };
   };
 
   const resolveTramcubosoCardChoice = (choiceIndex: 0 | 1) => {
@@ -446,6 +464,7 @@ export default function App() {
 
     setDeck(currentDeck);
     setDiscardPile([]);
+    eliminatedInventoryReturnedRef.current.clear();
     newPlayers.forEach(player => {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
@@ -462,7 +481,7 @@ export default function App() {
         id: Date.now(),
         round: 1,
         actorName: "Árbitro",
-        message: `¡Modo Aleatorio 3 vs 3! Dados barajados y repartidos a cada escuadrón. Manos vacías al inicio. Cartas se obtienen del Mazo Global por Bloqueo Perfecto o al quebrar umbrales de vida (≤15, ≤10, ≤5 HP).`,
+        message: `¡Modo Aleatorio 3 vs 3! Dados barajados y repartidos a cada escuadrón. Manos vacías al inicio. Cartas se obtienen del Pila General por Bloqueo Perfecto o al quebrar umbrales de vida (≤15, ≤10, ≤5 HP).`,
         isCritical: true
       }
     ]);
@@ -537,6 +556,7 @@ export default function App() {
 
     setDeck(currentDeck);
     setDiscardPile([]);
+    eliminatedInventoryReturnedRef.current.clear();
     newPlayers.forEach(player => {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
@@ -553,7 +573,7 @@ export default function App() {
         id: Date.now(),
         round: 1,
         actorName: "Árbitro",
-        message: `¡Inicia la pelea! Manos vacías al inicio. Cartas se obtienen del Mazo Global por Bloqueo Perfecto o al cruzar múltiplos de 5.`,
+        message: `¡Inicia la pelea! Manos vacías al inicio. Cartas se obtienen del Pila General por Bloqueo Perfecto o al cruzar múltiplos de 5.`,
         isCritical: true
       }
     ]);
@@ -651,6 +671,7 @@ export default function App() {
 
     setDeck(currentDeck);
     setDiscardPile([]);
+    eliminatedInventoryReturnedRef.current.clear();
     newPlayers.forEach(player => {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
@@ -667,7 +688,7 @@ export default function App() {
         id: Date.now(),
         round: 1,
         actorName: "Árbitro",
-        message: `¡CAMPAÑA: ${chapter.title}! Derrota al Jefe. Robas del Mazo Global por Bloqueo Perfecto o al cruzar múltiplos de 5.`,
+        message: `¡CAMPAÑA: ${chapter.title}! Derrota al Jefe. Robas del Pila General por Bloqueo Perfecto o al cruzar múltiplos de 5.`,
         isCritical: true
       }
     ]);
@@ -714,6 +735,7 @@ export default function App() {
 
     setDeck(currentDeck);
     setDiscardPile([]);
+    eliminatedInventoryReturnedRef.current.clear();
     newPlayers.forEach(player => {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
@@ -826,6 +848,7 @@ export default function App() {
 
     setDeck(currentDeck);
     setDiscardPile([]);
+    eliminatedInventoryReturnedRef.current.clear();
     newPlayers.forEach(player => {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
@@ -955,7 +978,7 @@ export default function App() {
       cubinarcaOrderDefiedThisTurn: false
     } : player));
     if (!hasHandSpace) returnCardsToGlobalPile([weapon]);
-    addLog(`${victim.name} cumple la orden y desequipa [${weapon.name}]${hasHandSpace ? ', devolviéndola a su mano.' : '; su mano está llena y el arma va al descarte.'}`, true, victim.name);
+    addLog(`${victim.name} cumple la orden y desequipa [${weapon.name}]${hasHandSpace ? ', devolviéndola a su mano.' : '; su mano está llena y el arma va a la Pila General.'}`, true, victim.name);
     sound.playStanceActivate();
   };
 
@@ -968,6 +991,21 @@ export default function App() {
     ));
     addLog(`${victim.name} desobedece la orden de Cubinarca: Discordia le impide bloquear hasta cumplirla.`, true, victim.name);
   };
+
+  useEffect(() => {
+    const invalidOrders = players.filter(player => {
+      const order = player.cubinarcaOrder;
+      if (order?.kind !== 'ATTACK_TARGET' || order.attackTargetId === undefined) return false;
+      const target = players.find(candidate => candidate.id === order.attackTargetId);
+      return !target || target.isEliminated || target.hp <= 0;
+    });
+    if (invalidOrders.length === 0) return;
+    const ids = new Set(invalidOrders.map(player => player.id));
+    setPlayers(previous => previous.map(player => ids.has(player.id) ? {
+      ...player, cubinarcaOrder: null, blocksDisabledByOrder: false, cubinarcaOrderDefiedThisTurn: false
+    } : player));
+    invalidOrders.forEach(player => addLog("La orden de Cubinarca de " + player.name + " queda anulada porque el objetivo ya no está disponible. Discordia se retira.", true, player.name));
+  }, [players]);
 
   // Apply Heroic Class Synergy (Plants vs. Zombies Heroes Style)
   const applyCardClassSynergy = (actorId: number, card: GameCard, targetId?: number | null) => {
@@ -1044,7 +1082,7 @@ export default function App() {
             return { ...p, actionPoints: p.actionPoints + 1 };
           }));
           addLog(`🧠 ¡Sinergia Cerebral de ${heroDef.displayName}! Reembolsa +1 Cúbit con ingenio táctico.`, true, actor.name);
-          addFloatingText(actorId, "+1 PA CEREBRAL", "#c084fc");
+          addFloatingText(actorId, "+1 CÚBIT CEREBRAL", "#c084fc");
         } else {
           if (actor.hand.length >= getMaxHandSize(actor)) {
             addLog("🧠 La Sinergia Cerebral de " + heroDef.displayName + " no encuentra espacio libre en la mano.", false, actor.name);
@@ -1064,7 +1102,7 @@ export default function App() {
             }
             triggerDeckAnimation();
             sound.playCardDraw();
-            addLog("🧠 ¡Sinergia Cerebral de " + heroDef.displayName + "! Roba del Mazo Global.", true, actor.name);
+            addLog("🧠 ¡Sinergia Cerebral de " + heroDef.displayName + "! Roba del Pila General.", true, actor.name);
             addFloatingText(actorId, "+1 CARTA CEREBRAL", "#c084fc");
           } else {
             addLog("La Sinergia Cerebral no pudo robar: no quedan cartas disponibles.", false, actor.name);
@@ -1207,8 +1245,12 @@ export default function App() {
 
     // Avaricia suspende cualquier postura Truco que ya estuviera preparada.
     // Se conserva en el estado del jugador, pero no produce efectos mientras Cubinja esté activa.
-    const activeDefenderStance = isCubinjaHero(target) ? null : target.preparedStance;
+    const defenderStances = isCubinjaHero(target) ? [] :
+      [target.preparedStance, target.preparedStanceSecondary].filter((stance): stance is GameCard => Boolean(stance));
+    const activeDefenderStance = defenderStances.find(stance => stance.id === 19) ||
+      defenderStances.find(stance => stance.id === 17) || defenderStances[0] || null;
     const hasAutomaticPerfectBlock = activeDefenderStance?.id === 19; // El Esquive de Callejón
+    const consumedPreparedActivables: GameCard[] = [];
 
     if (target.blocksDisabledByOrder) {
       defenderFinalVal = 0;
@@ -1291,42 +1333,53 @@ export default function App() {
         : null;
 
     if (!diceOverride?.skipTramcubosoPrompt && tramcubosoCandidate) {
-      setPendingDiceReroll({
-        tramcubosoId: tramcubosoCandidate.id,
-        attackerId: attacker.id,
-        defenderId: target.id,
-        targetId: intendedTarget.id,
-        secondaryTargetId,
-        isCubiculaAbility,
-        isCubogroAbility,
-        attackerRolls: [...attackerRolls],
-        defenderRolls: [...defenderRolls]
-      });
-      addLog(`Revolución de la Mesa: ${tramcubosoCandidate.name} puede conservar la tirada o pagar 1 Cúbit para relanzar todos los dados del enfrentamiento.`, true, tramcubosoCandidate.name);
-      return;
+      if (tramcubosoCandidate.isBot) {
+        const botIsAttacker = tramcubosoCandidate.id === attacker.id;
+        const attackPeak = Math.max(...attackerRolls);
+        const botWantsReroll = botIsAttacker ? (isPerfectBlock || attackPeak < 6) : !isPerfectBlock;
+        if (botWantsReroll) {
+          const rollMany = (count: number) => Array.from({ length: count }, () => Math.floor(Math.random() * 6) + 1);
+          addLog("Revolución de la Mesa: " + tramcubosoCandidate.name + " decide relanzar automáticamente los dados del enfrentamiento.", true, tramcubosoCandidate.name);
+          handleAttack(intendedTarget.id, isCubiculaAbility, secondaryTargetId, {
+            attackerRolls: rollMany(attackerRolls.length),
+            defenderRolls: rollMany(defenderRolls.length),
+            skipTramcubosoPrompt: true,
+            spentCubitPlayerId: tramcubosoCandidate.id
+          }, isCubogroAbility);
+          return;
+        }
+      } else {
+        setPendingDiceReroll({
+          tramcubosoId: tramcubosoCandidate.id,
+          attackerId: attacker.id,
+          defenderId: target.id,
+          targetId: intendedTarget.id,
+          secondaryTargetId,
+          isCubiculaAbility,
+          isCubogroAbility,
+          attackerRolls: [...attackerRolls],
+          defenderRolls: [...defenderRolls]
+        });
+        addLog("Revolución de la Mesa: " + tramcubosoCandidate.name + " puede conservar la tirada o pagar 1 Cúbit para relanzar todos los dados del enfrentamiento.", true, tramcubosoCandidate.name);
+        return;
+      }
     }
 
-    const sixChoices: Array<{ playerId: number; actorName: string; isAttacker: boolean }> = [];
-    const attackerShowsSix = attackerHero === CharacterType.TRAMCUBOSO
-      ? attackerFinalVal === 6
-      : attackerRolls.includes(6);
     const defenderShowsSix = defenderHero === CharacterType.TRAMCUBOSO
       ? defenderFinalVal === 6
       : defenderRolls.includes(6);
-
-    if (attackerShowsSix) {
-      if (attacker.isBot) {
-        handleApplySixChoice(attacker.id, getMaxHandSize(attacker) === 0 || attacker.hand.length >= getMaxHandSize(attacker) ? 'EXTRA_TURN' : 'CARD');
-      } else sixChoices.push({ playerId: attacker.id, actorName: attacker.name, isAttacker: true });
-    }
     if (defenderShowsSix) {
       if (target.isBot) {
-        handleApplySixChoice(target.id, target.hand.length < getMaxHandSize(target) ? 'CARD' : 'EXTRA_TURN');
-      } else sixChoices.push({ playerId: target.id, actorName: target.name, isAttacker: false });
-    }
-    if (sixChoices.length > 0) {
-      setSpecialSixChoice(sixChoices[0]);
-      setSpecialSixQueue(previous => [...previous, ...sixChoices.slice(1)]);
+        // Wait for the combat inventory update so the 6 reward cannot be overwritten
+        // by the perfect-block draw or other card transfers from this resolution.
+        setTimeout(() => {
+          const latestDefender = playersRef.current.find(player => player.id === target.id) || target;
+          const botChoice = latestDefender.hand.length < getMaxHandSize(latestDefender) ? 'CARD' : 'EXTRA_TURN';
+          handleApplySixChoice(target.id, botChoice);
+        }, 60);
+      } else {
+        setSpecialSixChoice({ playerId: target.id, actorName: target.name, isAttacker: false });
+      }
     }
 
     if (wasInterceptedByGladiacubon) {
@@ -1368,8 +1421,16 @@ export default function App() {
     // Consume only the one-use defensive postures resolved by this attack.
     // A posture stored on Cubinja remains dormant and is not consumed while Avaricia is active.
     let updatedTargetStance = target.preparedStance;
-    if (activeDefenderStance && [17, 19].includes(activeDefenderStance.id)) {
-      updatedTargetStance = null;
+    let updatedTargetSecondaryStance = target.preparedStanceSecondary ?? null;
+    const primaryStanceWasUsed = Boolean(
+      activeDefenderStance &&
+      ((activeDefenderStance.id === 19 && isPerfectBlock) ||
+        (activeDefenderStance.id === 17 && !isPerfectBlock))
+    );
+    if (activeDefenderStance && primaryStanceWasUsed) {
+      if (target.preparedStance?.uid === activeDefenderStance.uid) updatedTargetStance = null;
+      else if (target.preparedStanceSecondary?.uid === activeDefenderStance.uid) updatedTargetSecondaryStance = null;
+      consumedPreparedActivables.push(activeDefenderStance);
     }
 
     // Aliento conserva una sola tirada defensiva compartida, pero el daño del
@@ -1383,17 +1444,24 @@ export default function App() {
     let updatedSecondaryStance = secondarySharesPrimaryRecipient
       ? updatedTargetStance
       : (secondaryDamageRecipient?.preparedStance ?? null);
-    const activeSecondaryStance = secondaryDamageRecipient &&
-      !secondarySharesPrimaryRecipient &&
-      !isCubinjaHero(secondaryDamageRecipient)
-      ? secondaryDamageRecipient.preparedStance
-      : null;
+    let updatedSecondarySecondaryStance = secondarySharesPrimaryRecipient
+      ? updatedTargetSecondaryStance
+      : (secondaryDamageRecipient?.preparedStanceSecondary ?? null);
+    const secondaryStances = secondaryDamageRecipient && !isCubinjaHero(secondaryDamageRecipient)
+      ? [secondaryDamageRecipient.preparedStance, secondaryDamageRecipient.preparedStanceSecondary].filter((stance): stance is GameCard => Boolean(stance))
+      : [];
+    const activeSecondaryStance = secondaryStances.find(stance => stance.id === 19) ||
+      secondaryStances.find(stance => stance.id === 17) || null;
     if (useDracubonBreath && secondaryTarget && secondaryDamageRecipient && !isPerfectBlock) {
       secondaryFinalDamage = modifiedAttackDamage;
-      if (activeSecondaryStance?.id === 17) { // La Cortina de Mugre (Vape)
+      if (activeSecondaryStance?.id === 17 || activeSecondaryStance?.id === 19) {
         secondaryFinalDamage = 0;
-        updatedSecondaryStance = null;
-        addLog(`${secondaryDamageRecipient.name} se desvanece en su Humo de Vape preparado!`);
+        if (secondaryDamageRecipient.preparedStance?.uid === activeSecondaryStance.uid) updatedSecondaryStance = null;
+        else if (secondaryDamageRecipient.preparedStanceSecondary?.uid === activeSecondaryStance.uid) updatedSecondarySecondaryStance = null;
+        if (!consumedPreparedActivables.some(card => card.uid === activeSecondaryStance.uid)) {
+          consumedPreparedActivables.push(activeSecondaryStance);
+        }
+        addLog("La postura activable de " + secondaryDamageRecipient.name + " anula el impacto secundario.", true);
       }
       if (secondaryFinalDamage === 1 && secondaryCombatWeapons.some(w => w.id === 4)) {
         secondaryFinalDamage = 0;
@@ -1652,7 +1720,7 @@ export default function App() {
             triggerDeckAnimation();
             sound.playCardDraw();
             addLog(
-              `¡Umbral de vida quebrado! ${attacker.name} cruzó múltiplos de 5 de ${target.name}${secondaryDamageRecipient && !secondarySharesPrimaryRecipient ? ` y ${secondaryDamageRecipient.name}` : ""} (umbrales: ${crossedMultiples.join(', ')}) y roba ${attackerCardsToAdd} carta(s) del Mazo Global.`,
+              `¡Umbral de vida quebrado! ${attacker.name} cruzó múltiplos de 5 de ${target.name}${secondaryDamageRecipient && !secondarySharesPrimaryRecipient ? ` y ${secondaryDamageRecipient.name}` : ""} (umbrales: ${crossedMultiples.join(', ')}) y roba ${attackerCardsToAdd} carta(s) del Pila General.`,
               true
             );
             addFloatingText(attacker.id, `+${attackerCardsToAdd} CARTA MAZO`, "#ffd600");
@@ -1680,7 +1748,7 @@ export default function App() {
               0,
               getMaxHandSize(target) - defenderHandAfterVaciado
             );
-            const standardPerfectBlockDraw = defenderFreeSlotsAfterVaciado > 0 ? 1 : 0;
+            const standardPerfectBlockDraw = Math.min(2, defenderFreeSlotsAfterVaciado);
             defenderCardsToAdd = standardPerfectBlockDraw;
             defenderHpHeal = 2; // Recuperación heroica por Super-Bloqueo
             if (defenderCardsToAdd > 0) {
@@ -1694,7 +1762,7 @@ export default function App() {
             }
             addLog(
               `🛡️⚡ ¡¡SUPER-BLOQUEO HEROICO!! ${target.name} igualó el número del atacante (${defenderFinalVal})! Anula el 100% del daño y desata su Superpoder [${targetHeroDef.signatureSuperpowerName}]: ${targetHeroDef.signatureSuperpowerDesc}! Recupera +${defenderHpHeal} HP${defenderCardsToAdd > 0
-                ? ` y puede robar hasta ${defenderCardsToAdd} carta(s) del Mazo Global.`
+                ? ` y puede robar hasta ${defenderCardsToAdd} carta(s) del Pila General.`
                 : getMaxHandSize(target) === 0
                 ? '. Piel de Piedra impide robar cartas.'
                 : ', pero no tiene espacio en la mano para robar.'}`,
@@ -1820,6 +1888,7 @@ export default function App() {
                     : p.nextBreathBonus,
                   hand: newHand,
                   preparedStance: updatedTargetStance,
+                  preparedStanceSecondary: updatedTargetSecondaryStance,
                   shieldBarrier: secondarySharesPrimaryRecipient ? secondaryBarrierRemaining : targetBarrierRemaining,
                   guardingAllyId: (
                     wasInterceptedByGladiacubon ||
@@ -1843,6 +1912,7 @@ export default function App() {
                   isEliminated: secondaryNewHp <= 0,
                   shieldBarrier: secondaryBarrierRemaining,
                   preparedStance: updatedSecondaryStance,
+                  preparedStanceSecondary: updatedSecondarySecondaryStance,
                   guardingAllyId: secondaryCoverGuardian && secondaryNewHp <= 0 ? null : p.guardingAllyId,
                   nextAttackBonus: secondaryHero === CharacterType.FLAUCUBISTA_DESAFINADO && secondaryDamageTotal > 0
                     ? (p.nextAttackBonus || 0) + 1
@@ -1863,6 +1933,7 @@ export default function App() {
 
           setDeck([...currentDeckState, ...currentDiscardState].sort(() => Math.random() - 0.5));
           setDiscardPile([]);
+          if (consumedPreparedActivables.length > 0) returnCardsToGlobalPile(consumedPreparedActivables);
           const combatChoices = [...attackerDrawResult.choices, ...defenderDrawResult.choices];
           if (combatChoices.length > 0) {
             setTramcubosoCardChoices(prev => [...prev, ...combatChoices]);
@@ -1935,13 +2006,15 @@ export default function App() {
                       hand: p.hand.filter(c => c.id !== weapon.id),
                       equippedWeapons: [...p.equippedWeapons, weapon]
                     } : p);
-                  } else if (stance && !defender.preparedStance) {
+                  } else if (stance && [defender.preparedStance, defender.preparedStanceSecondary].filter(Boolean).length < getMaxPreparedStanceSlots(defender)) {
                     sound.playStanceActivate();
-                    addLog(`¡Reacción! ${defender.name} aprovecha su Bloqueo Perfecto y prepara [${stance.name}] de inmediato!`, true);
+                    const useSecondary = Boolean(defender.preparedStance);
+                    addLog("¡Reacción! " + defender.name + " prepara [" + stance.name + "] en un espacio activable.", true);
                     return latestPlayers.map(p => p.id === defender.id ? {
                       ...p,
                       hand: p.hand.filter(c => c.id !== stance.id),
-                      preparedStance: stance
+                      preparedStance: useSecondary ? p.preparedStance : stance,
+                      preparedStanceSecondary: useSecondary ? stance : p.preparedStanceSecondary
                     } : p);
                   }
                   return latestPlayers;
@@ -2052,17 +2125,16 @@ export default function App() {
     if (!card) return;
     sound.playStanceActivate();
     const newHand = reactionPlayer.hand.filter(c => c.id !== cardId);
-    if (reactionPlayer.preparedStance) {
-      returnCardsToGlobalPile([reactionPlayer.preparedStance!]);
-    }
-
-    setPlayers(prev =>
-      prev.map(p =>
-        p.id === reactionPlayer.id
-          ? { ...p, hand: newHand, preparedStance: card }
-          : p
-      )
-    );
+    const occupied = [reactionPlayer.preparedStance, reactionPlayer.preparedStanceSecondary].filter(Boolean);
+    const limit = getMaxPreparedStanceSlots(reactionPlayer);
+    const useSecondary = limit > 1 && Boolean(reactionPlayer.preparedStance) && occupied.length < limit;
+    const replaced = occupied.length >= limit ? (reactionPlayer.preparedStanceSecondary || reactionPlayer.preparedStance) : null;
+    if (replaced) returnCardsToGlobalPile([replaced]);
+    setPlayers(prev => prev.map(p => p.id === reactionPlayer.id ? {
+      ...p, hand: newHand,
+      preparedStance: limit === 1 ? card : useSecondary ? p.preparedStance : p.preparedStance || card,
+      preparedStanceSecondary: limit === 1 ? null : useSecondary ? card : replaced ? null : p.preparedStanceSecondary
+    } : p));
     addLog(`¡Reacción! ${reactionPlayer.name} preparó la postura [${card.name}] tras su Bloqueo Perfecto!`, true);
     applyCardClassSynergy(reactionPlayer.id, card);
     setReactionPlayer(null);
@@ -2127,22 +2199,18 @@ export default function App() {
     sound.playStanceActivate();
     const newHand = attacker.hand.filter(c => c.id !== cardId);
 
-    if (attacker.preparedStance) {
-      returnCardsToGlobalPile([attacker.preparedStance!]);
-    }
-
-    setPlayers(prev =>
-      prev.map(p =>
-        p.id === attacker.id
-          ? {
-              ...p,
-              actionPoints: Math.max(0, p.actionPoints - 1),
-              hand: newHand,
-              preparedStance: card
-            }
-          : p
-      )
-    );
+    const stanceLimit = getMaxPreparedStanceSlots(attacker);
+    const occupiedStances = [attacker.preparedStance, attacker.preparedStanceSecondary].filter(Boolean);
+    const useSecondaryStance = stanceLimit > 1 && Boolean(attacker.preparedStance) && occupiedStances.length < stanceLimit;
+    const replacedStance = occupiedStances.length >= stanceLimit ? (attacker.preparedStanceSecondary || attacker.preparedStance) : null;
+    if (replacedStance) returnCardsToGlobalPile([replacedStance]);
+    setPlayers(prev => prev.map(p => p.id === attacker.id ? {
+      ...p,
+      actionPoints: Math.max(0, p.actionPoints - 1),
+      hand: newHand,
+      preparedStance: stanceLimit === 1 ? card : useSecondaryStance ? p.preparedStance : p.preparedStance || card,
+      preparedStanceSecondary: stanceLimit === 1 ? null : useSecondaryStance ? card : replacedStance ? null : p.preparedStanceSecondary
+    } : p));
 
     addLog(`${attacker.name} preparó la postura: [${card.name}]`, true);
     if (!attacker.isBot) dailyMissionsManager.recordCardPlayed();
@@ -2253,7 +2321,7 @@ export default function App() {
 
       const firstDraw = drawCardFromDeck(deck, discardPile);
       if (!firstDraw.card) {
-        addLog("Suministro Mágico no pudo activarse: el mazo y el descarte están vacíos.");
+        addLog("Suministro Mágico no pudo activarse: el Pila General están vacíos.");
         return;
       }
       const secondDraw = drawCardFromDeck(firstDraw.newDeck, firstDraw.newDiscard);
@@ -2382,16 +2450,14 @@ export default function App() {
         (actor.teamId === undefined || p.teamId !== actor.teamId));
       setPlayers(prev => prev.map(p => {
         if (p.id === actor.id) {
-          const nextHp = roll === 6 ? p.hp : Math.max(0, p.hp - roll);
-          return { ...p, hp: nextHp, isEliminated: nextHp <= 0,
-            actionPoints: Math.max(0, p.actionPoints - 1), abilityCooldownRemaining: 3 };
+          return { ...p, actionPoints: Math.max(0, p.actionPoints - 1), abilityCooldownRemaining: 3 };
         }
         if (roll === 6 && rivals.some(rival => rival.id === p.id)) return { ...p, hand: [] };
         return p;
       }));
       addLog(roll === 6
         ? `¡Saqueo Colectivo! ${actor.name} obtiene 6: las manos rivales quedan reunidas para distribuirlas.`
-        : `¡Robo fallido! ${actor.name} obtiene ${roll} y recibe ${roll} de daño por el linchamiento.`,
+        : `Saqueo Colectivo: ${actor.name} obtiene ${roll}; no consigue reunir las manos rivales.`,
         true, actor.name);
       if (roll === 6) {
         const pooledCards = rivals.flatMap(rival => rival.hand);
@@ -2419,10 +2485,6 @@ export default function App() {
             addLog(`Saqueo Colectivo automático: ${actor.name} conserva ${retained.length}, reparte ${gifts.size} y devuelve ${remaining.length} a la Pila General.`, true, actor.name);
           }
         } else addLog("Saqueo Colectivo: los rivales no tenían cartas en sus manos.", false, actor.name);
-      } else {
-        addFloatingText(actor.id, `-${roll} HP · ROBO FALLIDO`, "#ef4444");
-        if (actor.hp - roll <= 0) sound.playElimination();
-        setTimeout(() => checkVictory(), 250);
       }
       sound.playDiceRoll();
     } else if (hero === CharacterType.CUBINJA) {
@@ -2756,127 +2818,137 @@ export default function App() {
     }
   };
 
-  // Cambiaformas: Mimetismo automático al comienzo de cada ronda.
+    const finalizeMorphForm = (
+    playerId: number,
+    nextForm: CharacterType,
+    nextHand: GameCard[],
+    nextWeapons: GameCard[],
+    nextStances: GameCard[]
+  ) => {
+    const player = playersRef.current.find(item => item.id === playerId) || players.find(item => item.id === playerId);
+    if (!player || (player.morphFormsUsed || []).includes(nextForm)) return;
+    const returned = [
+      ...player.hand.filter(card => !nextHand.includes(card)),
+      ...player.equippedWeapons.filter(card => !nextWeapons.includes(card)),
+      ...[player.preparedStance, player.preparedStanceSecondary].filter((card): card is GameCard => Boolean(card) && !nextStances.includes(card!))
+    ];
+    const newMaxHp = getCharacterMaxHp(nextForm);
+    setPlayers(previous => previous.map(item => item.id === playerId ? {
+      ...item,
+      activeMorphCharacter: nextForm,
+      activeMorphRound: round,
+      morphFormsUsed: [...(item.morphFormsUsed || []), nextForm],
+      morphExhausted: false,
+      maxHp: newMaxHp,
+      hp: Math.min(item.hp, newMaxHp),
+      abilityCooldownRemaining: 0,
+      cubogroAbilityCharges: nextForm === CharacterType.CUBOGRO ? (item.cubogroAbilityCharges ?? 1) : item.cubogroAbilityCharges,
+      hand: nextHand,
+      equippedWeapons: nextWeapons,
+      preparedStance: nextStances[0] || null,
+      preparedStanceSecondary: nextStances[1] || null
+    } : item));
+    if (returned.length > 0) returnCardsToGlobalPile(returned);
+    const formName = CHARACTERS[nextForm]?.displayName || nextForm;
+    addLog("¡Mimetismo! " + player.name + " adopta la forma de " + formName + " para la ronda " + round + ".", true, player.name);
+    if (returned.length > 0) addLog("La forma nueva devuelve " + returned.length + " carta(s)/arma(s) excedentes a la Pila General.", true, player.name);
+    setMorphInventoryOffer(null);
+    setMorphSelectionPlayerId(null);
+  };
+
+  const applyMorphForm = (playerId: number, nextForm: CharacterType) => {
+    const player = playersRef.current.find(item => item.id === playerId) || players.find(item => item.id === playerId);
+    if (!player || (player.morphFormsUsed || []).includes(nextForm) || nextForm === CharacterType.CAMBIAFORMAS) return;
+    const projected = { ...player, activeMorphCharacter: nextForm };
+    const weaponLimit = getMaxWeaponSlots(projected);
+    const stanceLimit = getMaxPreparedStanceSlots(projected);
+    const defaultWeapons = weaponLimit > 0 ? player.equippedWeapons.slice(-weaponLimit) : [];
+    const handLimit = getMaxHandSize({ ...projected, equippedWeapons: defaultWeapons });
+    const hand = [...player.hand];
+    const weapons = [...player.equippedWeapons];
+    const stances = [player.preparedStance, player.preparedStanceSecondary].filter((card): card is GameCard => Boolean(card));
+    const needsChoice = hand.length > handLimit || weapons.length > weaponLimit || stances.length > stanceLimit;
+
+    if (!player.isBot && needsChoice) {
+      setMorphInventoryOffer({ playerId, form: nextForm, hand, weapons, stances, handLimit, weaponLimit, stanceLimit });
+      setMorphSelectionPlayerId(null);
+      return;
+    }
+    const score = (card: GameCard) => {
+      const rarity: Record<string, number> = { LEGENDARIA: 5, SUPER_RARA: 4, RARA: 3 };
+      return (rarity[card.rarity] || 1) +
+        (CHARACTERS[nextForm]?.classes.includes(card.category) ? 2 : 0) +
+        (card.type === CardType.WEAPON && card.id === 13 ? 3 : card.type === CardType.WEAPON ? 1 : 0) +
+        (card.timing === TrickTiming.PREPARED_STANCE ? 1 : 0);
+    };
+    const selectTop = (cards: GameCard[], max: number) => cards
+      .map((card, index) => ({ index, score: score(card) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, max)
+      .map(entry => entry.index)
+      .sort((a, b) => a - b);
+    const keptWeapons = selectTop(weapons, weaponLimit).map(index => weapons[index]);
+    const actualHandLimit = getMaxHandSize({ ...projected, equippedWeapons: keptWeapons });
+    const keptHand = selectTop(hand, actualHandLimit).map(index => hand[index]);
+    const keptStances = selectTop(stances, stanceLimit).map(index => stances[index]);
+    finalizeMorphForm(playerId, nextForm, keptHand, keptWeapons, keptStances);
+  };
+
+  const confirmMorphInventory = (selection: { hand: number[]; weapons: number[]; stances: number[] }) => {
+    const offer = morphInventoryOffer;
+    if (!offer) return;
+    const player = playersRef.current.find(item => item.id === offer.playerId);
+    if (!player) return;
+    const keptWeapons = selection.weapons.slice(0, offer.weaponLimit).map(index => offer.weapons[index]).filter(Boolean);
+    const actualHandLimit = getMaxHandSize({ ...player, activeMorphCharacter: offer.form, equippedWeapons: keptWeapons });
+    const keptHand = selection.hand.slice(0, actualHandLimit).map(index => offer.hand[index]).filter(Boolean);
+    const keptStances = selection.stances.slice(0, offer.stanceLimit).map(index => offer.stances[index]).filter(Boolean);
+    finalizeMorphForm(offer.playerId, offer.form, keptHand, keptWeapons, keptStances);
+  };
+
+  // Cambiaformas selecciona una forma cualquiera de los otros 12 héroes y no puede repetirla.
   useEffect(() => {
     if (currentScreen !== CurrentScreen.ARENA) {
       processedMorphRoundRef.current = null;
+      setMorphSelectionPlayerId(null);
+      setMorphInventoryOffer(null);
       return;
     }
-    if (winner || isMatchIntroPlaying || players.length === 0) return;
-
-    const pendingMorphs = players.filter(player =>
-      player.characterType === CharacterType.CAMBIAFORMAS &&
-      !player.isEliminated &&
-      player.hp > 0 &&
-      player.activeMorphRound !== round
+    if (winner || isMatchIntroPlaying || players.length === 0 || morphSelectionPlayerId !== null || morphInventoryOffer) return;
+    const morph = players.find(player =>
+      player.characterType === CharacterType.CAMBIAFORMAS && !player.isEliminated && player.hp > 0 &&
+      player.activeMorphRound !== round && !player.morphExhausted
     );
-    if (pendingMorphs.length === 0) return;
-
-    const roundKey = `${round}:${pendingMorphs.map(player => player.id).sort((a, b) => a - b).join(",")}`;
-    if (processedMorphRoundRef.current === roundKey) return;
-    processedMorphRoundRef.current = roundKey;
-
-    const plans = pendingMorphs.map(player => {
-      const candidateForms = players
-        .filter(other => other.id !== player.id && !other.isEliminated && other.hp > 0)
-        .map(other => other.activeMorphCharacter || other.characterType)
-        .filter(form => form !== CharacterType.CAMBIAFORMAS);
-      const nextForm = candidateForms.length > 0
-        ? candidateForms[Math.floor(Math.random() * candidateForms.length)]
-        : null;
-
-      if (!nextForm) {
-        return {
-          playerId: player.id,
-          nextForm: player.activeMorphCharacter || null,
-          transformed: false,
-          hand: player.hand,
-          equippedWeapons: player.equippedWeapons,
-          preparedStance: player.preparedStance,
-          discardedCards: [] as GameCard[]
-        };
-      }
-
-      const projectedPlayer = { ...player, activeMorphCharacter: nextForm };
-      let nextHand = [...player.hand];
-      let nextWeapons = [...player.equippedWeapons];
-      let nextStance = player.preparedStance;
-      const discardedCards: GameCard[] = [];
-
-      if (nextForm === CharacterType.CUBOGRO) {
-        // Piel de Piedra cannot retain cards, weapons or a prepared Trick.
-        discardedCards.push(...nextHand, ...nextWeapons);
-        if (nextStance) discardedCards.push(nextStance);
-        nextHand = [];
-        nextWeapons = [];
-        nextStance = null;
-      } else {
-        const nextWeaponLimit = getMaxWeaponSlots(projectedPlayer);
-        if (nextWeapons.length > nextWeaponLimit) {
-          const excess = nextWeapons.length - nextWeaponLimit;
-          discardedCards.push(...nextWeapons.slice(0, excess));
-          nextWeapons = nextWeapons.slice(-nextWeaponLimit);
-        }
-
-        // Calculate hand capacity after weapon trimming: discarding the Backpack
-        // must also remove its +1 hand slot in the same transformation.
-        const playerAfterWeaponTrim = { ...projectedPlayer, equippedWeapons: nextWeapons };
-        const nextHandLimit = getMaxHandSize(playerAfterWeaponTrim);
-        if (nextHand.length > nextHandLimit) {
-          discardedCards.push(...nextHand.slice(nextHandLimit));
-          nextHand = nextHand.slice(0, nextHandLimit);
-        }
-      }
-
-      return {
-        playerId: player.id,
-        nextForm,
-        transformed: true,
-        hand: nextHand,
-        equippedWeapons: nextWeapons,
-        preparedStance: nextStance,
-        discardedCards
-      };
-    });
-
-    setPlayers(previous => previous.map(player => {
-      const plan = plans.find(item => item.playerId === player.id);
-      if (!plan) return player;
-      return {
-        ...player,
-        activeMorphCharacter: plan.nextForm || player.activeMorphCharacter || null,
-        activeMorphRound: round,
-        cubogroAbilityCharges: plan.nextForm === CharacterType.CUBOGRO
-          ? (player.cubogroAbilityCharges ?? 1)
-          : player.cubogroAbilityCharges,
-        hand: plan.hand,
-        equippedWeapons: plan.equippedWeapons,
-        preparedStance: plan.preparedStance
-      };
-    }));
-
-    const discardedCards = plans.flatMap(plan => plan.discardedCards);
-    if (discardedCards.length > 0) {
-      returnCardsToGlobalPile(discardedCards);
+    if (!morph) return;
+    const used = morph.morphFormsUsed || [];
+    const key = round + ":" + morph.id + ":" + used.length;
+    if (processedMorphRoundRef.current === key) return;
+    processedMorphRoundRef.current = key;
+    const available = CHARACTER_LIST.filter(character =>
+      character.type !== CharacterType.CAMBIAFORMAS && !used.includes(character.type)
+    );
+    if (available.length === 0) {
+      setPlayers(previous => previous.map(player => player.id === morph.id
+        ? { ...player, activeMorphRound: round, morphExhausted: true }
+        : player
+      ));
+      addLog(morph.name + " ha agotado sus 12 formas y conservará la última hasta terminar la partida.", true, morph.name);
+      return;
     }
+    if (morph.isBot) {
+      const priority = morph.hp <= 8
+        ? available.find(form => form.type === CharacterType.CUBICULA)
+        : morph.equippedWeapons.length >= 2
+        ? available.find(form => form.type === CharacterType.CUBINJA)
+        : morph.hand.length === 0
+        ? available.find(form => form.type === CharacterType.HADA_AL_CUBO)
+        : null;
+      const chosen = priority || available[Math.floor(Math.random() * available.length)];
+      applyMorphForm(morph.id, chosen.type);
+    } else setMorphSelectionPlayerId(morph.id);
+  }, [currentScreen, winner, isMatchIntroPlaying, players, round, morphSelectionPlayerId, morphInventoryOffer]);
 
-    plans.forEach(plan => {
-      const player = players.find(item => item.id === plan.playerId);
-      if (!player) return;
-      if (plan.transformed && plan.nextForm) {
-        const formName = CHARACTERS[plan.nextForm]?.displayName || plan.nextForm;
-        addLog(`¡Mimetismo! ${player.name} adopta la forma de ${formName} para la ronda ${round}.`, true, player.name);
-        addFloatingText(player.id, `¡MIMETISMO: ${formName.toUpperCase()}!`, "#a78bfa");
-      } else {
-        addLog(`Mimetismo: ${player.name} no encuentra otro personaje vivo del que copiarse y conserva su forma actual.`, false, player.name);
-      }
-      if (plan.discardedCards.length > 0) {
-        addLog(`Las restricciones de la nueva forma descartan ${plan.discardedCards.length} carta(s)/arma(s) de ${player.name}.`, true, player.name);
-      }
-    });
-  }, [currentScreen, winner, isMatchIntroPlaying, players, round]);
-
-  // Auto-skip turn if current active player is eliminated or dead (CRITICAL FIX FOR STUCK 'PENSANDO')
+// Auto-skip turn if current active player is eliminated or dead (CRITICAL FIX FOR STUCK 'PENSANDO')
   useEffect(() => {
     if (currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
     const currentP = players[turnIndex];
@@ -3009,7 +3081,7 @@ export default function App() {
         activePlayer.actionPoints === 2 &&
         activePlayer.hand.length < getMaxHandSize(activePlayer) &&
         botHasSupplyAlly &&
-        deck.length + discardPile.length >= 2
+        deck.length >= 2
       ) {
         handleUseHeroAbility();
         return;
@@ -3027,7 +3099,7 @@ export default function App() {
 
       if (weapon && activePlayer.equippedWeapons.length < maxSlots && activePlayer.actionPoints > 0) {
         handleEquipWeapon(weapon.id);
-      } else if (stance && !activePlayer.preparedStance && activePlayer.actionPoints > 0) {
+      } else if (stance && [activePlayer.preparedStance, activePlayer.preparedStanceSecondary].filter(Boolean).length < getMaxPreparedStanceSlots(activePlayer) && activePlayer.actionPoints > 0) {
         handlePrepareStance(stance.id);
       }
 
@@ -3138,7 +3210,6 @@ export default function App() {
           supplyMagicOffer={supplyMagicOffer}
           onConfirmSupplyMagic={handleConfirmSupplyMagic}
           deckCount={deck.length}
-          discardPileCount={discardPile.length}
           log={log}
           phase={phase}
           activeDiceRoll={activeDiceRoll}
@@ -3189,6 +3260,32 @@ export default function App() {
         />
       )}
 
+      {morphSelectionPlayerId !== null && (() => {
+        const morph = players.find(player => player.id === morphSelectionPlayerId);
+        if (!morph) return null;
+        const used = morph.morphFormsUsed || [];
+        return <MorphFormSelectionModal
+          playerName={morph.name}
+          usedCount={used.length}
+          availableForms={CHARACTER_LIST.filter(form => form.type !== CharacterType.CAMBIAFORMAS && !used.includes(form.type))}
+          onChoose={form => applyMorphForm(morph.id, form)}
+        />;
+      })()}
+      {morphInventoryOffer && (() => {
+        const player = players.find(item => item.id === morphInventoryOffer.playerId);
+        if (!player) return null;
+        return <MorphInventoryChoiceModal
+          playerName={player.name}
+          formName={CHARACTERS[morphInventoryOffer.form]?.displayName || morphInventoryOffer.form}
+          hand={morphInventoryOffer.hand}
+          weapons={morphInventoryOffer.weapons}
+          stances={morphInventoryOffer.stances}
+          handLimit={morphInventoryOffer.handLimit}
+          weaponLimit={morphInventoryOffer.weaponLimit}
+          stanceLimit={morphInventoryOffer.stanceLimit}
+          onConfirm={confirmMorphInventory}
+        />;
+      })()}
       {pendingDiceReroll && (() => {
         const tram = players.find(player => player.id === pendingDiceReroll.tramcubosoId);
         const attacker = players.find(player => player.id === pendingDiceReroll.attackerId);
