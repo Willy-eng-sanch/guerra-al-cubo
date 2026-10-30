@@ -1950,6 +1950,39 @@ export default function App() {
         })
       );
       addLog(`¡${actor.name} usó [Abordaje Cúbico] sobre ${target.name}! Anula su próximo turno.`, true);
+    } else if (hero === CharacterType.GLADIACUBON) {
+      const ally = players.find(p =>
+        p.id === targetId &&
+        p.id !== actor.id &&
+        !p.isEliminated &&
+        p.hp > 0 &&
+        actor.teamId !== undefined &&
+        p.teamId === actor.teamId
+      );
+      if (
+        !ally ||
+        actor.actionPoints <= 0 ||
+        actor.isFrozen ||
+        actor.guardingAllyId != null ||
+        (actor.interceptionAvailableRound || 0) > round
+      ) return;
+
+      sound.playStanceActivate();
+      setPlayers(prev => prev.map(p => p.id === actor.id
+        ? {
+            ...p,
+            actionPoints: Math.max(0, p.actionPoints - 1),
+            guardingAllyId: ally.id,
+            interceptionAvailableRound: round + 2
+          }
+        : p
+      ));
+      addLog(
+        `¡Intercepción! ${actor.name} gasta 1 AP y activa Cobertura sobre ${ally.name}. El siguiente ataque dirigido a ese aliado será interceptado con el dado de ${actor.name}; no podrá reactivar en la próxima ronda ni antes de consumir esta cobertura.`,
+        true,
+        actor.name
+      );
+      addFloatingText(actor.id, `CUBRIENDO A ${ally.name.toUpperCase()}`, "#60a5fa");
     } else if (hero === CharacterType.DRACUBON) {
       const blocker = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
       const secondTarget = players.find(p => p.id === extraOption && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
