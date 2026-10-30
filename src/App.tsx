@@ -1482,20 +1482,6 @@ export default function App() {
           ];
 
           let attackerCardsToAdd = 0;
-          if (
-            crossedMultiples.length > 0 &&
-            !attacker.equippedWeapons.some(w => w.id === 6) &&
-            attacker.hand.length < getMaxHandSize(attacker)
-          ) {
-            attackerCardsToAdd = crossedMultiples.length;
-            triggerDeckAnimation();
-            sound.playCardDraw();
-            addLog(
-              `¡Umbral de vida quebrado! ${attacker.name} cruzó múltiplos de 5 de ${target.name}${secondaryDamageRecipient && !secondarySharesPrimaryRecipient ? ` y ${secondaryDamageRecipient.name}` : ""} (umbrales: ${crossedMultiples.join(', ')}) y roba ${attackerCardsToAdd} carta(s) del Mazo Global.`,
-              true
-            );
-            addFloatingText(attacker.id, `+${attackerCardsToAdd} CARTA MAZO`, "#ffd600");
-          }
 
           // Hurto Sigiloso: only steal after the primary defender actually loses HP.
           // Damage absorbed entirely by an external shield/barrier is not effective damage.
@@ -1594,6 +1580,32 @@ export default function App() {
               );
               addFloatingText(target.id, "¡CADENA COMPLETA: 5!", "#f59e0b");
             }
+          }
+
+          // Threshold rewards use the attacker's post-disarm inventory. A Racubitero
+          // Perfect Block can empty the attacker's hand and equipment before this draw.
+          const attackerHandLimitAfterRacubitero = getMaxHandSize({
+            ...attacker,
+            equippedWeapons: attackerWeaponsAfterRacubitero
+          });
+          const attackerFreeSlotsAfterRacubitero = Math.max(
+            0,
+            attackerHandLimitAfterRacubitero - attackerHandAfterRacubitero.length
+          );
+          if (
+            crossedMultiples.length > 0 &&
+            !attackerWeaponsAfterRacubitero.some(w => w.id === 6)
+          ) {
+            attackerCardsToAdd = Math.min(crossedMultiples.length, attackerFreeSlotsAfterRacubitero);
+          }
+          if (attackerCardsToAdd > 0) {
+            triggerDeckAnimation();
+            sound.playCardDraw();
+            addLog(
+              `¡Umbral de vida quebrado! ${attacker.name} cruzó múltiplos de 5 de ${target.name}${secondaryDamageRecipient && !secondarySharesPrimaryRecipient ? ` y ${secondaryDamageRecipient.name}` : ""} (umbrales: ${crossedMultiples.join(', ')}) y roba ${attackerCardsToAdd} carta(s) del Mazo Global.`,
+              true
+            );
+            addFloatingText(attacker.id, `+${attackerCardsToAdd} CARTA MAZO`, "#ffd600");
           }
 
           // Super-Bloqueo Heroico / Bloqueo Perfecto rewards for defender:
