@@ -165,7 +165,8 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
         p.id !== currentTurnPlayer.id &&
         p.teamId === currentTurnPlayer.teamId &&
         !p.isEliminated &&
-        p.hp > 0
+        p.hp > 0 &&
+        !players.some(guardian => guardian.guardingAllyId === p.id)
       )
     : [];
   const hasPendingInterception = currentTurnPlayer?.guardingAllyId != null;
