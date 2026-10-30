@@ -178,12 +178,15 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
     !hasPendingInterception &&
     !interceptionCooldown
   );
+  const pendingInterceptionAllyName = currentTurnPlayer?.guardingAllyId != null
+    ? players.find(p => p.id === currentTurnPlayer.guardingAllyId)?.name
+    : null;
   const interceptionUnavailableReason = !currentTurnPlayer || currentTurnPlayer.actionPoints <= 0
     ? 'Necesitas 1 Punto de Acción para activar Intercepción.'
     : currentTurnPlayer.isFrozen
     ? 'No puedes activar habilidades mientras estás congelado.'
     : hasPendingInterception
-    ? 'Ya hay una cobertura pendiente. Debe interceptar un ataque contra el aliado antes de volver a activarla.'
+    ? `Cobertura pendiente sobre ${pendingInterceptionAllyName || 'un aliado'}: espera a conseguir el Bloqueo Perfecto antes de volver a activarla.`
     : interceptionCooldown
     ? `Intercepción estará disponible en la ronda ${currentTurnPlayer.interceptionAvailableRound}.`
     : validAllies.length === 0
@@ -467,6 +470,17 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                 <span>TERMINAR TURNO</span>
               </button>
             </div>
+
+            {currentTurnPlayer.guardingAllyId != null && (
+              <div className="mb-2 rounded-xl border border-blue-500/40 bg-blue-950/30 p-2 text-center text-[11px] font-bold text-blue-200">
+                Intercepción activa: Gladiacubon protege a {pendingInterceptionAllyName || 'un aliado'}. La cobertura solo termina con un Bloqueo Perfecto.
+              </div>
+            )}
+            {currentTurnPlayer.interceptionAvailableRound != null && currentTurnPlayer.interceptionAvailableRound > round && (
+              <div className="mb-2 rounded-xl border border-amber-500/30 bg-amber-950/20 p-2 text-center text-[10px] font-semibold text-amber-200">
+                Intercepción en enfriamiento hasta la ronda {currentTurnPlayer.interceptionAvailableRound}.
+              </div>
+            )}
 
             {/* Hand Cards Horizontal Carousel with PvZ Heroes Class & Synergy System */}
             <div>
