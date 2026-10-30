@@ -195,14 +195,14 @@ export default function App() {
         if (p.id !== playerId) return p;
         return { ...p, actionPoints: p.actionPoints + 1 };
       }));
-      addFloatingText(playerId, "+1 TURNO EXTRA (PA)", "#ffd600");
-      addLog(`¡Cara Especial 6! ${actorName} elige TURNO EXTRA (+1 Cúbit).`, true);
+      addFloatingText(playerId, "+1 CÚBIT", "#ffd600");
+      addLog(`¡Cara Especial 6! ${actorName} elige ACCIÓN ADICIONAL (+1 Cúbit).`, true);
       sound.playStanceActivate();
-      narrator.narrateSpecialFaceSix(actorName, "Turno Extra");
+      narrator.narrateSpecialFaceSix(actorName, "Acción adicional");
     } else {
       const drawResult = drawForPlayer(actor, deck, discardPile, "Cara Especial 6");
       if (drawResult.cards.length === 0) {
-        addLog("No quedan cartas disponibles en el mazo ni en el descarte.", true);
+        addLog("La Pila General está vacía.", true);
       } else {
         setDeck(drawResult.newDeck);
         setDiscardPile([]);
@@ -2395,8 +2395,30 @@ export default function App() {
         true, actor.name);
       if (roll === 6) {
         const pooledCards = rivals.flatMap(rival => rival.hand);
-        if (pooledCards.length > 0) setRacubiteroLootOffer({ actorId: actor.id, cards: pooledCards });
-        else addLog("Saqueo Colectivo: los rivales no tenían cartas en sus manos.", false, actor.name);
+        if (pooledCards.length > 0) {
+          if (!actor.isBot) {
+            setRacubiteroLootOffer({ actorId: actor.id, cards: pooledCards });
+          } else {
+            let remaining = [...pooledCards];
+            const selfSlots = Math.max(0, getMaxHandSize(actor) - actor.hand.length);
+            const retained = remaining.splice(0, selfSlots);
+            const gifts = new Map<number, GameCard>();
+            const botAllies = actor.teamId === undefined ? [] : players.filter(player =>
+              player.id !== actor.id && player.teamId === actor.teamId && !player.isEliminated &&
+              player.hp > 0 && player.hand.length < getMaxHandSize(player)
+            );
+            botAllies.forEach(ally => {
+              if (remaining.length > 0) gifts.set(ally.id, remaining.shift()!);
+            });
+            setPlayers(prev => prev.map(player => {
+              if (player.id === actor.id) return { ...player, hand: [...player.hand, ...retained] };
+              const gift = gifts.get(player.id);
+              return gift ? { ...player, hand: [...player.hand, gift] } : player;
+            }));
+            if (remaining.length > 0) returnCardsToGlobalPile(remaining);
+            addLog(`Saqueo Colectivo automático: ${actor.name} conserva ${retained.length}, reparte ${gifts.size} y devuelve ${remaining.length} a la Pila General.`, true, actor.name);
+          }
+        } else addLog("Saqueo Colectivo: los rivales no tenían cartas en sus manos.", false, actor.name);
       } else {
         addFloatingText(actor.id, `-${roll} HP · ROBO FALLIDO`, "#ef4444");
         if (actor.hp - roll <= 0) sound.playElimination();
@@ -2824,6 +2846,9 @@ export default function App() {
         ...player,
         activeMorphCharacter: plan.nextForm || player.activeMorphCharacter || null,
         activeMorphRound: round,
+        cubogroAbilityCharges: plan.nextForm === CharacterType.CUBOGRO
+          ? (player.cubogroAbilityCharges ?? 1)
+          : player.cubogroAbilityCharges,
         hand: plan.hand,
         equippedWeapons: plan.equippedWeapons,
         preparedStance: plan.preparedStance
@@ -3185,7 +3210,7 @@ export default function App() {
         if (!actor) return null;
         const allies = players.filter(player =>
           player.id !== actor.id && !player.isEliminated && player.hp > 0 &&
-          (actor.teamId !== undefined ? player.teamId === actor.teamId : true) &&
+          actor.teamId !== undefined && player.teamId === actor.teamId &&
           player.hand.length < getMaxHandSize(player)
         );
         return <RacubiteroLootModal cards={racubiteroLootOffer.cards} actor={actor} allies={allies} onConfirm={resolveRacubiteroLoot} />;

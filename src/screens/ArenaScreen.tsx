@@ -271,7 +271,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           </div>
         </div>
 
-        {/* Deck, Discard, Audio and Speed Toggle */}
+        {/* Pila General, Audio and Speed Toggle */}
         <div className="flex items-center gap-2 text-xs">
           <AudioControlBar />
 
@@ -496,7 +496,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                   TUS CARTAS EN MANO ({currentTurnPlayer.hand.length}/{getMaxHandSize(currentTurnPlayer)})
                 </span>
                 <span className="text-yellow-400">
-                  Cúbits disponibles: <b>{currentTurnPlayer.actionPoints} Cúbits</b>
+                  Cúbits disponibles: <b>{currentTurnPlayer.actionPoints}</b>
                 </span>
               </div>
               {isCubinjaTurn && (

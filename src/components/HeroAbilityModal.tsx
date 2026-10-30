@@ -133,7 +133,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                     color: character.primaryColor
                   }}
                 >
-                  {character.abilityCooldownMax > 0 ? 'Activa con Cooldown' : isRacubitero ? 'Pasiva automática' : 'Habilidad Especial'}
+                  {character.abilityCooldownMax > 0 ? 'Activa con Cooldown' : isRacubitero ? 'Habilidad activa' : 'Habilidad Especial'}
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400">{character.title}</p>

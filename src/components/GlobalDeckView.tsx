@@ -59,7 +59,7 @@ export const GlobalDeckView: React.FC<GlobalDeckViewProps> = ({
               PILA GENERAL
             </span>
             <span className="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.2 rounded-full border border-purple-700 font-mono font-bold">
-              {deckCount} / 60 cartas
+              {deckCount} cartas disponibles
             </span>
             {isDrawingAnimation && (
               <span className="text-[9px] bg-yellow-400 text-black px-1.5 py-0.2 rounded-full font-black animate-pulse">
@@ -70,12 +70,12 @@ export const GlobalDeckView: React.FC<GlobalDeckViewProps> = ({
           <div className="text-[10px] text-neutral-300 flex flex-col sm:flex-row sm:items-center gap-x-2 gap-y-0.5 mt-0.5">
             <span className="flex items-center gap-1 text-yellow-400 font-semibold">
               <Sparkles className="w-3 h-3" />
-              <span>Robas por umbral (≤20, ≤15, ≤10, ≤5 HP)</span>
+              <span>Robas al cruzar umbrales de vida (≤20, ≤15, ≤10, ≤5 HP)</span>
             </span>
             <span className="hidden sm:inline text-neutral-600">•</span>
             <span className="flex items-center gap-1 text-cyan-300 font-semibold">
               <ShieldCheck className="w-3 h-3" />
-              <span>Robas + Reacción por Bloqueo Perfecto</span>
+              <span>Robas + reacción por Bloqueo Perfecto</span>
             </span>
           </div>
         </div>

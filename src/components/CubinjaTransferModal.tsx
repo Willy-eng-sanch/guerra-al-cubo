@@ -1,5 +1,5 @@
 import React from 'react';
-import { GameCard, PlayerState, getMaxHandSize } from '../types/game';
+import { CharacterType, GameCard, PlayerState, getMaxHandSize } from '../types/game';
 import { Hand, Send } from 'lucide-react';
 
 interface CubinjaTransferModalProps {
@@ -14,7 +14,7 @@ export const CubinjaTransferModal: React.FC<CubinjaTransferModalProps> = ({ acto
   const targets = players.filter(player =>
     player.id !== actor.id && !player.isEliminated && player.hp > 0 &&
     player.hand.length < getMaxHandSize(player) &&
-    (player.activeMorphCharacter || player.characterType) !== 'CUBOGRO'
+    (player.activeMorphCharacter || player.characterType) !== CharacterType.CUBOGRO
   );
   return (
     <div className="fixed inset-0 z-[116] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
