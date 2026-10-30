@@ -819,6 +819,14 @@ export default function App() {
       modifiedAttackDamage += 1; // Batería de coche
     }
 
+    const flaucubistaBonus = attackerHero === CharacterType.FLAUCUBISTA_DESAFINADO
+      ? (attacker.nextAttackBonus || 0)
+      : 0;
+    modifiedAttackDamage += flaucubistaBonus;
+    if (flaucubistaBonus > 0) {
+      addLog(`Acorde Violento añade +${flaucubistaBonus} al próximo ataque de ${attacker.name}.`);
+    }
+
     // 2. Pre-calculate Defender Roll
     const defenderHero = target.activeMorphCharacter || target.characterType;
     const defenderRolls: number[] = [];
@@ -1054,7 +1062,10 @@ export default function App() {
                   actionPoints: Math.max(0, p.actionPoints - 1),
                   hand: newHand,
                   damageDealt: (p.damageDealt || 0) + finalDamage,
-                  cardsDrawn: (p.cardsDrawn || 0) + attackerDrawnCount
+                  cardsDrawn: (p.cardsDrawn || 0) + attackerDrawnCount,
+                  nextAttackBonus: attackerHero === CharacterType.FLAUCUBISTA_DESAFINADO && flaucubistaBonus > 0
+                    ? 0
+                    : p.nextAttackBonus
                 };
               } else if (p.id === target.id) {
                 const newHand = [...p.hand];
@@ -1081,6 +1092,9 @@ export default function App() {
                 return {
                   ...p,
                   hp: Math.min(p.maxHp, newHp + defenderHpHeal),
+                  nextAttackBonus: defenderHero === CharacterType.FLAUCUBISTA_DESAFINADO && finalDamage > 0
+                    ? (p.nextAttackBonus || 0) + 1
+                    : p.nextAttackBonus,
                   hand: newHand,
                   preparedStance: updatedTargetStance,
                   shieldBarrier: targetBarrierRemaining,
@@ -1443,7 +1457,12 @@ export default function App() {
       } else {
         const selfDamage = Math.max(1, Math.floor(roll / 2));
         setPlayers(prev =>
-          prev.map(p => (p.id === actor.id ? { ...p, hp: Math.max(0, p.hp - selfDamage), isEliminated: Math.max(0, p.hp - selfDamage) <= 0 } : p))
+          prev.map(p => (p.id === actor.id ? {
+            ...p,
+            hp: Math.max(0, p.hp - selfDamage),
+            nextAttackBonus: (p.nextAttackBonus || 0) + 1,
+            isEliminated: Math.max(0, p.hp - selfDamage) <= 0
+          } : p))
         );
         addLog(`Flaucubista desafinó (apostó ${chosenNum}, sacó ${roll}) y sufre ${selfDamage} de daño.`);
       }
