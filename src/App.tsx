@@ -2170,7 +2170,8 @@ export default function App() {
       if (!nextForm) {
         return {
           playerId: player.id,
-          nextForm: null as CharacterType | null,
+          nextForm: player.activeMorphCharacter || null,
+          transformed: false,
           hand: player.hand,
           equippedWeapons: player.equippedWeapons,
           preparedStance: player.preparedStance,
@@ -2209,6 +2210,7 @@ export default function App() {
       return {
         playerId: player.id,
         nextForm,
+        transformed: true,
         hand: nextHand,
         equippedWeapons: nextWeapons,
         preparedStance: nextStance,
@@ -2221,7 +2223,7 @@ export default function App() {
       if (!plan) return player;
       return {
         ...player,
-        activeMorphCharacter: plan.nextForm,
+        activeMorphCharacter: plan.nextForm || player.activeMorphCharacter || null,
         activeMorphRound: round,
         hand: plan.hand,
         equippedWeapons: plan.equippedWeapons,
@@ -2237,7 +2239,7 @@ export default function App() {
     plans.forEach(plan => {
       const player = players.find(item => item.id === plan.playerId);
       if (!player) return;
-      if (plan.nextForm) {
+      if (plan.transformed && plan.nextForm) {
         const formName = CHARACTERS[plan.nextForm]?.displayName || plan.nextForm;
         addLog(`¡Mimetismo! ${player.name} adopta la forma de ${formName} para la ronda ${round}.`, true, player.name);
         addFloatingText(player.id, `¡MIMETISMO: ${formName.toUpperCase()}!`, "#a78bfa");
