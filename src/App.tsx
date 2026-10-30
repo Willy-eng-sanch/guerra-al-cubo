@@ -1509,7 +1509,7 @@ export default function App() {
                   hand: newHand,
                   preparedStance: updatedTargetStance,
                   shieldBarrier: targetBarrierRemaining,
-                  guardingAllyId: wasInterceptedByGladiacubon && isPerfectBlock ? null : p.guardingAllyId,
+                  guardingAllyId: wasInterceptedByGladiacubon && (isPerfectBlock || newHp <= 0) ? null : p.guardingAllyId,
                   isEliminated: newHp <= 0,
                   perfectBlocks: (p.perfectBlocks || 0) + (isPerfectBlock ? 1 : 0),
                   cardsDrawn: (p.cardsDrawn || 0) + defenderDrawResult.drawnCount
@@ -1982,7 +1982,8 @@ export default function App() {
         !p.isEliminated &&
         p.hp > 0 &&
         actor.teamId !== undefined &&
-        p.teamId === actor.teamId
+        p.teamId === actor.teamId &&
+        !players.some(guardian => guardian.guardingAllyId === p.id)
       );
       if (
         !ally ||
