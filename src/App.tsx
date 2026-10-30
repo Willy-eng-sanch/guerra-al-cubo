@@ -73,6 +73,9 @@ export default function App() {
   } | null>(null);
   const [supplyMagicOffer, setSupplyMagicOffer] = useState<{ actorId: number; cards: GameCard[] } | null>(null);
   const [cubinarcaOrderOffer, setCubinarcaOrderOffer] = useState<{ issuerId: number; victimId: number } | null>(null);
+  const botOrderTurnRef = useRef<number | null>(null);
+  const playersRef = useRef<PlayerState[]>([]);
+  useEffect(() => { playersRef.current = players; }, [players]);
   const matchIntroCompletedRef = useRef(true);
 
   const speedMultiplier = isFastSpeed ? 0.5 : 1;
@@ -680,7 +683,7 @@ export default function App() {
 
     const order: CubinarcaOrder = { issuerId: issuer.id, kind, attackTargetId };
     setPlayers(prev => prev.map(player => player.id === victim.id
-      ? { ...player, cubinarcaOrder: order, blocksDisabledByOrder: false }
+      ? { ...player, cubinarcaOrder: order, blocksDisabledByOrder: false, cubinarcaOrderDefiedThisTurn: false }
       : player
     ));
     setCubinarcaOrderOffer(null);
@@ -741,7 +744,8 @@ export default function App() {
         ...player,
         hand: player.hand.filter((_, index) => index !== cardIndex),
         cubinarcaOrder: null,
-        blocksDisabledByOrder: false
+        blocksDisabledByOrder: false,
+        cubinarcaOrderDefiedThisTurn: false
       };
       if (player.id === issuer.id) return { ...player, hand: [...player.hand, card] };
       return player;
@@ -762,7 +766,8 @@ export default function App() {
       equippedWeapons: player.equippedWeapons.filter((_, index) => index !== weaponIndex),
       hand: hasHandSpace ? [...player.hand, weapon] : player.hand,
       cubinarcaOrder: null,
-      blocksDisabledByOrder: false
+      blocksDisabledByOrder: false,
+      cubinarcaOrderDefiedThisTurn: false
     } : player));
     if (!hasHandSpace) setDiscardPile(prev => [...prev, weapon]);
     addLog(`${victim.name} cumple la orden y desequipa [${weapon.name}]${hasHandSpace ? ', devolviéndola a su mano.' : '; su mano está llena y el arma va al descarte.'}`, true, victim.name);
@@ -773,7 +778,7 @@ export default function App() {
     const victim = currentTurnPlayer;
     if (!victim?.cubinarcaOrder) return;
     setPlayers(prev => prev.map(player => player.id === victim.id
-      ? { ...player, blocksDisabledByOrder: true }
+      ? { ...player, blocksDisabledByOrder: true, cubinarcaOrderDefiedThisTurn: true }
       : player
     ));
     addLog(`${victim.name} desobedece la orden de Cubinarca: Discordia le impide bloquear hasta cumplirla.`, true, victim.name);
@@ -1918,50 +1923,55 @@ export default function App() {
 
   // End Turn
   const handleEndTurn = () => {
-    if (players.length === 0) return;
-    const endingPlayer = players[turnIndex];
+    const turnPlayers = playersRef.current.length > 0 ? playersRef.current : players;
+    if (turnPlayers.length === 0) return;
+    const endingPlayer = turnPlayers[turnIndex];
     if (endingPlayer?.cubinarcaOrder && !endingPlayer.blocksDisabledByOrder) {
-      setPlayers(prev => prev.map(player => player.id === endingPlayer.id
-        ? { ...player, blocksDisabledByOrder: true }
-        : player
-      ));
       addLog(`${endingPlayer.name} terminó su turno sin cumplir la orden: Discordia le quita la capacidad de bloquear.`, true, endingPlayer.name);
     }
 
     // 1. Check if only 1 survivor or 1 team remains
-    const alivePlayers = players.filter(p => !p.isEliminated && p.hp > 0);
+    const alivePlayers = turnPlayers.filter(p => !p.isEliminated && p.hp > 0);
     if (alivePlayers.length <= 1) {
-      checkVictory(players);
+      checkVictory(turnPlayers);
       return;
     }
 
     // 2. Step forward in a single pass until we find the next non-eliminated player
-    let nextIdx = (turnIndex + 1) % players.length;
+    let nextIdx = (turnIndex + 1) % turnPlayers.length;
     let cycles = 0;
     let roundsToAdd = 0;
 
-    while ((players[nextIdx].isEliminated || players[nextIdx].hp <= 0) && cycles < players.length) {
+    while ((turnPlayers[nextIdx].isEliminated || turnPlayers[nextIdx].hp <= 0) && cycles < turnPlayers.length) {
       if (nextIdx === 0) {
         roundsToAdd++;
       }
-      nextIdx = (nextIdx + 1) % players.length;
+      nextIdx = (nextIdx + 1) % turnPlayers.length;
       cycles++;
     }
 
-    if (cycles >= players.length) {
-      checkVictory(players);
+    if (cycles >= turnPlayers.length) {
+      checkVictory(turnPlayers);
       return;
     }
 
     const nextRound = (nextIdx <= turnIndex) ? round + 1 + roundsToAdd : round + roundsToAdd;
 
-    const updated = players.map((p, idx) => {
+    const updated = turnPlayers.map((p, idx) => {
+      if (idx === turnIndex && p.cubinarcaOrder) {
+        return {
+          ...p,
+          blocksDisabledByOrder: true,
+          cubinarcaOrderDefiedThisTurn: p.blocksDisabledByOrder ? p.cubinarcaOrderDefiedThisTurn : false
+        };
+      }
       if (idx === nextIdx) {
         return {
           ...p,
           actionPoints: 2,
           isFrozen: false,
-          abilityCooldownRemaining: Math.max(0, p.abilityCooldownRemaining - 1)
+          abilityCooldownRemaining: Math.max(0, p.abilityCooldownRemaining - 1),
+          cubinarcaOrderDefiedThisTurn: false
         };
       }
       return p;
@@ -2099,7 +2109,7 @@ export default function App() {
             handleAttack(orderedTarget.id);
           } else {
             setPlayers(prev => prev.map(player => player.id === activePlayer.id
-              ? { ...player, blocksDisabledByOrder: true }
+              ? { ...player, blocksDisabledByOrder: true, cubinarcaOrderDefiedThisTurn: true }
               : player
             ));
           }
