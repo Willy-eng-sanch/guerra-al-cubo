@@ -47,6 +47,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   const isFrozen = player.isFrozen;
   const isDracubon = heroType === CharacterType.DRACUBON;
   const isGladiacubon = heroType === CharacterType.GLADIACUBON;
+  const isRacubitero = heroType === CharacterType.RACUBITERO;
   const abilityTargets = isGladiacubon ? validAllies : validTargets;
 
   // Does this ability require choosing a rival or an ally?
@@ -56,7 +57,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   const isFlute = heroType === CharacterType.FLAUCUBISTA_DESAFINADO;
   const isSupplyMagic = heroType === CharacterType.HADA_AL_CUBO;
 
-  const canActivate = !isCooldown && !isFrozen &&
+  const canActivate = !isRacubitero && !isCooldown && !isFrozen &&
     (!needsTarget || (currentTargetId !== null && abilityTargets.some(target => target.id === currentTargetId))) &&
     (!isDracubon || (validTargets.length >= 2 && dracubonBlockerId !== null && dracubonSecondTargetId !== null && dracubonBlockerId !== dracubonSecondTargetId)) &&
     (!needsActionPoint || player.actionPoints > 0) &&
@@ -119,7 +120,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                     color: character.primaryColor
                   }}
                 >
-                  {character.abilityCooldownMax > 0 ? 'Activa con Cooldown' : 'Habilidad Especial'}
+                  {character.abilityCooldownMax > 0 ? 'Activa con Cooldown' : isRacubitero ? 'Pasiva automática' : 'Habilidad Especial'}
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400">{character.title}</p>
@@ -189,6 +190,13 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
           {isSupplyMagic && !canUseSupplyMagic && !isCooldown && !isFrozen && (
             <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 p-3 text-xs text-amber-200">
               {supplyMagicUnavailableReason}
+            </div>
+          )}
+
+          {isRacubitero && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 p-3 text-xs text-amber-100 space-y-1">
+              <p className="font-black text-amber-200">Pasiva automática · sin coste de AP</p>
+              <p>Hurto Sigiloso roba al causar daño efectivo. En Bloqueo Perfecto se activan Vaciado de Bolsillo y Desarme en Cadena; no se usan desde este botón.</p>
             </div>
           )}
 
@@ -372,6 +380,8 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                 ? 'SUMINISTRO NO DISPONIBLE'
                 : isGladiacubon && !canUseInterception
                 ? 'INTERCEPCIÓN NO DISPONIBLE'
+                : isRacubitero
+                ? 'PASIVA AUTOMÁTICA'
                 : isDracubon && validTargets.length < 2
                 ? 'SE NECESITAN 2 RIVALES VIVOS'
                 : needsActionPoint && player.actionPoints <= 0
