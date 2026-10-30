@@ -449,6 +449,11 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                   Acciones restantes: <b>{currentTurnPlayer.actionPoints} AP</b>
                 </span>
               </div>
+              {currentTurnPlayer.cannotUseCardsThisTurn && (
+                <div className="mb-2 rounded-xl border border-amber-500/40 bg-amber-950/30 p-2 text-center text-[11px] font-bold text-amber-200">
+                  Congelamiento Glacial: este turno no puedes usar cartas.
+                </div>
+              )}
 
               {getMaxHandSize(currentTurnPlayer) === 0 ? (
                 <div className="bg-[#12151e] border border-dashed border-[#242b3b] rounded-xl p-3 text-center text-xs text-stone-300">
@@ -539,7 +544,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                         <div className="mt-2 pt-1.5 border-t border-neutral-800/80">
                           {isWeapon ? (
                             <button
-                              disabled={currentTurnPlayer.actionPoints <= 0}
+                              disabled={currentTurnPlayer.actionPoints <= 0 || currentTurnPlayer.cannotUseCardsThisTurn}
                               onClick={() => onEquipWeapon(card.id)}
                               className="w-full py-1 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-black font-black text-[10px] rounded-lg tracking-wider"
                             >
@@ -547,7 +552,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                             </button>
                           ) : isStance ? (
                             <button
-                              disabled={currentTurnPlayer.actionPoints <= 0}
+                              disabled={currentTurnPlayer.actionPoints <= 0 || currentTurnPlayer.cannotUseCardsThisTurn}
                               onClick={() => onPrepareStance(card.id)}
                               className="w-full py-1 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 text-black font-black text-[10px] rounded-lg tracking-wider"
                             >
@@ -555,7 +560,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                             </button>
                           ) : (
                             <button
-                              disabled={currentTurnPlayer.actionPoints <= 0}
+                              disabled={currentTurnPlayer.actionPoints <= 0 || currentTurnPlayer.cannotUseCardsThisTurn}
                               onClick={() => onPlayActionTrick(card.id, selectedTargetId || undefined)}
                               className="w-full py-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-black text-[10px] rounded-lg tracking-wider"
                             >
