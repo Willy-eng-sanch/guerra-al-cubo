@@ -184,6 +184,7 @@ export interface PlayerState {
   abilityCooldownRemaining: number;
   isEliminated: boolean;
   activeMorphCharacter?: CharacterType | null;
+  activeMorphRound?: number; // Última ronda en la que Cambiaformas aplicó Mimetismo.
   teamId?: number;
   superBlockMeter?: number; // Opcional
   shieldBarrier?: number; // Puntos de escudo defensivo acumulados por Sinergia Guardián
