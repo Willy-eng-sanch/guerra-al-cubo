@@ -33,12 +33,13 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   const isFrozen = player.isFrozen;
 
   // Does this ability require choosing a rival?
-  const needsTarget = heroType === CharacterType.CUBITO_DE_HIELO || heroType === CharacterType.PIRATA;
+  const needsTarget = heroType === CharacterType.CUBITO_DE_HIELO || heroType === CharacterType.PIRATA || heroType === CharacterType.CUBICULA;
+  const needsActionPoint = heroType === CharacterType.CUBICULA;
   // Does this ability have a betting mechanic?
   const isFlute = heroType === CharacterType.FLAUCUBISTA_DESAFINADO;
   const isSupplyMagic = heroType === CharacterType.HADA_AL_CUBO;
 
-  const canActivate = !isCooldown && !isFrozen && (!needsTarget || currentTargetId !== null) && (!isSupplyMagic || canUseSupplyMagic);
+  const canActivate = !isCooldown && !isFrozen && (!needsTarget || currentTargetId !== null) && (!needsActionPoint || player.actionPoints > 0) && (!isSupplyMagic || canUseSupplyMagic);
 
   const handleConfirmActivate = () => {
     if (!canActivate) return;
@@ -260,6 +261,8 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                 ? 'NO DISPONIBLE (CONGELADO)'
                 : isSupplyMagic && !canUseSupplyMagic
                 ? 'SUMINISTRO NO DISPONIBLE'
+                : needsActionPoint && player.actionPoints <= 0
+                ? 'SIN ACCIONES (0 AP)'
                 : '¡ACTIVAR HABILIDAD AHORA!'}
             </span>
           </button>
