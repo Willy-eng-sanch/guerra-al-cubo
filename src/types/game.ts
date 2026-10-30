@@ -199,6 +199,7 @@ export interface PlayerState {
 
 export function getMaxHandSize(player: PlayerState): number {
   const activeChar = player.activeMorphCharacter || player.characterType;
+  if (activeChar === CharacterType.CUBOGRO) return 0; // Piel de Piedra: sin mano ni cartas.
   if (activeChar === CharacterType.HADA_AL_CUBO) return 4;
   if (player.equippedWeapons.some(w => w.id === 13)) return 3; // Mochila de Repartidor
   return 2;
@@ -206,6 +207,7 @@ export function getMaxHandSize(player: PlayerState): number {
 
 export function getMaxWeaponSlots(player: PlayerState): number {
   const activeChar = player.activeMorphCharacter || player.characterType;
+  if (activeChar === CharacterType.CUBOGRO) return 0; // Piel de Piedra: no puede equipar armas.
   if (activeChar === CharacterType.CUBINJA) return 99;
   if (activeChar === CharacterType.HADA_AL_CUBO || activeChar === CharacterType.GLADIACUBON) return 2;
   return 1;
