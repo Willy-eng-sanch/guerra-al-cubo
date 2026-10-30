@@ -1410,7 +1410,20 @@ export default function App() {
           // Super-Bloqueo Heroico / Bloqueo Perfecto rewards for defender:
           let defenderCardsToAdd = 0;
           let defenderHpHeal = 0;
-          if (isPerfectBlock) {
+          if (isCubinjaCardBlock) {
+            defenderCardsToAdd = target.hand.length < getMaxHandSize(target) ? 1 : 0;
+            if (defenderCardsToAdd > 0) {
+              triggerDeckAnimation();
+              sound.playCardDraw();
+            }
+            addLog(
+              defenderCardsToAdd > 0
+                ? `Avaricia: ${target.name} roba 1 carta por su Bloqueo Perfecto, pero recibe el daño del ataque sin mitigación.`
+                : `Avaricia: ${target.name} iguala el ataque, pero su mano está llena; recibe el daño sin mitigación y no roba carta.`,
+              true,
+              target.name
+            );
+          } else if (isPerfectBlock) {
             defenderCardsToAdd = target.hand.length < getMaxHandSize(target) ? 1 : 0;
             defenderHpHeal = 2; // Recuperación heroica por Super-Bloqueo
             if (defenderCardsToAdd > 0) {
