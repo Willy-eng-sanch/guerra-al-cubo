@@ -1125,16 +1125,16 @@ export default function App() {
       defenderRolls.push(0);
       isPerfectBlock = false;
       addLog(`Discordia: ${target.name} no puede lanzar dado de bloqueo hasta obedecer la orden pendiente.`, true);
-    } else if (target.isFrozen) {
-      const r = Math.floor(Math.random() * 6) + 1;
-      defenderRolls.push(r);
-      defenderFinalVal = r;
-      isPerfectBlock = false; // Congelado no puede bloquear
     } else if (hasAutomaticPerfectBlock) {
       defenderFinalVal = attackerFinalVal;
       defenderRolls.push(defenderFinalVal);
       isPerfectBlock = true;
       addLog(`¡${target.name} activa El Esquive de Callejón y consigue un Bloqueo Perfecto!`, true, target.name);
+    } else if (target.isFrozen) {
+      const r = Math.floor(Math.random() * 6) + 1;
+      defenderRolls.push(r);
+      defenderFinalVal = r;
+      isPerfectBlock = false; // Congelado no puede bloquear
     } else if (defenderHero === CharacterType.CUBINJA) {
       const r = Math.floor(Math.random() * 6) + 1;
       defenderRolls.push(r);
