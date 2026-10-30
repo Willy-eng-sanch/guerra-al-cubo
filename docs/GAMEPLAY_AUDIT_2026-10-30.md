@@ -11,7 +11,7 @@ Esta auditoría distingue entre mecánicas que ya están en `main`, cambios prop
 - **Dracubon (PR #6 y PR #8):** Escamas refleja daño cuando su tirada de defensa coincide; Aliento golpea a dos rivales con una sola tirada de ataque y una tirada de bloqueo designada para ambos. Llamarada Doble potencia el siguiente Aliento después de un Bloqueo Perfecto.
 - **Cubícula (PR #7):** Festín Sangriento y Reflejo de Noche integrados en el flujo de ataque, daño reflejado, barreras, curación y eliminación.
 
-## Cambio propuesto en PR #9 — Cubinarca
+## Cubinarca integrado en main (PR #9)
 
 La rama `feat/cubinarca-orden-imperativa` implementa:
 
@@ -21,7 +21,7 @@ La rama `feat/cubinarca-orden-imperativa` implementa:
 - La penalización se retira cuando se cumple la orden.
 - Modal para jugadores humanos y obediencia automática de bots.
 
-**Interpretación aplicada:** “transferir 1 carta global” se implementó como entregar una carta de la mano de la víctima a Cubinarca. Al desequipar un arma, vuelve a la mano si hay espacio; de lo contrario se envía al descarte. Este PR no está fusionado en `main`.
+**Interpretación aplicada:** “transferir 1 carta global” se implementó como entregar una carta de la mano de la víctima a Cubinarca. Al desequipar un arma, vuelve a la mano si hay espacio; de lo contrario se envía al descarte. El PR #9 fue fusionado en `main` el 30 de octubre de 2026 (commit `dcdba907`).
 
 ## Pendientes de auditoría
 
@@ -33,7 +33,7 @@ La rama `feat/cubinarca-orden-imperativa` implementa:
 - **Cambiaformas:** comprobar transformación, duración, reversión y conservación de estado.
 - **Cubito de Hielo y Pirata:** verificar exactamente cuánto dura la congelación/anulación de turno y sus efectos sobre bloqueo.
 - **Flaucubista:** revisar que Acorde Violento acumule bono con todas las fuentes de daño definidas por las reglas.
-- **Órdenes de Cubinarca:** probar órdenes en combate individual, escuadras, contra bots y entre jugadores humanos una vez que PR #9 se integre.
+- **Órdenes de Cubinarca:** probar órdenes en combate individual, escuadras, contra bots y entre jugadores humanos; la integración en `main` no sustituye esas pruebas.
 
 ## Verificación técnica
 
