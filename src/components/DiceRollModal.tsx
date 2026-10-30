@@ -97,8 +97,8 @@ export const DiceRollModal: React.FC<DiceRollModalProps> = ({
                   <span>¡AVARICIA: COINCIDENCIA!</span>
                 </div>
                 <p className="text-xs text-white font-bold mt-1.5 leading-relaxed">
-                  Cubinja igualó el resultado, pero no mitiga el daño ni se cura. Su pasiva solo concede 1 carta si tiene espacio en la mano.
-                  Daño recibido: {roll.damageDealt}.
+                  Cubinja igualó el resultado: la coincidencia no bloquea el ataque ni cura. Armaduras y barreras siguen aplicando.
+                  Robo posible: 1 carta si hay espacio. Daño final: {roll.damageDealt}.
                 </p>
               </div>
             ) : roll.isPerfectBlock ? (
