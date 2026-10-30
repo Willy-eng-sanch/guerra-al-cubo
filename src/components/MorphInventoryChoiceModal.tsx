@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GameCard } from '../types/game';
+import { CharacterType, GameCard, getMaxHandSizeForLoadout } from '../types/game';
 import { Backpack, CheckCircle2, Shield, Sparkles } from 'lucide-react';
 
 export interface MorphInventorySelection {
@@ -11,30 +11,53 @@ export interface MorphInventorySelection {
 interface MorphInventoryChoiceModalProps {
   playerName: string;
   formName: string;
+  form: CharacterType;
   hand: GameCard[];
   weapons: GameCard[];
   stances: GameCard[];
-  handLimit: number;
   weaponLimit: number;
   stanceLimit: number;
   onConfirm: (selection: MorphInventorySelection) => void;
 }
 
 export const MorphInventoryChoiceModal: React.FC<MorphInventoryChoiceModalProps> = ({
-  playerName, formName, hand, weapons, stances, handLimit, weaponLimit, stanceLimit, onConfirm
+  playerName, formName, form, hand, weapons, stances, weaponLimit, stanceLimit, onConfirm
 }) => {
+  const getHandLimitForWeapons = (weaponIndexes: number[]) =>
+    getMaxHandSizeForLoadout(
+      form,
+      weaponIndexes.map(index => weapons[index]).filter((card): card is GameCard => Boolean(card))
+    );
+  const initialWeaponSelection = weaponLimit > 0
+    ? weapons.slice(-weaponLimit).map((_, index) => index + Math.max(0, weapons.length - weaponLimit))
+    : [];
+
   const [selection, setSelection] = useState<MorphInventorySelection>(() => ({
-    hand: hand.slice(0, handLimit).map((_, index) => index),
-    weapons: weaponLimit > 0 ? weapons.slice(-weaponLimit).map((_, index) => index + Math.max(0, weapons.length - weaponLimit)) : [],
+    hand: hand.slice(0, getHandLimitForWeapons(initialWeaponSelection)).map((_, index) => index),
+    weapons: initialWeaponSelection,
     stances: stanceLimit > 0 ? stances.slice(-stanceLimit).map((_, index) => index + Math.max(0, stances.length - stanceLimit)) : []
   }));
+  const activeHandLimit = getHandLimitForWeapons(selection.weapons);
 
   const toggle = (field: keyof MorphInventorySelection, index: number, limit: number) => {
     setSelection(previous => {
       const current = previous[field];
-      if (current.includes(index)) return { ...previous, [field]: current.filter(value => value !== index) };
-      if (current.length >= limit) return previous;
-      return { ...previous, [field]: [...current, index] };
+      const nextValues = current.includes(index)
+        ? current.filter(value => value !== index)
+        : current.length >= limit
+          ? current
+          : [...current, index];
+
+      if (field === 'weapons') {
+        const nextHandLimit = getHandLimitForWeapons(nextValues);
+        return {
+          ...previous,
+          weapons: nextValues,
+          hand: previous.hand.slice(0, nextHandLimit)
+        };
+      }
+
+      return { ...previous, [field]: nextValues };
     });
   };
 
@@ -86,7 +109,7 @@ export const MorphInventoryChoiceModal: React.FC<MorphInventoryChoiceModalProps>
           <p className="mt-1 text-xs text-neutral-300">{playerName} adopta {formName}. Elige qué conservar dentro de los nuevos límites.</p>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          {renderSection('hand', 'Mano', <Backpack className="h-4 w-4 text-amber-300" />, hand, handLimit)}
+          {renderSection('hand', 'Mano', <Backpack className="h-4 w-4 text-amber-300" />, hand, activeHandLimit)}
           {renderSection('weapons', 'Equipables', <Shield className="h-4 w-4 text-cyan-300" />, weapons, weaponLimit)}
           {renderSection('stances', 'Activables preparados', <Sparkles className="h-4 w-4 text-pink-300" />, stances, stanceLimit)}
         </div>

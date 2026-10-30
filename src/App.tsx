@@ -140,7 +140,7 @@ export default function App() {
   const [morphSelectionPlayerId, setMorphSelectionPlayerId] = useState<number | null>(null);
   const [morphInventoryOffer, setMorphInventoryOffer] = useState<{
     playerId: number; form: CharacterType; hand: GameCard[]; weapons: GameCard[];
-    stances: GameCard[]; handLimit: number; weaponLimit: number; stanceLimit: number;
+    stances: GameCard[]; weaponLimit: number; stanceLimit: number;
   } | null>(null);
   const eliminatedInventoryReturnedRef = useRef<Set<number>>(new Set());
   const botOrderTurnRef = useRef<number | null>(null);
@@ -237,7 +237,14 @@ export default function App() {
     } else {
       const drawResult = drawForPlayer(actor, deckRef.current, [], "Cara Especial 6");
       if (drawResult.cards.length === 0) {
-        addLog("La Pila General está vacía.", true);
+        setPlayers(prev => prev.map(p => p.id === playerId
+          ? { ...p, actionPoints: p.actionPoints + 1 }
+          : p
+        ));
+        addLog("La Pila General quedó vacía; la recompensa se convierte en +1 Cúbit.", true);
+        addFloatingText(playerId, "+1 CÚBIT", "#ffd600");
+        sound.playStanceActivate();
+        narrator.narrateSpecialFaceSix(actorName, "Acción adicional");
       } else {
         setDeck(drawResult.newDeck);
         setDiscardPile([]);
@@ -1286,7 +1293,7 @@ export default function App() {
         else isPerfectBlock = matchedAttack;
         if (isCubinjaCardBlock) addLog(`¡Arsenal Ilimitado! ${target.name} coincide en defensa: obtiene una carta, pero el daño no se bloquea ni se reduce.`, true, target.name);
       }
-    } else if (defenderHero === CharacterType.CUBINJA) {    } else if (defenderHero === CharacterType.CUBINJA) {
+    } else if (defenderHero === CharacterType.CUBINJA) {
       const r = Math.floor(Math.random() * 6) + 1;
       defenderRolls.push(r);
       defenderFinalVal = r;
@@ -1365,22 +1372,7 @@ export default function App() {
       }
     }
 
-    const defenderShowsSix = defenderHero === CharacterType.TRAMCUBOSO
-      ? defenderFinalVal === 6
-      : defenderRolls.includes(6);
-    if (defenderShowsSix) {
-      if (target.isBot) {
-        // Wait for the combat inventory update so the 6 reward cannot be overwritten
-        // by the perfect-block draw or other card transfers from this resolution.
-        setTimeout(() => {
-          const latestDefender = playersRef.current.find(player => player.id === target.id) || target;
-          const botChoice = latestDefender.hand.length < getMaxHandSize(latestDefender) ? 'CARD' : 'EXTRA_TURN';
-          handleApplySixChoice(target.id, botChoice);
-        }, 60);
-      } else {
-        setSpecialSixChoice({ playerId: target.id, actorName: target.name, isAttacker: false });
-      }
-    }
+    const defenderShowsSix = !hasAutomaticPerfectBlock && !target.blocksDisabledByOrder && defenderRolls.includes(6);
 
     if (wasInterceptedByGladiacubon) {
       if (isPerfectBlock) {
@@ -1922,6 +1914,23 @@ export default function App() {
               return p;
             })
           );
+
+          if (defenderShowsSix) {
+            setTimeout(() => {
+              const latestDefender = playersRef.current.find(player => player.id === target.id);
+              if (!latestDefender) return;
+              if (latestDefender.isBot) {
+                const canDrawCard = latestDefender.hand.length < getMaxHandSize(latestDefender) && deckRef.current.length > 0;
+                handleApplySixChoice(latestDefender.id, canDrawCard ? 'CARD' : 'EXTRA_TURN');
+              } else {
+                setSpecialSixChoice({
+                  playerId: latestDefender.id,
+                  actorName: latestDefender.name,
+                  isAttacker: false
+                });
+              }
+            }, 60);
+          }
 
           const alientoDamageTotal = primaryDamageTotal + secondaryDamageTotal;
           if (!attacker.isBot && alientoDamageTotal > 0) {
@@ -2870,7 +2879,7 @@ export default function App() {
     const needsChoice = hand.length > handLimit || weapons.length > weaponLimit || stances.length > stanceLimit;
 
     if (!player.isBot && needsChoice) {
-      setMorphInventoryOffer({ playerId, form: nextForm, hand, weapons, stances, handLimit, weaponLimit, stanceLimit });
+      setMorphInventoryOffer({ playerId, form: nextForm, hand, weapons, stances, weaponLimit, stanceLimit });
       setMorphSelectionPlayerId(null);
       return;
     }
@@ -3280,7 +3289,7 @@ export default function App() {
           hand={morphInventoryOffer.hand}
           weapons={morphInventoryOffer.weapons}
           stances={morphInventoryOffer.stances}
-          handLimit={morphInventoryOffer.handLimit}
+          form={morphInventoryOffer.form}
           weaponLimit={morphInventoryOffer.weaponLimit}
           stanceLimit={morphInventoryOffer.stanceLimit}
           onConfirm={confirmMorphInventory}
@@ -3320,7 +3329,7 @@ export default function App() {
         <DiceSpecialChoiceModal
           actorName={specialSixChoice.actorName}
           isAttacker={specialSixChoice.isAttacker}
-          canDrawCard={players.some(p => p.id === specialSixChoice.playerId && p.hand.length < getMaxHandSize(p))}
+          canDrawCard={deck.length > 0 && players.some(p => p.id === specialSixChoice.playerId && p.hand.length < getMaxHandSize(p))}
           onChoose={(choice) => {
             handleApplySixChoice(specialSixChoice.playerId, choice);
             const nextChoice = specialSixQueue[0];

@@ -27,7 +27,7 @@ export const DiceSpecialChoiceModal: React.FC<DiceSpecialChoiceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
       <div className="relative w-full max-w-md bg-gradient-to-b from-[#181d2a] to-[#0f121a] border-2 border-yellow-400 rounded-3xl p-6 shadow-[0_0_40px_rgba(250,204,21,0.25)] text-center">
         {/* Glow Header */}
         <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-yellow-400/20 border border-yellow-400/50 text-yellow-300 font-black text-xs tracking-wider mb-2">
@@ -72,7 +72,7 @@ export const DiceSpecialChoiceModal: React.FC<DiceSpecialChoiceModalProps> = ({
               <p className="text-[11px] text-neutral-300 mt-0.5">
                 {canDrawCard
                   ? 'Roba de inmediato una carta de truco o arma para tu mano.'
-                  : 'Piel de Piedra impide robar cartas. Elige el Cúbit adicional.'}
+                  : 'No hay espacio libre o cartas en la Pila General. Elige el Cúbit adicional.'}
               </p>
             </div>
           </button>

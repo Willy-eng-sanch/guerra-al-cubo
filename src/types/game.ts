@@ -209,13 +209,22 @@ export interface PlayerState {
   morphExhausted?: boolean; // Ya utilizó las otras doce formas y conserva la última.
 }
 
-export function getMaxHandSize(player: PlayerState): number {
-  const activeChar = player.activeMorphCharacter || player.characterType;
-  if (activeChar === CharacterType.CUBOGRO) return 0; // Piel de Piedra: sin mano ni cartas.
-  if (activeChar === CharacterType.HADA_AL_CUBO) return 4;
-  if (activeChar === CharacterType.CUBINJA) return 2; // Su mano permanece limitada a dos cartas.
-  if (player.equippedWeapons.some(w => w.id === 13)) return 3; // Mochila de Repartidor
+export function getMaxHandSizeForLoadout(
+  characterType: CharacterType,
+  equippedWeapons: readonly GameCard[] = []
+): number {
+  if (characterType === CharacterType.CUBOGRO) return 0; // Piel de Piedra: sin mano ni cartas.
+  if (characterType === CharacterType.HADA_AL_CUBO) return 4;
+  if (characterType === CharacterType.CUBINJA) return 2; // Su mano permanece limitada a dos cartas.
+  if (equippedWeapons.some(weapon => weapon.id === 13)) return 3; // Mochila de Repartidor
   return 2;
+}
+
+export function getMaxHandSize(player: PlayerState): number {
+  return getMaxHandSizeForLoadout(
+    player.activeMorphCharacter || player.characterType,
+    player.equippedWeapons
+  );
 }
 
 export function getMaxPreparedStanceSlots(player: PlayerState): number {
