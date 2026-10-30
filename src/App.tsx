@@ -1414,21 +1414,12 @@ export default function App() {
       );
       addLog(`¡${actor.name} usó [Abordaje Cúbico] sobre ${target.name}! Anula su próximo turno.`, true);
     } else if (hero === CharacterType.FLAUCUBISTA_DESAFINADO) {
-      const chosenNum = extraOption || Math.floor(Math.random() * 6) + 1;
-      const roll = Math.floor(Math.random() * 6) + 1;
+      // La apuesta del Flaucubista es una excepción explícita: usa D5, no el D6 general.
+      const chosenNum = extraOption && extraOption >= 1 && extraOption <= 5
+        ? extraOption
+        : Math.floor(Math.random() * 5) + 1;
+      const roll = Math.floor(Math.random() * 5) + 1;
       sound.playDiceRoll();
-
-      if (roll === 6) {
-        if (!actor.isBot) {
-          setSpecialSixChoice({
-            playerId: actor.id,
-            actorName: actor.name,
-            isAttacker: true
-          });
-        } else {
-          handleApplySixChoice(actor.id, actor.hand.length < 2 ? 'CARD' : 'EXTRA_TURN');
-        }
-      }
 
       if (roll === chosenNum) {
         const affectedEnemies = players.filter(p => p.id !== actor.id && !p.isEliminated).length;
