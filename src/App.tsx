@@ -832,6 +832,7 @@ export default function App() {
     const defenderRolls: number[] = [];
     let defenderFinalVal: number;
     let isPerfectBlock = false;
+    let dracubonReflectTriggered = false;
 
     const hasReflejoFelino = target.preparedStance?.id === 53;
     const hasElComodin = target.preparedStance?.id === 60;
@@ -862,7 +863,14 @@ export default function App() {
       const r = Math.floor(Math.random() * 6) + 1;
       defenderRolls.push(r);
       defenderFinalVal = r;
-      isPerfectBlock = attackerRolls.includes(r) || r === attackerFinalVal;
+      const matchedAttack = attackerRolls.includes(r) || r === attackerFinalVal;
+      if (defenderHero === CharacterType.DRACUBON) {
+        // Dracubon has no normal perfect block: a matching die reflects damage instead.
+        dracubonReflectTriggered = matchedAttack;
+        isPerfectBlock = false;
+      } else {
+        isPerfectBlock = matchedAttack;
+      }
     }
 
     // Special Face 6 Effect check for Defender
@@ -905,6 +913,21 @@ export default function App() {
       finalDamage -= absorbed;
       addLog(`🛡️ ¡La Barrera de Escudo de ${target.name} absorbió ${absorbed} de daño! (Quedan: ${targetBarrierRemaining})`);
       addFloatingText(target.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
+    }
+
+    // Dracubon's Escamas reflect the damage that actually penetrates its defenses.
+    let attackerBarrierRemaining = attacker.shieldBarrier || 0;
+    const dracubonReflectedDamage = dracubonReflectTriggered ? finalDamage : 0;
+    let dracubonReflectedTaken = dracubonReflectedDamage;
+    if (dracubonReflectedTaken > 0 && attackerBarrierRemaining > 0) {
+      const absorbed = Math.min(attackerBarrierRemaining, dracubonReflectedTaken);
+      attackerBarrierRemaining -= absorbed;
+      dracubonReflectedTaken -= absorbed;
+      addLog(`La barrera de ${attacker.name} absorbe ${absorbed} del daño reflejado por las Escamas de Dracubon.`);
+    }
+    const attackerNewHp = Math.max(0, attacker.hp - dracubonReflectedTaken);
+    if (dracubonReflectedTaken > 0) {
+      addLog(`¡Escamas de Dracubon! ${target.name} devuelve ${dracubonReflectedTaken} de daño a ${attacker.name}.`, true, target.name);
     }
 
     // Consume posture
@@ -964,6 +987,12 @@ export default function App() {
         } else {
           sound.playCartoonBoing(260);
           addFloatingText(target.id, "¡EVADIDO!", "#7c4dff");
+        }
+        if (dracubonReflectTriggered) {
+          addFloatingText(target.id, "¡ESCAMAS: REFLEJO!", "#fb923c");
+          if (dracubonReflectedTaken > 0) {
+            addFloatingText(attacker.id, `-${dracubonReflectedTaken} REFLEJADO`, "#ef4444");
+          }
         }
 
         // Stage 3 -> 4: Complete clash and commit state
@@ -1059,6 +1088,9 @@ export default function App() {
 
                 return {
                   ...p,
+                  hp: attackerNewHp,
+                  isEliminated: attackerNewHp <= 0,
+                  shieldBarrier: attackerBarrierRemaining,
                   actionPoints: Math.max(0, p.actionPoints - 1),
                   hand: newHand,
                   damageDealt: (p.damageDealt || 0) + finalDamage,
@@ -1092,6 +1124,7 @@ export default function App() {
                 return {
                   ...p,
                   hp: Math.min(p.maxHp, newHp + defenderHpHeal),
+                  damageDealt: (p.damageDealt || 0) + dracubonReflectedTaken,
                   nextAttackBonus: defenderHero === CharacterType.FLAUCUBISTA_DESAFINADO && finalDamage > 0
                     ? (p.nextAttackBonus || 0) + 1
                     : p.nextAttackBonus,
@@ -1116,6 +1149,12 @@ export default function App() {
 
           setDeck(currentDeckState);
           setDiscardPile(currentDiscardState);
+
+          if (attackerNewHp <= 0 && !attacker.isEliminated) {
+            sound.playElimination();
+            addLog(`¡K.O.! ${attacker.name} cayó por el daño devuelto por las Escamas de Dracubon.`, true);
+            narrator.narrateElimination(attacker.name);
+          }
 
           if (newHp <= 0) {
             sound.playElimination();
