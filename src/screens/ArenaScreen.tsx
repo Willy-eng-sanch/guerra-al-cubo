@@ -700,7 +700,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
         ) : null;
       })()}
 
-      {currentTurnPlayer?.cubinarcaOrder && !currentTurnPlayer.isBot && !currentTurnPlayer.cubinarcaOrderDefiedThisTurn && (() => {
+      {currentTurnPlayer?.cubinarcaOrder && !currentTurnPlayer.isBot && !currentTurnPlayer.cubinarcaOrderDefiedThisTurn && !(currentTurnPlayer.cubinarcaOrder.kind === 'ATTACK_TARGET' && currentTurnPlayer.actionPoints <= 0) && (() => {
         const issuer = players.find(player => player.id === currentTurnPlayer.cubinarcaOrder?.issuerId);
         return issuer ? (
           <CubinarcaOrderModal
