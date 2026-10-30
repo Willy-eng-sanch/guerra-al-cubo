@@ -11,6 +11,9 @@ interface HeroAbilityModalProps {
   onActivate: (targetId?: number, extraOption?: number) => void;
   canUseSupplyMagic: boolean;
   supplyMagicUnavailableReason: string;
+  validAllies: PlayerState[];
+  canUseInterception: boolean;
+  interceptionUnavailableReason: string;
 }
 
 export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
@@ -21,10 +24,15 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   onClose,
   onActivate,
   canUseSupplyMagic,
-  supplyMagicUnavailableReason
+  supplyMagicUnavailableReason,
+  validAllies,
+  canUseInterception,
+  interceptionUnavailableReason
 }) => {
-  const [currentTargetId, setCurrentTargetId] = useState<number | null>(
-    selectedTargetId || (validTargets.length > 0 ? validTargets[0].id : null)
+  const [currentTargetId, setCurrentTargetId] = useState<number | null>(() =>
+    character.type === CharacterType.GLADIACUBON
+      ? (validAllies[0]?.id ?? null)
+      : (selectedTargetId || (validTargets.length > 0 ? validTargets[0].id : null))
   );
   const [fluteBet, setFluteBet] = useState<number>(3);
   const [dracubonBlockerId, setDracubonBlockerId] = useState<number | null>(() =>
@@ -38,18 +46,21 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   const isCooldown = player.abilityCooldownRemaining > 0;
   const isFrozen = player.isFrozen;
   const isDracubon = heroType === CharacterType.DRACUBON;
+  const isGladiacubon = heroType === CharacterType.GLADIACUBON;
+  const abilityTargets = isGladiacubon ? validAllies : validTargets;
 
-  // Does this ability require choosing a rival?
-  const needsTarget = heroType === CharacterType.CUBITO_DE_HIELO || heroType === CharacterType.PIRATA || heroType === CharacterType.CUBICULA;
-  const needsActionPoint = heroType === CharacterType.CUBICULA || isDracubon;
+  // Does this ability require choosing a rival or an ally?
+  const needsTarget = heroType === CharacterType.CUBITO_DE_HIELO || heroType === CharacterType.PIRATA || heroType === CharacterType.CUBICULA || isGladiacubon;
+  const needsActionPoint = heroType === CharacterType.CUBICULA || isDracubon || isGladiacubon;
   // Does this ability have a betting mechanic?
   const isFlute = heroType === CharacterType.FLAUCUBISTA_DESAFINADO;
   const isSupplyMagic = heroType === CharacterType.HADA_AL_CUBO;
 
   const canActivate = !isCooldown && !isFrozen &&
-    (!needsTarget || currentTargetId !== null) &&
+    (!needsTarget || (currentTargetId !== null && abilityTargets.some(target => target.id === currentTargetId))) &&
     (!isDracubon || (validTargets.length >= 2 && dracubonBlockerId !== null && dracubonSecondTargetId !== null && dracubonBlockerId !== dracubonSecondTargetId)) &&
     (!needsActionPoint || player.actionPoints > 0) &&
+    (!isGladiacubon || canUseInterception) &&
     (!isSupplyMagic || canUseSupplyMagic);
 
   const handleConfirmActivate = () => {
@@ -166,6 +177,15 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
             </p>
           </div>
 
+          {isGladiacubon && (
+            <div className="rounded-xl border border-blue-500/40 bg-blue-950/30 p-3 text-xs text-blue-100 space-y-1">
+              <p className="font-black text-blue-200">Intercepción · Coste: 1 AP</p>
+              <p>El aliado elegido queda bajo Cobertura. El siguiente ataque dirigido a él será recibido por Gladiacubon, que lanzará su propio dado.</p>
+              <p>La cobertura solo se libera cuando Gladiacubon consigue un Bloqueo Perfecto. Si falla, sigue protegiendo al mismo aliado.</p>
+              <p>Tras activar, no puede volver a usarse durante la ronda siguiente y tampoco mientras exista una cobertura pendiente.</p>
+            </div>
+          )}
+
           {isSupplyMagic && !canUseSupplyMagic && !isCooldown && !isFrozen && (
             <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 p-3 text-xs text-amber-200">
               {supplyMagicUnavailableReason}
@@ -270,16 +290,16 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
             </div>
           )}
 
-          {/* Interactive Input 2: Target Selection (Cubito de Hielo / Pirata) */}
+          {/* Interactive Input 2: Select target for control or coverage abilities. */}
           {needsTarget && !isCooldown && !isFrozen && (
             <div className="bg-[#151c2b] border-2 border-cyan-500/50 p-4 rounded-xl space-y-2.5">
               <span className="text-xs font-black text-cyan-300 flex items-center gap-1.5">
                 <Target className="w-4 h-4 text-cyan-400" />
-                <span>Selecciona el objetivo para tu habilidad:</span>
+                <span>{isGladiacubon ? "Selecciona al aliado que quieres escudar:" : "Selecciona el objetivo para tu habilidad:"}</span>
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {validTargets.map(target => {
+                {abilityTargets.map(target => {
                   const isSelected = currentTargetId === target.id;
                   return (
                     <button
@@ -307,6 +327,12 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                   );
                 })}
               </div>
+              {isGladiacubon && !canUseInterception && (
+                <p className="text-[11px] text-amber-200">{interceptionUnavailableReason}</p>
+              )}
+              {isGladiacubon && validAllies.length === 0 && (
+                <p className="text-[11px] text-amber-200">No hay aliados vivos elegibles para proteger.</p>
+              )}
             </div>
           )}
 
@@ -344,6 +370,8 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                 ? 'NO DISPONIBLE (CONGELADO)'
                 : isSupplyMagic && !canUseSupplyMagic
                 ? 'SUMINISTRO NO DISPONIBLE'
+                : isGladiacubon && !canUseInterception
+                ? 'INTERCEPCIÓN NO DISPONIBLE'
                 : isDracubon && validTargets.length < 2
                 ? 'SE NECESITAN 2 RIVALES VIVOS'
                 : needsActionPoint && player.actionPoints <= 0

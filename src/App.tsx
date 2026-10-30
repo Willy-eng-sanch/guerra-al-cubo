@@ -86,6 +86,24 @@ export default function App() {
   const botOrderTurnRef = useRef<number | null>(null);
   const playersRef = useRef<PlayerState[]>([]);
   useEffect(() => { playersRef.current = players; }, [players]);
+
+  // Release a stale cover if its ally was eliminated or the guardian changed into another hero.
+  useEffect(() => {
+    const staleCoverageIds = players
+      .filter(player => {
+        if (player.guardingAllyId == null) return false;
+        const protectedAlly = players.find(ally => ally.id === player.guardingAllyId);
+        const activeHero = player.activeMorphCharacter || player.characterType;
+        return activeHero !== CharacterType.GLADIACUBON || !protectedAlly || protectedAlly.isEliminated || protectedAlly.hp <= 0;
+      })
+      .map(player => player.id);
+    if (staleCoverageIds.length === 0) return;
+    setPlayers(previous => previous.map(player => staleCoverageIds.includes(player.id)
+      ? { ...player, guardingAllyId: null }
+      : player
+    ));
+  }, [players]);
+
   const matchIntroCompletedRef = useRef(true);
 
   const speedMultiplier = isFastSpeed ? 0.5 : 1;
@@ -981,12 +999,28 @@ export default function App() {
   ) => {
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || attacker.isFrozen) return;
-    const target = players.find(p => p.id === targetId);
-    if (!target || target.isEliminated || target.hp <= 0 || target.id === attacker.id) return;
-    if (attacker.cubinarcaOrder?.kind === 'ATTACK_TARGET' && attacker.cubinarcaOrder.attackTargetId !== target.id) {
+    const intendedTarget = players.find(p => p.id === targetId);
+    if (!intendedTarget || intendedTarget.isEliminated || intendedTarget.hp <= 0 || intendedTarget.id === attacker.id) return;
+    if (attacker.cubinarcaOrder?.kind === 'ATTACK_TARGET' && attacker.cubinarcaOrder.attackTargetId !== intendedTarget.id) {
       addLog(`Discordia obliga a ${attacker.name} a atacar a ${players.find(player => player.id === attacker.cubinarcaOrder?.attackTargetId)?.name ?? 'su objetivo señalado'}.`);
       return;
     }
+
+    // A live Gladiacubon covering this ally becomes the actual defender and rolls its own die.
+    const coveringGladiacubon = players.find(player =>
+      player.id !== attacker.id &&
+      player.guardingAllyId === intendedTarget.id &&
+      !player.isEliminated &&
+      player.hp > 0 &&
+      (player.activeMorphCharacter || player.characterType) === CharacterType.GLADIACUBON
+    ) || null;
+    const target = coveringGladiacubon || intendedTarget;
+    const wasInterceptedByGladiacubon = Boolean(coveringGladiacubon);
+    if (wasInterceptedByGladiacubon) {
+      addLog(`¡Intercepción! ${coveringGladiacubon.name} intercepta el ataque dirigido a ${intendedTarget.name} y realizará la tirada de bloqueo con su propio dado.`, true, coveringGladiacubon.name);
+      addFloatingText(coveringGladiacubon.id, `¡INTERCEPCIÓN POR ${intendedTarget.name.toUpperCase()}!`, "#60a5fa");
+    }
+
     const secondaryTarget = secondaryTargetId === undefined
       ? null
       : players.find(p => p.id === secondaryTargetId) || null;
@@ -1118,6 +1152,14 @@ export default function App() {
         isPerfectBlock = false;
       } else {
         isPerfectBlock = matchedAttack;
+      }
+    }
+
+    if (wasInterceptedByGladiacubon) {
+      if (isPerfectBlock) {
+        addLog(`¡Cobertura cumplida! ${target.name} consiguió el Bloqueo Perfecto usando su propio dado y protegió a ${intendedTarget.name}. La cobertura queda liberada.`, true, target.name);
+      } else {
+        addLog(`La cobertura de ${target.name} sobre ${intendedTarget.name} continúa activa: aún debe conseguir un Bloqueo Perfecto para liberarla.`, false, target.name);
       }
     }
 
@@ -1485,6 +1527,7 @@ export default function App() {
                   hand: newHand,
                   preparedStance: updatedTargetStance,
                   shieldBarrier: targetBarrierRemaining,
+                  guardingAllyId: wasInterceptedByGladiacubon && (isPerfectBlock || newHp <= 0) ? null : p.guardingAllyId,
                   isEliminated: newHp <= 0,
                   perfectBlocks: (p.perfectBlocks || 0) + (isPerfectBlock ? 1 : 0),
                   cardsDrawn: (p.cardsDrawn || 0) + defenderDrawResult.drawnCount
@@ -1950,6 +1993,40 @@ export default function App() {
         })
       );
       addLog(`¡${actor.name} usó [Abordaje Cúbico] sobre ${target.name}! Anula su próximo turno.`, true);
+    } else if (hero === CharacterType.GLADIACUBON) {
+      const ally = players.find(p =>
+        p.id === targetId &&
+        p.id !== actor.id &&
+        !p.isEliminated &&
+        p.hp > 0 &&
+        actor.teamId !== undefined &&
+        p.teamId === actor.teamId &&
+        !players.some(guardian => guardian.guardingAllyId === p.id)
+      );
+      if (
+        !ally ||
+        actor.actionPoints <= 0 ||
+        actor.isFrozen ||
+        actor.guardingAllyId != null ||
+        (actor.interceptionAvailableRound || 0) > round
+      ) return;
+
+      sound.playStanceActivate();
+      setPlayers(prev => prev.map(p => p.id === actor.id
+        ? {
+            ...p,
+            actionPoints: Math.max(0, p.actionPoints - 1),
+            guardingAllyId: ally.id,
+            interceptionAvailableRound: round + 2
+          }
+        : p
+      ));
+      addLog(
+        `¡Intercepción! ${actor.name} gasta 1 AP y activa Cobertura sobre ${ally.name}. El siguiente ataque dirigido a ese aliado será interceptado con el dado de ${actor.name}; no podrá reactivar en la próxima ronda ni antes de consumir esta cobertura.`,
+        true,
+        actor.name
+      );
+      addFloatingText(actor.id, `CUBRIENDO A ${ally.name.toUpperCase()}`, "#60a5fa");
     } else if (hero === CharacterType.DRACUBON) {
       const blocker = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
       const secondTarget = players.find(p => p.id === extraOption && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
@@ -2253,6 +2330,25 @@ export default function App() {
           }
         }
         setTimeout(() => handleEndTurn(), pendingOrder.kind === 'ATTACK_TARGET' ? 3600 * speedMultiplier : 900 * speedMultiplier);
+        return;
+      }
+
+      const botCoverageAlly = activeHero === CharacterType.GLADIACUBON && activePlayer.teamId !== undefined
+        ? players.find(p =>
+            p.id !== activePlayer.id &&
+            p.teamId === activePlayer.teamId &&
+            !p.isEliminated &&
+            p.hp > 0 &&
+            !players.some(guardian => guardian.guardingAllyId === p.id)
+          )
+        : undefined;
+      if (
+        botCoverageAlly &&
+        activePlayer.actionPoints > 0 &&
+        activePlayer.guardingAllyId == null &&
+        (activePlayer.interceptionAvailableRound || 0) <= round
+      ) {
+        handleUseHeroAbility(botCoverageAlly.id);
         return;
       }
 

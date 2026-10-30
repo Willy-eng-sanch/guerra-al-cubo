@@ -160,6 +160,39 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   );
 
   const selectedTarget = players.find(p => p.id === selectedTargetId);
+  const validAllies = currentTurnPlayer?.teamId !== undefined
+    ? players.filter(p =>
+        p.id !== currentTurnPlayer.id &&
+        p.teamId === currentTurnPlayer.teamId &&
+        !p.isEliminated &&
+        p.hp > 0 &&
+        !players.some(guardian => guardian.guardingAllyId === p.id)
+      )
+    : [];
+  const hasPendingInterception = currentTurnPlayer?.guardingAllyId != null;
+  const interceptionCooldown = (currentTurnPlayer?.interceptionAvailableRound || 0) > round;
+  const canUseInterception = Boolean(
+    currentTurnPlayer &&
+    currentTurnPlayer.actionPoints > 0 &&
+    !currentTurnPlayer.isFrozen &&
+    validAllies.length > 0 &&
+    !hasPendingInterception &&
+    !interceptionCooldown
+  );
+  const pendingInterceptionAllyName = currentTurnPlayer?.guardingAllyId != null
+    ? players.find(p => p.id === currentTurnPlayer.guardingAllyId)?.name
+    : null;
+  const interceptionUnavailableReason = !currentTurnPlayer || currentTurnPlayer.actionPoints <= 0
+    ? 'Necesitas 1 Punto de Acción para activar Intercepción.'
+    : currentTurnPlayer.isFrozen
+    ? 'No puedes activar habilidades mientras estás congelado.'
+    : hasPendingInterception
+    ? `Cobertura pendiente sobre ${pendingInterceptionAllyName || 'un aliado'}: espera a conseguir el Bloqueo Perfecto antes de volver a activarla.`
+    : interceptionCooldown
+    ? `Intercepción estará disponible en la ronda ${currentTurnPlayer.interceptionAvailableRound}.`
+    : validAllies.length === 0
+    ? 'Necesitas un aliado vivo de tu mismo escuadrón.'
+    : '';
   const supplyMagicAllies = currentTurnPlayer?.teamId !== undefined
     ? players.filter(p => {
         const allyHero = p.activeMorphCharacter || p.characterType;
@@ -439,6 +472,17 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
               </button>
             </div>
 
+            {currentTurnPlayer.guardingAllyId != null && (
+              <div className="mb-2 rounded-xl border border-blue-500/40 bg-blue-950/30 p-2 text-center text-[11px] font-bold text-blue-200">
+                Intercepción activa: Gladiacubon protege a {pendingInterceptionAllyName || 'un aliado'}. La cobertura solo termina con un Bloqueo Perfecto.
+              </div>
+            )}
+            {currentTurnPlayer.interceptionAvailableRound != null && currentTurnPlayer.interceptionAvailableRound > round && (
+              <div className="mb-2 rounded-xl border border-amber-500/30 bg-amber-950/20 p-2 text-center text-[10px] font-semibold text-amber-200">
+                Intercepción en enfriamiento hasta la ronda {currentTurnPlayer.interceptionAvailableRound}.
+              </div>
+            )}
+
             {/* Hand Cards Horizontal Carousel with PvZ Heroes Class & Synergy System */}
             <div>
               <div className="flex items-center justify-between text-[11px] text-neutral-400 font-semibold mb-1.5 px-1">
@@ -682,6 +726,9 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           selectedTargetId={selectedTargetId}
           canUseSupplyMagic={canUseSupplyMagic}
           supplyMagicUnavailableReason={supplyMagicUnavailableReason}
+          validAllies={validAllies}
+          canUseInterception={canUseInterception}
+          interceptionUnavailableReason={interceptionUnavailableReason}
           onClose={() => setShowAbilityModal(false)}
           onActivate={(targetId, extraOption) => {
             setShowAbilityModal(false);

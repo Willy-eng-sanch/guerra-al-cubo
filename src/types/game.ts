@@ -184,6 +184,8 @@ export interface PlayerState {
   abilityCooldownRemaining: number;
   isEliminated: boolean;
   activeMorphCharacter?: CharacterType | null;
+  guardingAllyId?: number | null; // Aliado cuya próxima agresión será interceptada por Gladiacubon.
+  interceptionAvailableRound?: number; // Primera ronda en la que puede volver a activar Intercepción.
   teamId?: number;
   superBlockMeter?: number; // Opcional
   shieldBarrier?: number; // Puntos de escudo defensivo acumulados por Sinergia Guardián
