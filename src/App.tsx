@@ -1242,6 +1242,9 @@ export default function App() {
       attacker.maxHp,
       Math.max(0, attacker.hp - reflectedDamageTaken) + attackerLifeStealHeal
     );
+    if (attackerHero === CharacterType.FLAUCUBISTA_DESAFINADO && reflectedDamageTaken > 0) {
+      addLog(`¡Acorde Violento! ${attacker.name} recibe ${reflectedDamageTaken} de daño reflejado y gana +1 al daño de su próximo ataque.`, true, attacker.name);
+    }
 
     // Consume posture
     let updatedTargetStance = target.preparedStance;
@@ -1466,8 +1469,8 @@ export default function App() {
                   damageDealt: (p.damageDealt || 0) + primaryDamageTotal + secondaryDamageTotal,
                   nextBreathBonus: useDracubonBreath && p.nextBreathBonus ? false : p.nextBreathBonus,
                   cardsDrawn: (p.cardsDrawn || 0) + attackerDrawResult.drawnCount,
-                  nextAttackBonus: attackerHero === CharacterType.FLAUCUBISTA_DESAFINADO && flaucubistaBonus > 0
-                    ? 0
+                  nextAttackBonus: attackerHero === CharacterType.FLAUCUBISTA_DESAFINADO
+                    ? (flaucubistaBonus > 0 ? 0 : (p.nextAttackBonus || 0)) + (reflectedDamageTaken > 0 ? 1 : 0)
                     : p.nextAttackBonus
                 };
               } else if (p.id === target.id) {
@@ -1985,9 +1988,17 @@ export default function App() {
                 damageDealt: (p.damageDealt || 0) + (affectedEnemies * 2)
               };
             }
-            if (!p.isEliminated) {
+            if (!p.isEliminated && p.hp > 0) {
               const nhp = Math.max(0, p.hp - 2);
-              return { ...p, hp: nhp, isEliminated: nhp <= 0 };
+              const affectedHero = p.activeMorphCharacter || p.characterType;
+              return {
+                ...p,
+                hp: nhp,
+                nextAttackBonus: affectedHero === CharacterType.FLAUCUBISTA_DESAFINADO
+                  ? (p.nextAttackBonus || 0) + 1
+                  : p.nextAttackBonus,
+                isEliminated: nhp <= 0
+              };
             }
             return p;
           })
