@@ -52,6 +52,9 @@ interface TramcubosoCardChoice {
 const getCharacterMaxHp = (characterType: CharacterType): number =>
   characterType === CharacterType.CUBOGRO ? 25 : 20;
 
+const isCubinjaHero = (player: PlayerState): boolean =>
+  (player.activeMorphCharacter || player.characterType) === CharacterType.CUBINJA;
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<CurrentScreen>(CurrentScreen.TITLE);
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.QUICK_BATTLE);
@@ -1075,6 +1078,7 @@ export default function App() {
     const defenderRolls: number[] = [];
     let defenderFinalVal: number;
     let isPerfectBlock = false;
+    let isCubinjaCardBlock = false;
     let dracubonReflectTriggered = false;
 
     const hasReflejoFelino = target.preparedStance?.id === 53;
@@ -1088,13 +1092,26 @@ export default function App() {
     } else if (hasReflejoFelino || hasElComodin) {
       defenderFinalVal = attackerFinalVal;
       defenderRolls.push(defenderFinalVal);
-      isPerfectBlock = true;
-      addLog(`${target.name} activa su postura defensiva y bloquea a la perfección!`);
+      if (defenderHero === CharacterType.CUBINJA) {
+        isCubinjaCardBlock = true;
+        addLog(`¡Avaricia! ${target.name} iguala el ataque, pero Cubinja no mitiga el daño: solo obtiene su robo de carta.`, true, target.name);
+      } else {
+        isPerfectBlock = true;
+        addLog(`${target.name} activa su postura defensiva y bloquea a la perfección!`);
+      }
     } else if (target.isFrozen) {
       const r = Math.floor(Math.random() * 6) + 1;
       defenderRolls.push(r);
       defenderFinalVal = r;
       isPerfectBlock = false; // Congelado no puede bloquear
+    } else if (defenderHero === CharacterType.CUBINJA) {
+      const r = Math.floor(Math.random() * 6) + 1;
+      defenderRolls.push(r);
+      defenderFinalVal = r;
+      isCubinjaCardBlock = attackerRolls.includes(r) || r === attackerFinalVal;
+      if (isCubinjaCardBlock) {
+        addLog(`¡Avaricia! ${target.name} iguala el ataque con ${r}; recibe el daño completo y solo roba una carta.`, true, target.name);
+      }
     } else if (defenderHero === CharacterType.TRAMCUBOSO) {
       const r1 = Math.floor(Math.random() * 6) + 1;
       const r2 = Math.floor(Math.random() * 6) + 1;
@@ -1302,6 +1319,9 @@ export default function App() {
         if (isPerfectBlock) {
           sound.playPerfectBlock();
           addFloatingText(target.id, "¡SUPER-BLOQUEO HEROICO!", "#00e5ff");
+        } else if (isCubinjaCardBlock) {
+          sound.playPunchHit();
+          addFloatingText(target.id, "¡AVARICIA: ROBA CARTA, RECIBE DAÑO!", "#fbbf24");
         } else if (primaryDamageTotal > 0) {
           sound.playPunchHit();
           addFloatingText(target.id, `-${primaryDamageTotal} HP`, "#ff1744");
@@ -1343,6 +1363,7 @@ export default function App() {
             defenderRolls,
             defenderFinalVal,
             isPerfectBlock,
+            isCubinjaCardBlock,
             damageDealt: primaryDamageTotal,
             attackerName: attacker.name,
             defenderName: useDracubonBreath ? `${target.name} (bloquea por ambos)` : target.name
@@ -1476,7 +1497,7 @@ export default function App() {
                   preparedStance: updatedTargetStance,
                   shieldBarrier: targetBarrierRemaining,
                   isEliminated: newHp <= 0,
-                  perfectBlocks: (p.perfectBlocks || 0) + (isPerfectBlock ? 1 : 0),
+                  perfectBlocks: (p.perfectBlocks || 0) + (isPerfectBlock || isCubinjaCardBlock ? 1 : 0),
                   cardsDrawn: (p.cardsDrawn || 0) + defenderDrawResult.drawnCount
                 };
               } else if (secondaryTarget && p.id === secondaryTarget.id) {
@@ -1500,7 +1521,7 @@ export default function App() {
           if (!attacker.isBot && alientoDamageTotal > 0) {
             dailyMissionsManager.recordDamage(alientoDamageTotal);
           }
-          if (isPerfectBlock) {
+          if (isPerfectBlock || isCubinjaCardBlock) {
             dailyMissionsManager.recordPerfectBlock();
           }
 
