@@ -160,13 +160,16 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
       })
     : [];
   const hasSupplyMagicHandSpace = Boolean(currentTurnPlayer && currentTurnPlayer.actionPoints > 0 && currentTurnPlayer.hand.length < getMaxHandSize(currentTurnPlayer));
-  const canUseSupplyMagic = hasSupplyMagicHandSpace && supplyMagicAllies.length > 0;
+  const hasTwoSupplyCards = deckCount + discardPileCount >= 2;
+  const canUseSupplyMagic = hasSupplyMagicHandSpace && supplyMagicAllies.length > 0 && hasTwoSupplyCards;
   const supplyMagicUnavailableReason = !currentTurnPlayer || currentTurnPlayer.actionPoints <= 0
     ? 'Necesitas al menos 1 Punto de Acción para usar Suministro Mágico.'
     : currentTurnPlayer.hand.length >= getMaxHandSize(currentTurnPlayer)
     ? 'Deja al menos un espacio libre en la mano de Hada al Cubo para conservar la carta que no entregues.'
     : supplyMagicAllies.length === 0
     ? 'Necesitas un compañero vivo de tu mismo escuadrón con espacio disponible en su mano.'
+    : !hasTwoSupplyCards
+    ? 'Se necesitan dos cartas disponibles entre el mazo y el descarte.'
     : '';
   const supplyMagicActor = supplyMagicOffer ? players.find(p => p.id === supplyMagicOffer.actorId) : null;
 
