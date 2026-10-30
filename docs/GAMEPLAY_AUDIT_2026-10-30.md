@@ -25,9 +25,9 @@ La rama `feat/cubinarca-orden-imperativa` implementa:
 
 ## Pendientes de auditoría
 
-- **Cubogro (este PR):** se centralizan los límites de mano y equipo en cero; se bloquean el robo de la Cara Especial 6, las recompensas de cartas, el uso de trucos, la preparación de posturas y el equipamiento normal o por reacción. La pasiva queda pendiente de lint/build y pruebas de partida.
-- **Tramcuboso:** verificar la selección entre dos cartas al robar y los casos de empate en defensa.
-- **Cubinja:** verificar la prohibición de cartas Truco y la regla especial de Bloqueo Perfecto que no mitiga daño.
+- **Cubogro (PR #10 integrado):** Piel de Piedra fija la capacidad de mano y las ranuras de equipo en cero; bloquea las rutas de robo, uso, equipamiento, reacciones y transferencias. Falta validación funcional de partida.
+- **Tramcuboso (PR #11 abierto en borrador):** Selección Afortunada aplica dos cartas por cada robo del mazo global y conserva una; los bots eligen mediante una heurística de rareza, afinidad y utilidad de equipo/postura. La vista previa de Vercel fue limitada por cuota de despliegue; faltan lint y pruebas manuales.
+- **Cubinja (PR #12 propuesto):** Avaricia prohíbe usar cartas Truco y posturas; una coincidencia defensiva concede una carta, pero no anula el daño ni abre reacción. Faltan lint y pruebas de partida.
 - **Gladiacubon:** comprobar la reducción de daño y la ranura adicional en todos los caminos de equipamiento.
 - **Racubitero:** comprobar el robo por daño y el robo doble cuando aparece un 5 en todos los modos.
 - **Cambiaformas:** comprobar transformación, duración, reversión y conservación de estado.
@@ -37,6 +37,6 @@ La rama `feat/cubinarca-orden-imperativa` implementa:
 
 ## Verificación técnica
 
-Las revisiones de PR #3, #4, #6, #7, #8 y #9 han incluido inspección estática y despliegues de vista previa cuando estaban disponibles. Esto no equivale a una partida manual ni confirma todas las interacciones de combate.
+Las revisiones de PR #3, #4, #6, #7, #8, #9 y #10 han incluido inspección estática y despliegues de vista previa cuando estaban disponibles. PR #11 sigue sin validación de despliegue porque Vercel rechazó la solicitud por cuota del plan. Esto no equivale a una partida manual ni confirma todas las interacciones de combate.
 
 Todavía se necesita ejecutar `npm run lint`, `npm run build` y una batería de pruebas manuales que cubra daño, barreras, Bloqueo Perfecto, órdenes pendientes, límites de mano, armas y cambios de turno. No considerar el juego validado funcionalmente hasta completar esas pruebas.
