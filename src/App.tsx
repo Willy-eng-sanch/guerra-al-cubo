@@ -1072,6 +1072,9 @@ export default function App() {
 
     // 2. Pre-calculate Defender Roll
     const defenderHero = target.activeMorphCharacter || target.characterType;
+    const pirateMalDeOjoTriggered = defenderHero === CharacterType.PIRATA &&
+      attacker.id !== target.id &&
+      (attacker.teamId === undefined || target.teamId === undefined || attacker.teamId !== target.teamId);
     const defenderRolls: number[] = [];
     let defenderFinalVal: number;
     let isPerfectBlock = false;
@@ -1085,16 +1088,16 @@ export default function App() {
       defenderRolls.push(0);
       isPerfectBlock = false;
       addLog(`Discordia: ${target.name} no puede lanzar dado de bloqueo hasta obedecer la orden pendiente.`, true);
+    } else if (target.isFrozen) {
+      const r = Math.floor(Math.random() * 6) + 1;
+      defenderRolls.push(r);
+      defenderFinalVal = r;
+      isPerfectBlock = false; // Congelado no puede lanzar dado de bloqueo.
     } else if (hasReflejoFelino || hasElComodin) {
       defenderFinalVal = attackerFinalVal;
       defenderRolls.push(defenderFinalVal);
       isPerfectBlock = true;
       addLog(`${target.name} activa su postura defensiva y bloquea a la perfección!`);
-    } else if (target.isFrozen) {
-      const r = Math.floor(Math.random() * 6) + 1;
-      defenderRolls.push(r);
-      defenderFinalVal = r;
-      isPerfectBlock = false; // Congelado no puede bloquear
     } else if (defenderHero === CharacterType.TRAMCUBOSO) {
       const r1 = Math.floor(Math.random() * 6) + 1;
       const r2 = Math.floor(Math.random() * 6) + 1;
@@ -1138,6 +1141,11 @@ export default function App() {
     // 3. Resolve Damage & Shield Barrier
     let finalDamage = isPerfectBlock ? 0 : modifiedAttackDamage;
 
+    if (defenderHero === CharacterType.CUBITO_DE_HIELO && target.abilityCooldownRemaining > 0 && finalDamage > 0) {
+      finalDamage = Math.max(0, finalDamage - 1);
+      addLog(`¡Coraza de Escarcha! ${target.name} reduce en 1 el daño recibido mientras Congelamiento está en enfriamiento.`);
+    }
+
     if (!isPerfectBlock && target.preparedStance?.id === 35) {
       finalDamage = 0;
       addLog(`${target.name} se desvanece en su Humo de Vape preparado!`);
@@ -1180,6 +1188,10 @@ export default function App() {
         addLog(`La Chaqueta de Cuero de ${secondaryTarget.name} anuló el daño de 1.`);
       }
       const secondaryHero = secondaryTarget.activeMorphCharacter || secondaryTarget.characterType;
+      if (secondaryHero === CharacterType.CUBITO_DE_HIELO && secondaryTarget.abilityCooldownRemaining > 0 && secondaryFinalDamage > 0) {
+        secondaryFinalDamage = Math.max(0, secondaryFinalDamage - 1);
+        addLog(`¡Coraza de Escarcha! ${secondaryTarget.name} reduce en 1 el daño recibido mientras Congelamiento está en enfriamiento.`);
+      }
       if (secondaryHero === CharacterType.GLADIACUBON && secondaryFinalDamage >= 3) {
         secondaryFinalDamage = Math.max(1, Math.floor(secondaryFinalDamage / 2));
         addLog(`Gladiacubon de ${secondaryTarget.name} mitiga el impacto a ${secondaryFinalDamage} de daño.`);
@@ -1232,6 +1244,9 @@ export default function App() {
       attacker.maxHp,
       Math.max(0, attacker.hp - reflectedDamageTaken) + attackerLifeStealHeal
     );
+    if (pirateMalDeOjoTriggered) {
+      addLog(`¡Mal de Ojo Represivo! ${target.name} maldice a ${attacker.name}: perderá su próximo turno completo por atacarlo directamente.`, true, target.name);
+    }
 
     // Consume posture
     let updatedTargetStance = target.preparedStance;
@@ -1452,6 +1467,7 @@ export default function App() {
                   blocksDisabledByOrder: fulfilledAttackOrder ? false : p.blocksDisabledByOrder,
                   shieldBarrier: attackerBarrierRemaining,
                   actionPoints: Math.max(0, p.actionPoints - 1),
+                  skipNextTurn: pirateMalDeOjoTriggered ? true : p.skipNextTurn,
                   hand: newHand,
                   damageDealt: (p.damageDealt || 0) + primaryDamageTotal + secondaryDamageTotal,
                   nextBreathBonus: useDracubonBreath && p.nextBreathBonus ? false : p.nextBreathBonus,
@@ -1605,7 +1621,7 @@ export default function App() {
 
   // Reaction handlers for Perfect Block
   const handleEquipReaction = (cardId: number) => {
-    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0) return;
+    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0 || reactionPlayer.cannotUseCardsThisTurn) return;
     const card = reactionPlayer.hand.find(c => c.id === cardId && c.type === CardType.WEAPON);
     if (!card) return;
     sound.playCardDraw();
@@ -1634,7 +1650,7 @@ export default function App() {
   };
 
   const handleActivateReaction = (cardId: number) => {
-    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0) return;
+    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0 || reactionPlayer.cannotUseCardsThisTurn) return;
     const card = reactionPlayer.hand.find(
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION
     );
@@ -1661,7 +1677,7 @@ export default function App() {
   };
 
   const handlePrepareReaction = (cardId: number) => {
-    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0) return;
+    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0 || reactionPlayer.cannotUseCardsThisTurn) return;
     const card = reactionPlayer.hand.find(
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
     );
@@ -1691,7 +1707,7 @@ export default function App() {
   // Equip Weapon
   const handleEquipWeapon = (cardId: number) => {
     const attacker = currentTurnPlayer;
-    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
+    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || attacker.cannotUseCardsThisTurn) return;
     const card = attacker.hand.find(c => c.id === cardId && c.type === CardType.WEAPON);
     if (!card) return;
 
@@ -1734,7 +1750,7 @@ export default function App() {
   // Prepare Stance
   const handlePrepareStance = (cardId: number) => {
     const attacker = currentTurnPlayer;
-    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
+    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || attacker.cannotUseCardsThisTurn) return;
     const card = attacker.hand.find(
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
     );
@@ -1768,7 +1784,7 @@ export default function App() {
   // Play Action Trick
   const handlePlayActionTrick = (cardId: number, targetId?: number) => {
     const attacker = currentTurnPlayer;
-    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
+    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || attacker.cannotUseCardsThisTurn) return;
     const card = attacker.hand.find(
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION
     );
@@ -1922,7 +1938,7 @@ export default function App() {
       sound.playStanceActivate();
       setPlayers(prev =>
         prev.map(p => {
-          if (p.id === actor.id) return { ...p, abilityCooldownRemaining: 2 };
+          if (p.id === actor.id) return { ...p, abilityCooldownRemaining: 2, cannotUseCardsThisTurn: true };
           if (p.id === target.id) return { ...p, isFrozen: true };
           return p;
         })
@@ -1932,14 +1948,16 @@ export default function App() {
       const target = players.find(p => p.id === targetId && !p.isEliminated && p.id !== actor.id);
       if (!target) return;
       sound.playStanceActivate();
+      const opposingTeamId = actor.teamId === 1 ? 2 : actor.teamId === 2 ? 1 : null;
+      if (opposingTeamId !== null && target.teamId !== opposingTeamId) return;
       setPlayers(prev =>
         prev.map(p => {
           if (p.id === actor.id) return { ...p, abilityCooldownRemaining: 3 };
-          if (p.id === target.id) return { ...p, isFrozen: true };
+          if (p.id === target.id) return { ...p, skipNextTurn: true };
           return p;
         })
       );
-      addLog(`¡${actor.name} usó [Abordaje Cúbico] sobre ${target.name}! Anula su próximo turno.`, true);
+      addLog(`¡${actor.name} usó [Maldición del Ancla] sobre ${target.name}! Su próximo turno completo queda cancelado.`, true);
     } else if (hero === CharacterType.DRACUBON) {
       const blocker = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
       const secondTarget = players.find(p => p.id === extraOption && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
@@ -2017,45 +2035,69 @@ export default function App() {
       return;
     }
 
-    // 2. Step forward in a single pass until we find the next non-eliminated player
-    let nextIdx = (turnIndex + 1) % turnPlayers.length;
-    let cycles = 0;
-    let roundsToAdd = 0;
+    // End-of-turn cleanup: Congelamiento and Cubito's card restriction last through this turn only.
+    let updatedPlayers = turnPlayers.map((p, idx) => {
+      if (idx !== turnIndex) return p;
+      const nextState = {
+        ...p,
+        isFrozen: false,
+        cannotUseCardsThisTurn: false
+      };
+      return p.cubinarcaOrder
+        ? {
+            ...nextState,
+            blocksDisabledByOrder: true,
+            cubinarcaOrderDefiedThisTurn: p.blocksDisabledByOrder ? p.cubinarcaOrderDefiedThisTurn : false
+          }
+        : nextState;
+    });
 
-    while ((turnPlayers[nextIdx].isEliminated || turnPlayers[nextIdx].hp <= 0) && cycles < turnPlayers.length) {
-      if (nextIdx === 0) {
-        roundsToAdd++;
-      }
+    // A skip is consumed when the affected player's next scheduled turn arrives.
+    let nextIdx = turnIndex;
+    let roundsAdvanced = 0;
+    let foundNextPlayer = false;
+    let steps = 0;
+    while (steps < turnPlayers.length * 2) {
       nextIdx = (nextIdx + 1) % turnPlayers.length;
-      cycles++;
-    }
+      if (nextIdx === 0) roundsAdvanced++;
+      steps++;
 
-    if (cycles >= turnPlayers.length) {
-      checkVictory(turnPlayers);
-      return;
-    }
-
-    const nextRound = (nextIdx <= turnIndex) ? round + 1 + roundsToAdd : round + roundsToAdd;
-
-    const updated = turnPlayers.map((p, idx) => {
-      if (idx === turnIndex && p.cubinarcaOrder) {
-        return {
-          ...p,
-          blocksDisabledByOrder: true,
-          cubinarcaOrderDefiedThisTurn: p.blocksDisabledByOrder ? p.cubinarcaOrderDefiedThisTurn : false
-        };
+      const candidate = updatedPlayers[nextIdx];
+      if (candidate.isEliminated || candidate.hp <= 0) continue;
+      if (candidate.skipNextTurn) {
+        addLog(`¡Mal de Ojo! ${candidate.name} pierde su turno completo y queda libre de la maldición.`, true, candidate.name);
+        updatedPlayers = updatedPlayers.map((p, idx) => idx === nextIdx
+          ? { ...p, skipNextTurn: false, isFrozen: false, cannotUseCardsThisTurn: false }
+          : p
+        );
+        continue;
       }
-      if (idx === nextIdx) {
-        return {
+
+      foundNextPlayer = true;
+      break;
+    }
+
+    if (!foundNextPlayer) {
+      // All remaining players were due to lose a turn; after consuming those skips, resume safely.
+      const fallback = updatedPlayers.findIndex((p, idx) => idx !== turnIndex && !p.isEliminated && p.hp > 0);
+      if (fallback < 0) {
+        checkVictory(updatedPlayers);
+        return;
+      }
+      nextIdx = fallback;
+      addLog("Todos los turnos disponibles fueron anulados; la arena retoma el siguiente turno vivo.", true, "Árbitro");
+    }
+
+    const nextRound = round + roundsAdvanced;
+    const updated = updatedPlayers.map((p, idx) => idx === nextIdx
+      ? {
           ...p,
           actionPoints: 2,
-          isFrozen: false,
           abilityCooldownRemaining: Math.max(0, p.abilityCooldownRemaining - 1),
           cubinarcaOrderDefiedThisTurn: false
-        };
-      }
-      return p;
-    });
+        }
+      : p
+    );
 
     setPlayers(updated);
     setTurnIndex(nextIdx);
