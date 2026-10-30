@@ -1410,6 +1410,7 @@ export default function App() {
           ];
 
           let attackerCardsToAdd = 0;
+          let attackerCardsToSteal = 0;
           if (
             crossedMultiples.length > 0 &&
             !attacker.equippedWeapons.some(w => w.id === 6) &&
@@ -1425,17 +1426,9 @@ export default function App() {
             addFloatingText(attacker.id, `+${attackerCardsToAdd} CARTA MAZO`, "#ffd600");
           }
 
-          // Racubitero passive
-          if (
-            attackerHero === CharacterType.RACUBITERO &&
-            finalDamage > 0 &&
-            attacker.hand.length < getMaxHandSize(attacker)
-          ) {
-            const stealCount = attackerRolls.includes(5) ? 2 : 1;
-            attackerCardsToAdd += stealCount;
-            triggerDeckAnimation();
-            sound.playCardDraw();
-            addLog(`¡El Racubitero saquea ${stealCount} carta(s) del Mazo por daño efectivo!`, true);
+          // Hurto Sigiloso transfiere cartas reales de la mano del rival que recibió daño.
+          if (attackerHero === CharacterType.RACUBITERO && primaryDamageTotal > 0) {
+            attackerCardsToSteal = attackerRolls.includes(5) ? 2 : 1;
           }
 
           // Super-Bloqueo Heroico / Bloqueo Perfecto rewards for defender:
@@ -1487,14 +1480,37 @@ export default function App() {
             }
             return { cards, choices, drawnCount: cards.length };
           };
+          // Robar primero limita el hurto y los robos globales al espacio real de ambas manos.
+          const attackerFreeSlots = Math.max(0, getMaxHandSize(attacker) - attacker.hand.length);
+          const stealCount = Math.min(attackerCardsToSteal, attackerFreeSlots, target.hand.length);
+          const targetHandAfterTheft = [...target.hand];
+          const stolenCards: GameCard[] = [];
+          for (let i = 0; i < stealCount; i++) {
+            const randomIndex = Math.floor(Math.random() * targetHandAfterTheft.length);
+            const [stolenCard] = targetHandAfterTheft.splice(randomIndex, 1);
+            if (stolenCard) stolenCards.push(stolenCard);
+          }
+          if (stolenCards.length > 0) {
+            triggerDeckAnimation();
+            sound.playCardDraw();
+            addLog(
+              `¡Hurto Sigiloso! ${attacker.name} roba ${stolenCards.length} carta(s) de la mano de ${target.name}${attackerRolls.includes(5) ? ' por sacar un 5 natural' : ' por causar daño efectivo'}.`,
+              true,
+              attacker.name
+            );
+            addFloatingText(attacker.id, `+${stolenCards.length} CARTA(S) ROBADA(S)`, "#f59e0b");
+          }
+
+          const attackerWithStolenCards = { ...attacker, hand: [...attacker.hand, ...stolenCards] };
+          const defenderAfterTheft = { ...target, hand: targetHandAfterTheft };
           const attackerDrawSource = crossedMultiples.length > 0 ? "Umbral de vida" : "Robo de Racubitero";
-          const attackerDrawResult = prepareCombatDraws(attacker, attackerCardsToAdd, attackerDrawSource);
-          const defenderDrawResult = prepareCombatDraws(target, defenderCardsToAdd, "Bloqueo Perfecto");
+          const attackerDrawResult = prepareCombatDraws(attackerWithStolenCards, attackerCardsToAdd, attackerDrawSource);
+          const defenderDrawResult = prepareCombatDraws(defenderAfterTheft, defenderCardsToAdd, "Bloqueo Perfecto");
 
           setPlayers(prevPlayers =>
             prevPlayers.map(p => {
               if (p.id === attacker.id) {
-                const newHand = [...p.hand, ...attackerDrawResult.cards];
+                const newHand = [...p.hand, ...stolenCards, ...attackerDrawResult.cards];
                 const fulfilledAttackOrder = p.cubinarcaOrder?.kind === 'ATTACK_TARGET' && p.cubinarcaOrder.attackTargetId === target.id;
                 return {
                   ...p,
@@ -1513,7 +1529,7 @@ export default function App() {
                     : p.nextAttackBonus
                 };
               } else if (p.id === target.id) {
-                const newHand = [...p.hand, ...defenderDrawResult.cards];
+                const newHand = [...p.hand.filter(card => !stolenCards.includes(card)), ...defenderDrawResult.cards];
                 return {
                   ...p,
                   hp: Math.min(p.maxHp, newHp + defenderHpHeal + cubiculaReflectHeal),
