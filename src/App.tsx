@@ -763,7 +763,7 @@ export default function App() {
   };
 
   // Execute Attack
-  const handleAttack = (targetId: number) => {
+  const handleAttack = (targetId: number, isCubiculaAbility: boolean = false) => {
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || attacker.isFrozen) return;
     const target = players.find(p => p.id === targetId);
@@ -916,20 +916,45 @@ export default function App() {
       addFloatingText(target.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
     }
 
-    // Dracubon's Escamas reflect the damage that actually penetrates its defenses.
+    // Shared reflection and life-steal resolution (Dracubon + Cubícula).
     let attackerBarrierRemaining = attacker.shieldBarrier || 0;
-    const dracubonReflectedDamage = dracubonReflectTriggered ? finalDamage : 0;
-    let dracubonReflectedTaken = dracubonReflectedDamage;
-    if (dracubonReflectedTaken > 0 && attackerBarrierRemaining > 0) {
-      const absorbed = Math.min(attackerBarrierRemaining, dracubonReflectedTaken);
+    let dracubonReflectedTaken = dracubonReflectTriggered ? finalDamage : 0;
+
+    let cubiculaReflectRoll: number | null = null;
+    let cubiculaReflectHeal = 0;
+    let cubiculaReflectDamage = 0;
+    if (defenderHero === CharacterType.CUBICULA && isPerfectBlock) {
+      cubiculaReflectRoll = Math.floor(Math.random() * 6) + 1;
+      cubiculaReflectHeal = cubiculaReflectRoll;
+      cubiculaReflectDamage = Math.floor(cubiculaReflectRoll / 2);
+      addLog(`¡Reflejo de Noche! Cubícula relanza D6 (${cubiculaReflectRoll}), devuelve ${cubiculaReflectDamage} de daño y se cura ${cubiculaReflectHeal} HP.`, true, target.name);
+    }
+
+    let reflectedDamageTaken = dracubonReflectedTaken + cubiculaReflectDamage;
+    if (reflectedDamageTaken > 0 && attackerBarrierRemaining > 0) {
+      const absorbed = Math.min(attackerBarrierRemaining, reflectedDamageTaken);
       attackerBarrierRemaining -= absorbed;
-      dracubonReflectedTaken -= absorbed;
-      addLog(`La barrera de ${attacker.name} absorbe ${absorbed} del daño reflejado por las Escamas de Dracubon.`);
+      reflectedDamageTaken -= absorbed;
+      addLog(`La barrera de ${attacker.name} absorbe ${absorbed} del daño reflejado.`);
     }
-    const attackerNewHp = Math.max(0, attacker.hp - dracubonReflectedTaken);
-    if (dracubonReflectedTaken > 0) {
-      addLog(`¡Escamas de Dracubon! ${target.name} devuelve ${dracubonReflectedTaken} de daño a ${attacker.name}.`, true, target.name);
+
+    if (dracubonReflectTriggered && reflectedDamageTaken > 0) {
+      addLog(`¡Escamas de Dracubon! ${target.name} devuelve ${reflectedDamageTaken} de daño a ${attacker.name}.`, true, target.name);
     }
+
+    const attackerLifeStealHeal = isCubiculaAbility &&
+      attackerHero === CharacterType.CUBICULA &&
+      finalDamage >= 3
+      ? finalDamage
+      : 0;
+    if (attackerLifeStealHeal > 0) {
+      addLog(`¡Festín Sangriento! ${attacker.name} recupera ${attackerLifeStealHeal} HP por el daño efectivo causado.`, true, attacker.name);
+    }
+
+    const attackerNewHp = Math.min(
+      attacker.maxHp,
+      Math.max(0, attacker.hp - reflectedDamageTaken) + attackerLifeStealHeal
+    );
 
     // Consume posture
     let updatedTargetStance = target.preparedStance;
@@ -993,6 +1018,15 @@ export default function App() {
           addFloatingText(target.id, "¡ESCAMAS: REFLEJO!", "#fb923c");
           if (dracubonReflectedTaken > 0) {
             addFloatingText(attacker.id, `-${dracubonReflectedTaken} REFLEJADO`, "#ef4444");
+          }
+        }
+        if (attackerLifeStealHeal > 0) {
+          addFloatingText(attacker.id, `+${attackerLifeStealHeal} HP FESTÍN`, "#f472b6");
+        }
+        if (cubiculaReflectRoll !== null) {
+          addFloatingText(target.id, `+${cubiculaReflectHeal} HP REFLEJO`, "#c084fc");
+          if (reflectedDamageTaken > 0) {
+            addFloatingText(attacker.id, `-${reflectedDamageTaken} REFLEJADO`, "#ef4444");
           }
         }
 
@@ -1124,8 +1158,8 @@ export default function App() {
 
                 return {
                   ...p,
-                  hp: Math.min(p.maxHp, newHp + defenderHpHeal),
-                  damageDealt: (p.damageDealt || 0) + dracubonReflectedTaken,
+                  hp: Math.min(p.maxHp, newHp + defenderHpHeal + cubiculaReflectHeal),
+                  damageDealt: (p.damageDealt || 0) + reflectedDamageTaken,
                   nextAttackBonus: defenderHero === CharacterType.FLAUCUBISTA_DESAFINADO && finalDamage > 0
                     ? (p.nextAttackBonus || 0) + 1
                     : p.nextAttackBonus,
@@ -1153,7 +1187,7 @@ export default function App() {
 
           if (attackerNewHp <= 0 && !attacker.isEliminated) {
             sound.playElimination();
-            addLog(`¡K.O.! ${attacker.name} cayó por el daño devuelto por las Escamas de Dracubon.`, true);
+            addLog(`¡K.O.! ${attacker.name} cayó por el daño devuelto por ${dracubonReflectTriggered ? "las Escamas de Dracubon" : "el Reflejo de Noche de Cubícula"}.`, true);
             narrator.narrateElimination(attacker.name);
           }
 
@@ -1574,6 +1608,11 @@ export default function App() {
         })
       );
       addLog(`¡${actor.name} usó [Abordaje Cúbico] sobre ${target.name}! Anula su próximo turno.`, true);
+    } else if (hero === CharacterType.CUBICULA) {
+      const target = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
+      if (!target || actor.actionPoints <= 0) return;
+      addLog(` ${actor.name} activa [Festín Sangriento] contra ${target.name}. Si inflige al menos 3 de daño efectivo, recuperará esa cantidad de HP.`.trim(), true, actor.name);
+      handleAttack(target.id, true);
     } else if (hero === CharacterType.FLAUCUBISTA_DESAFINADO) {
       // La apuesta del Flaucubista es una excepción explícita: usa D5, no el D6 general.
       const chosenNum = extraOption && extraOption >= 1 && extraOption <= 5
@@ -1823,7 +1862,12 @@ export default function App() {
             );
             if (target) {
               setSelectedTargetId(target.id);
-              handleAttack(target.id);
+              const activeHero = currentP.activeMorphCharacter || currentP.characterType;
+              if (activeHero === CharacterType.CUBICULA && currentP.actionPoints >= 2) {
+                handleUseHeroAbility(target.id);
+              } else {
+                handleAttack(target.id);
+              }
             }
           }
         }
