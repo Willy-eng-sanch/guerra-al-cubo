@@ -762,7 +762,7 @@ export default function App() {
   };
 
   // Execute Attack
-  const handleAttack = (targetId: number) => {
+  const handleAttack = (targetId: number, isCubiculaAbility: boolean = false) => {
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || attacker.isFrozen) return;
     const target = players.find(p => p.id === targetId);
@@ -913,8 +913,38 @@ export default function App() {
       updatedTargetStance = null;
     }
 
+    const attackerLifeStealHeal = isCubiculaAbility &&
+      attackerHero === CharacterType.CUBICULA &&
+      finalDamage >= 3
+      ? finalDamage
+      : 0;
+    if (attackerLifeStealHeal > 0) {
+      addLog(`¡Festín Sangriento! ${attacker.name} recupera ${attackerLifeStealHeal} HP por el daño efectivo causado.`, true, attacker.name);
+    }
+
+    let cubiculaReflectRoll: number | null = null;
+    let cubiculaReflectHeal = 0;
+    let cubiculaReflectDamage = 0;
+    if (defenderHero === CharacterType.CUBICULA && isPerfectBlock) {
+      cubiculaReflectRoll = Math.floor(Math.random() * 6) + 1;
+      cubiculaReflectHeal = cubiculaReflectRoll;
+      cubiculaReflectDamage = Math.floor(cubiculaReflectRoll / 2);
+      addLog(`¡Reflejo de Noche! Cubícula relanza D6 (${cubiculaReflectRoll}), devuelve ${cubiculaReflectDamage} de daño y se cura ${cubiculaReflectHeal} HP.`, true, target.name);
+    }
+
+    // La barrera del atacante puede absorber el daño devuelto por Reflejo de Noche.
+    let attackerBarrierRemaining = attacker.shieldBarrier || 0;
+    let reflectedDamageTaken = cubiculaReflectDamage;
+    if (reflectedDamageTaken > 0 && attackerBarrierRemaining > 0) {
+      const absorbed = Math.min(attackerBarrierRemaining, reflectedDamageTaken);
+      attackerBarrierRemaining -= absorbed;
+      reflectedDamageTaken -= absorbed;
+      addLog(`La barrera de ${attacker.name} absorbe ${absorbed} del daño reflejado.`);
+    }
+
     const oldHp = target.hp;
     const newHp = Math.max(0, oldHp - finalDamage);
+    const attackerNewHp = Math.max(0, attacker.hp - reflectedDamageTaken);
 
     // =========================================================================
     // MULTI-STAGE CARTOON CLASH ANIMATION SEQUENCE
@@ -964,6 +994,15 @@ export default function App() {
         } else {
           sound.playCartoonBoing(260);
           addFloatingText(target.id, "¡EVADIDO!", "#7c4dff");
+        }
+        if (attackerLifeStealHeal > 0) {
+          addFloatingText(attacker.id, `+${attackerLifeStealHeal} HP FESTÍN`, "#f472b6");
+        }
+        if (cubiculaReflectRoll !== null) {
+          addFloatingText(target.id, `+${cubiculaReflectHeal} HP REFLEJO`, "#c084fc");
+          if (reflectedDamageTaken > 0) {
+            addFloatingText(attacker.id, `-${reflectedDamageTaken} REFLEJADO`, "#ef4444");
+          }
         }
 
         // Stage 3 -> 4: Complete clash and commit state
@@ -1057,8 +1096,13 @@ export default function App() {
                   }
                 }
 
+                const hpAfterReflection = Math.max(0, p.hp - reflectedDamageTaken);
+                const updatedAttackerHp = Math.min(p.maxHp, hpAfterReflection + attackerLifeStealHeal);
                 return {
                   ...p,
+                  hp: updatedAttackerHp,
+                  isEliminated: updatedAttackerHp <= 0,
+                  shieldBarrier: attackerBarrierRemaining,
                   actionPoints: Math.max(0, p.actionPoints - 1),
                   hand: newHand,
                   damageDealt: (p.damageDealt || 0) + finalDamage,
@@ -1091,7 +1135,8 @@ export default function App() {
 
                 return {
                   ...p,
-                  hp: Math.min(p.maxHp, newHp + defenderHpHeal),
+                  hp: Math.min(p.maxHp, newHp + defenderHpHeal + cubiculaReflectHeal),
+                  damageDealt: (p.damageDealt || 0) + reflectedDamageTaken,
                   nextAttackBonus: defenderHero === CharacterType.FLAUCUBISTA_DESAFINADO && finalDamage > 0
                     ? (p.nextAttackBonus || 0) + 1
                     : p.nextAttackBonus,
@@ -1116,6 +1161,12 @@ export default function App() {
 
           setDeck(currentDeckState);
           setDiscardPile(currentDiscardState);
+
+          if (attackerNewHp <= 0 && !attacker.isEliminated) {
+            sound.playElimination();
+            addLog(`¡K.O.! ${attacker.name} cayó por el daño devuelto por Reflejo de Noche.`, true);
+            narrator.narrateElimination(attacker.name);
+          }
 
           if (newHp <= 0) {
             sound.playElimination();
@@ -1427,6 +1478,11 @@ export default function App() {
         })
       );
       addLog(`¡${actor.name} usó [Abordaje Cúbico] sobre ${target.name}! Anula su próximo turno.`, true);
+    } else if (hero === CharacterType.CUBICULA) {
+      const target = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
+      if (!target || actor.actionPoints <= 0) return;
+      addLog(`${actor.name} activa [Festín Sangriento] contra ${target.name}. Si inflige al menos 3 de daño efectivo, recuperará esa cantidad de HP.`, true, actor.name);
+      handleAttack(target.id, true);
     } else if (hero === CharacterType.FLAUCUBISTA_DESAFINADO) {
       // La apuesta del Flaucubista es una excepción explícita: usa D5, no el D6 general.
       const chosenNum = extraOption && extraOption >= 1 && extraOption <= 5
