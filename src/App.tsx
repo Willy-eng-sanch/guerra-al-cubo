@@ -1448,8 +1448,9 @@ export default function App() {
             addFloatingText(attacker.id, `+${stolenCards.length} CARTA(S) ROBADA(S)`, "#f59e0b");
           }
           const attackerWithStolenCards = { ...attacker, hand: [...attacker.hand, ...stolenCards] };
+          const defenderAfterTheft = { ...target, hand: targetHandAfterTheft };
           const attackerDrawResult = prepareCombatDraws(attackerWithStolenCards, attackerCardsToAdd, "Umbral de vida");
-          const defenderDrawResult = prepareCombatDraws(target, defenderCardsToAdd, "Bloqueo Perfecto");
+          const defenderDrawResult = prepareCombatDraws(defenderAfterTheft, defenderCardsToAdd, "Bloqueo Perfecto");
 
           setPlayers(prevPlayers =>
             prevPlayers.map(p => {
