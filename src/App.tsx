@@ -1712,7 +1712,8 @@ export default function App() {
 
           const attackerWithStolenCards: PlayerState = {
             ...attacker,
-            hand: [...attackerHandAfterRacubitero, ...stolenCards]
+            hand: [...attackerHandAfterRacubitero, ...stolenCards],
+            equippedWeapons: attackerWeaponsAfterRacubitero
           };
           const defenderAfterTheft: PlayerState = {
             ...target,
