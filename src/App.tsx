@@ -86,6 +86,24 @@ export default function App() {
   const botOrderTurnRef = useRef<number | null>(null);
   const playersRef = useRef<PlayerState[]>([]);
   useEffect(() => { playersRef.current = players; }, [players]);
+
+  // Release a stale cover if its ally was eliminated or the guardian changed into another hero.
+  useEffect(() => {
+    const staleCoverageIds = players
+      .filter(player => {
+        if (player.guardingAllyId == null) return false;
+        const protectedAlly = players.find(ally => ally.id === player.guardingAllyId);
+        const activeHero = player.activeMorphCharacter || player.characterType;
+        return activeHero !== CharacterType.GLADIACUBON || !protectedAlly || protectedAlly.isEliminated || protectedAlly.hp <= 0;
+      })
+      .map(player => player.id);
+    if (staleCoverageIds.length === 0) return;
+    setPlayers(previous => previous.map(player => staleCoverageIds.includes(player.id)
+      ? { ...player, guardingAllyId: null }
+      : player
+    ));
+  }, [players]);
+
   const matchIntroCompletedRef = useRef(true);
 
   const speedMultiplier = isFastSpeed ? 0.5 : 1;
