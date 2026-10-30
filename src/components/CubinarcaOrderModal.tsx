@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CubinarcaOrder, CubinarcaOrderKind, GameCard, PlayerState, getMaxHandSize } from '../types/game';
-import { AlertTriangle, ArrowRight, Hand, ShieldOff, Swords, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Hand, ShieldOff, Swords } from 'lucide-react';
 
 interface CubinarcaOrderModalProps {
   mode: 'ISSUE' | 'FULFILL';
@@ -10,16 +10,10 @@ interface CubinarcaOrderModalProps {
   order?: CubinarcaOrder | null;
   onIssue?: (kind: CubinarcaOrderKind, attackTargetId?: number) => void;
   onFulfillAttack?: () => void;
-  onTransferCard?: (cardId: number) => void;
-  onUnequipWeapon?: (weaponId: number) => void;
+  onTransferCard?: (cardIndex: number) => void;
+  onUnequipWeapon?: (weaponIndex: number) => void;
   onDefy?: () => void;
 }
-
-const orderLabels: Record<CubinarcaOrderKind, string> = {
-  ATTACK_TARGET: 'Atacar al objetivo ordenado',
-  TRANSFER_CARD: 'Entregar una carta al Cubinarca',
-  UNEQUIP_WEAPON: 'Desequipar un arma'
-};
 
 export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
   mode,
