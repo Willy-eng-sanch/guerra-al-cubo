@@ -182,6 +182,7 @@ export interface PlayerState {
   damageDealt?: number; // Total daño infligido en la partida
   perfectBlocks?: number; // Bloqueos perfectos realizados
   cardsDrawn?: number; // Cartas totales robadas del mazo
+  nextAttackBonus?: number; // Bonificación acumulada de Acorde Violento
 }
 
 export function getMaxHandSize(player: PlayerState): number {
