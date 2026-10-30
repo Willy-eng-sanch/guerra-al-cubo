@@ -1051,14 +1051,13 @@ export default function App() {
       attackerTeamId: attacker.teamId,
       defenderTeamId: target.teamId,
       attackerName: attacker.name,
-      defenderName: target.name,
+      defenderName: useDracubonBreath ? `${target.name} (bloquea por ambos)` : target.name,
       attackerRolls,
       attackerFinalVal,
       defenderRolls,
       defenderFinalVal,
       isPerfectBlock,
       damageDealt: primaryDamageTotal,
-      defenderName: useDracubonBreath ? `${target.name} (bloquea por ambos)` : target.name,
       phase: 'RUSH_TO_CENTER'
     });
 
