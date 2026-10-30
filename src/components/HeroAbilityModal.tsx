@@ -177,6 +177,15 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
             </p>
           </div>
 
+          {isGladiacubon && (
+            <div className="rounded-xl border border-blue-500/40 bg-blue-950/30 p-3 text-xs text-blue-100 space-y-1">
+              <p className="font-black text-blue-200">Intercepción · Coste: 1 AP</p>
+              <p>El aliado elegido queda bajo Cobertura. El siguiente ataque dirigido a él será recibido por Gladiacubon, que lanzará su propio dado.</p>
+              <p>La cobertura solo se libera cuando Gladiacubon consigue un Bloqueo Perfecto. Si falla, sigue protegiendo al mismo aliado.</p>
+              <p>Tras activar, no puede volver a usarse durante la ronda siguiente y tampoco mientras exista una cobertura pendiente.</p>
+            </div>
+          )}
+
           {isSupplyMagic && !canUseSupplyMagic && !isCooldown && !isFrozen && (
             <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 p-3 text-xs text-amber-200">
               {supplyMagicUnavailableReason}
