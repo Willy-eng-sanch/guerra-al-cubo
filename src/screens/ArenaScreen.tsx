@@ -151,6 +151,10 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   const actorHeroDef = currentTurnPlayer
     ? CHARACTERS[currentTurnPlayer.activeMorphCharacter || currentTurnPlayer.characterType]
     : null;
+  const isCubinjaTurn = Boolean(
+    currentTurnPlayer &&
+    (currentTurnPlayer.activeMorphCharacter || currentTurnPlayer.characterType) === CharacterType.CUBINJA
+  );
 
   const validTargets = players.filter(
     p =>
@@ -493,6 +497,11 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                   Acciones restantes: <b>{currentTurnPlayer.actionPoints} AP</b>
                 </span>
               </div>
+              {isCubinjaTurn && (
+                <p className="mb-2 px-1 text-[10px] font-bold text-amber-300">
+                  AVARICIA: puedes equipar armas, pero no puedes usar cartas Truco ni preparar posturas.
+                </p>
+              )}
 
               {getMaxHandSize(currentTurnPlayer) === 0 ? (
                 <div className="bg-[#12151e] border border-dashed border-[#242b3b] rounded-xl p-3 text-center text-xs text-stone-300">
@@ -588,6 +597,13 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                               className="w-full py-1 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-black font-black text-[10px] rounded-lg tracking-wider"
                             >
                               EQUIPAR
+                            </button>
+                          ) : isCubinjaTurn ? (
+                            <button
+                              disabled
+                              className="w-full py-1 bg-neutral-800 text-neutral-500 font-black text-[10px] rounded-lg tracking-wider cursor-not-allowed"
+                            >
+                              PROHIBIDO
                             </button>
                           ) : isStance ? (
                             <button
