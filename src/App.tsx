@@ -1241,6 +1241,13 @@ export default function App() {
       addFloatingText(target.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
     }
 
+    // Consume only the one-use defensive postures resolved by this attack.
+    // A posture stored on Cubinja remains dormant and is not consumed while Avaricia is active.
+    let updatedTargetStance = target.preparedStance;
+    if (activeDefenderStance && [17, 19].includes(activeDefenderStance.id)) {
+      updatedTargetStance = null;
+    }
+
     // Aliento conserva una sola tirada defensiva compartida, pero el daño del
     // segundo objetivo también se redirige a su Gladiacubon si tiene cobertura.
     // Cuando ambos impactos llegan al mismo guardián, se consumen barrera y postura
@@ -1334,13 +1341,6 @@ export default function App() {
       attacker.maxHp,
       Math.max(0, attacker.hp - reflectedDamageTaken) + attackerLifeStealHeal
     );
-
-    // Consume only the one-use defensive postures resolved by this attack.
-    // A posture stored on Cubinja remains dormant and is not consumed while Avaricia is active.
-    let updatedTargetStance = target.preparedStance;
-    if (activeDefenderStance && [17, 19].includes(activeDefenderStance.id)) {
-      updatedTargetStance = null;
-    }
 
     const dracubonTrueDamage = useDracubonBreath && attacker.nextBreathBonus ? 1 : 0;
     const primaryDamageTotal = finalDamage + dracubonTrueDamage;
