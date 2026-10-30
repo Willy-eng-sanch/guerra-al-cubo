@@ -2314,6 +2314,25 @@ export default function App() {
         return;
       }
 
+      const botCoverageAlly = activeHero === CharacterType.GLADIACUBON && activePlayer.teamId !== undefined
+        ? players.find(p =>
+            p.id !== activePlayer.id &&
+            p.teamId === activePlayer.teamId &&
+            !p.isEliminated &&
+            p.hp > 0 &&
+            !players.some(guardian => guardian.guardingAllyId === p.id)
+          )
+        : undefined;
+      if (
+        botCoverageAlly &&
+        activePlayer.actionPoints > 0 &&
+        activePlayer.guardingAllyId == null &&
+        (activePlayer.interceptionAvailableRound || 0) <= round
+      ) {
+        handleUseHeroAbility(botCoverageAlly.id);
+        return;
+      }
+
       const botHasSupplyAlly = activePlayer.teamId !== undefined && players.some(p => {
         const allyHero = p.activeMorphCharacter || p.characterType;
         return p.id !== activePlayer.id &&
