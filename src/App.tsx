@@ -1081,8 +1081,9 @@ export default function App() {
     let isCubinjaCardBlock = false;
     let dracubonReflectTriggered = false;
 
-    const hasReflejoFelino = target.preparedStance?.id === 53;
-    const hasElComodin = target.preparedStance?.id === 60;
+    // Avaricia also disables any previously prepared Trick stance while Cubinja is active.
+    const hasReflejoFelino = !isCubinjaHero(target) && target.preparedStance?.id === 53;
+    const hasElComodin = !isCubinjaHero(target) && target.preparedStance?.id === 60;
 
     if (target.blocksDisabledByOrder) {
       defenderFinalVal = 0;
@@ -1155,7 +1156,7 @@ export default function App() {
     // 3. Resolve Damage & Shield Barrier
     let finalDamage = isPerfectBlock ? 0 : modifiedAttackDamage;
 
-    if (!isPerfectBlock && target.preparedStance?.id === 35) {
+    if (!isPerfectBlock && !isCubinjaHero(target) && target.preparedStance?.id === 35) {
       finalDamage = 0;
       addLog(`${target.name} se desvanece en su Humo de Vape preparado!`);
     }
@@ -1187,7 +1188,7 @@ export default function App() {
     let updatedSecondaryStance = secondaryTarget?.preparedStance ?? null;
     if (useDracubonBreath && secondaryTarget && !isPerfectBlock) {
       secondaryFinalDamage = modifiedAttackDamage;
-      if (secondaryTarget.preparedStance?.id === 35) {
+      if (!isCubinjaHero(secondaryTarget) && secondaryTarget.preparedStance?.id === 35) {
         secondaryFinalDamage = 0;
         updatedSecondaryStance = null;
         addLog(`${secondaryTarget.name} se desvanece en su Humo de Vape preparado!`);
