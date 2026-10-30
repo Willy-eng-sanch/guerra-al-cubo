@@ -2146,6 +2146,110 @@ export default function App() {
     }
   };
 
+  // Cambiaformas: automatic random Mimetismo at the beginning of each round.
+  useEffect(() => {
+    if (currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying || players.length === 0) return;
+
+    const pendingMorphs = players.filter(player =>
+      player.characterType === CharacterType.CAMBIAFORMAS &&
+      !player.isEliminated &&
+      player.hp > 0 &&
+      player.activeMorphRound !== round
+    );
+    if (pendingMorphs.length === 0) return;
+
+    const plans = pendingMorphs.map(player => {
+      const candidateForms = players
+        .filter(other => other.id !== player.id && !other.isEliminated && other.hp > 0)
+        .map(other => other.activeMorphCharacter || other.characterType)
+        .filter(form => form !== CharacterType.CAMBIAFORMAS);
+      const nextForm = candidateForms.length > 0
+        ? candidateForms[Math.floor(Math.random() * candidateForms.length)]
+        : null;
+
+      if (!nextForm) {
+        return {
+          playerId: player.id,
+          nextForm: null as CharacterType | null,
+          hand: player.hand,
+          equippedWeapons: player.equippedWeapons,
+          preparedStance: player.preparedStance,
+          discardedCards: [] as GameCard[]
+        };
+      }
+
+      const projectedPlayer = { ...player, activeMorphCharacter: nextForm };
+      let nextHand = [...player.hand];
+      let nextWeapons = [...player.equippedWeapons];
+      let nextStance = player.preparedStance;
+      const discardedCards: GameCard[] = [];
+
+      if (nextForm === CharacterType.CUBOGRO) {
+        // Piel de Piedra cannot retain cards, weapons or a prepared Trick.
+        discardedCards.push(...nextHand, ...nextWeapons);
+        if (nextStance) discardedCards.push(nextStance);
+        nextHand = [];
+        nextWeapons = [];
+        nextStance = null;
+      } else {
+        const nextHandLimit = getMaxHandSize(projectedPlayer);
+        if (nextHand.length > nextHandLimit) {
+          discardedCards.push(...nextHand.slice(nextHandLimit));
+          nextHand = nextHand.slice(0, nextHandLimit);
+        }
+
+        const nextWeaponLimit = getMaxWeaponSlots(projectedPlayer);
+        if (nextWeapons.length > nextWeaponLimit) {
+          const excess = nextWeapons.length - nextWeaponLimit;
+          discardedCards.push(...nextWeapons.slice(0, excess));
+          nextWeapons = nextWeapons.slice(-nextWeaponLimit);
+        }
+      }
+
+      return {
+        playerId: player.id,
+        nextForm,
+        hand: nextHand,
+        equippedWeapons: nextWeapons,
+        preparedStance: nextStance,
+        discardedCards
+      };
+    });
+
+    setPlayers(previous => previous.map(player => {
+      const plan = plans.find(item => item.playerId === player.id);
+      if (!plan) return player;
+      return {
+        ...player,
+        activeMorphCharacter: plan.nextForm,
+        activeMorphRound: round,
+        hand: plan.hand,
+        equippedWeapons: plan.equippedWeapons,
+        preparedStance: plan.preparedStance
+      };
+    }));
+
+    const discardedCards = plans.flatMap(plan => plan.discardedCards);
+    if (discardedCards.length > 0) {
+      setDiscardPile(previous => [...previous, ...discardedCards]);
+    }
+
+    plans.forEach(plan => {
+      const player = players.find(item => item.id === plan.playerId);
+      if (!player) return;
+      if (plan.nextForm) {
+        const formName = CHARACTERS[plan.nextForm]?.displayName || plan.nextForm;
+        addLog(`¡Mimetismo! ${player.name} adopta la forma de ${formName} para la ronda ${round}.`, true, player.name);
+        addFloatingText(player.id, `¡MIMETISMO: ${formName.toUpperCase()}!`, "#a78bfa");
+      } else {
+        addLog(`Mimetismo: ${player.name} no encuentra otro personaje vivo del que copiarse y conserva su forma actual.`, false, player.name);
+      }
+      if (plan.discardedCards.length > 0) {
+        addLog(`Las restricciones de la nueva forma descartan ${plan.discardedCards.length} carta(s)/arma(s) de ${player.name}.`, true, player.name);
+      }
+    });
+  }, [currentScreen, winner, isMatchIntroPlaying, players, round]);
+
   // Auto-skip turn if current active player is eliminated or dead (CRITICAL FIX FOR STUCK 'PENSANDO')
   useEffect(() => {
     if (currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
