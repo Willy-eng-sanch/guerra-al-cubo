@@ -25,8 +25,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Regenerate lockfile from package manifest
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Upload synchronized lockfile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synchronized-package-lock
+          path: package-lock.json
+          if-no-files-found: error
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
       - name: TypeScript check
         run: npm run lint
       - name: Production build
