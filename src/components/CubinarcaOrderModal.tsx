@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CubinarcaOrder, CubinarcaOrderKind, GameCard, PlayerState } from '../types/game';
+import { CubinarcaOrder, CubinarcaOrderKind, GameCard, PlayerState, getMaxHandSize } from '../types/game';
 import { AlertTriangle, ArrowRight, Hand, ShieldOff, Swords, X } from 'lucide-react';
 
 interface CubinarcaOrderModalProps {
@@ -40,7 +40,7 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
   const [attackTargetId, setAttackTargetId] = useState<number | null>(
     validAttackTargets[0]?.id ?? null
   );
-  const canTransfer = victim.hand.length > 0 && issuer.hand.length < (issuer.characterType === 'HADA_AL_CUBO' ? 4 : 2);
+  const canTransfer = victim.hand.length > 0 && issuer.hand.length < getMaxHandSize(issuer);
   const canUnequip = victim.equippedWeapons.length > 0;
   const canAttack = validAttackTargets.length > 0;
 
@@ -169,7 +169,7 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
                   <button
                     key={card.uid || `${card.id}-${index}`}
                     type="button"
-                    disabled={issuer.hand.length >= (issuer.characterType === 'HADA_AL_CUBO' ? 4 : 2)}
+                    disabled={issuer.hand.length >= getMaxHandSize(issuer)}
                     onClick={() => onTransferCard?.(index)}
                     className="w-full p-3 rounded-xl border border-cyan-500/40 bg-cyan-950/40 hover:bg-cyan-900/60 disabled:opacity-40 text-left"
                   >
