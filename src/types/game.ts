@@ -184,6 +184,7 @@ export interface PlayerState {
   abilityCooldownRemaining: number;
   isEliminated: boolean;
   activeMorphCharacter?: CharacterType | null;
+  activeMorphRound?: number; // Última ronda en la que Cambiaformas aplicó Mimetismo.
   guardingAllyId?: number | null; // Aliado cuya próxima agresión será interceptada por Gladiacubon.
   interceptionAvailableRound?: number; // Primera ronda en la que puede volver a activar Intercepción.
   teamId?: number;
