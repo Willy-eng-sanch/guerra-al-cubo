@@ -1150,11 +1150,6 @@ export default function App() {
     // 3. Resolve Damage & Shield Barrier
     let finalDamage = isPerfectBlock ? 0 : modifiedAttackDamage;
 
-    if (defenderHero === CharacterType.CUBITO_DE_HIELO && target.abilityCooldownRemaining > 0 && finalDamage > 0) {
-      finalDamage = Math.max(0, finalDamage - 1);
-      addLog(`¡Coraza de Escarcha! ${target.name} reduce en 1 el daño recibido mientras Congelamiento está en enfriamiento.`);
-    }
-
     if (!isPerfectBlock && target.preparedStance?.id === 35) {
       finalDamage = 0;
       addLog(`${target.name} se desvanece en su Humo de Vape preparado!`);
@@ -1163,6 +1158,11 @@ export default function App() {
     if (finalDamage === 1 && target.equippedWeapons.some(w => w.id === 4)) {
       finalDamage = 0;
       addLog(`La Chaqueta de Cuero de ${target.name} anuló el daño de 1.`);
+    }
+
+    if (defenderHero === CharacterType.CUBITO_DE_HIELO && target.abilityCooldownRemaining > 0 && finalDamage > 0) {
+      finalDamage = Math.max(0, finalDamage - 1);
+      addLog(`¡Coraza de Escarcha! ${target.name} reduce en 1 el daño recibido mientras Congelamiento está en enfriamiento.`);
     }
 
     if (defenderHero === CharacterType.GLADIACUBON && finalDamage >= 3) {
@@ -1942,8 +1942,8 @@ export default function App() {
         addLog(`${actor.name} usó Suministro Mágico: robó dos cartas y debe entregar una a un compañero.`, true, actor.name);
       }
     } else if (hero === CharacterType.CUBITO_DE_HIELO) {
-      const target = players.find(p => p.id === targetId && !p.isEliminated && p.id !== actor.id);
-      if (!target) return;
+      const target = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
+      if (!target || (actor.teamId !== undefined && target.teamId !== undefined && actor.teamId === target.teamId)) return;
       sound.playStanceActivate();
       setPlayers(prev =>
         prev.map(p => {
@@ -1954,8 +1954,8 @@ export default function App() {
       );
       addLog(`¡${actor.name} usó [Congelación Glacial] sobre ${target.name}! Pierde turno y bloqueos.`, true);
     } else if (hero === CharacterType.PIRATA) {
-      const target = players.find(p => p.id === targetId && !p.isEliminated && p.id !== actor.id);
-      if (!target) return;
+      const target = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
+      if (!target || (actor.teamId !== undefined && target.teamId !== undefined && actor.teamId === target.teamId)) return;
       sound.playStanceActivate();
       const opposingTeamId = actor.teamId === 1 ? 2 : actor.teamId === 2 ? 1 : null;
       if (opposingTeamId !== null && target.teamId !== opposingTeamId) return;
