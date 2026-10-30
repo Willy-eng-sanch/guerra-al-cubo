@@ -284,6 +284,14 @@ export default function App() {
             : player.hand.length < getMaxHandSize(player) ? [...player.hand, selectedCard] : player.hand
         };
       }));
+      // A perfect-block reaction can be waiting behind this modal; keep its snapshot in sync.
+      setReactionPlayer(prev => {
+        if (!prev || prev.id !== offer.playerId) return prev;
+        const hasInitial = prev.hand.some(card => card.uid === offer.initialCard.uid);
+        return hasInitial
+          ? { ...prev, hand: prev.hand.map(card => card.uid === offer.initialCard.uid ? selectedCard : card) }
+          : prev;
+      });
     }
     setDiscardPile(prev => [...prev, discardedCard]);
     setTramcubosoCardChoices(prev => prev.slice(1));
