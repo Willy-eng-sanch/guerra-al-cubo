@@ -943,16 +943,22 @@ export default function App() {
         const target = (targetId ? players.find(p => p.id === targetId && !p.isEliminated && p.id !== actorId) : null) ||
                        players.find(p => !p.isEliminated && p.id !== actorId && (!opposingTeam || p.teamId === opposingTeam));
         if (target) {
+          const coverageGuardian = findGladiacubonCovering(players, target.id);
+          const damageRecipient = coverageGuardian || target;
           setPlayers(prev => prev.map(p => {
             if (p.id === actorId) {
               return { ...p, damageDealt: (p.damageDealt || 0) + 1 };
             }
-            if (p.id !== target.id) return p;
+            if (p.id !== damageRecipient.id) return p;
             const newHp = Math.max(0, p.hp - 1);
             return { ...p, hp: newHp, isEliminated: newHp <= 0 };
           }));
-          addLog(`⚡ ¡Sinergia Kaboom de ${heroDef.displayName}! Dispara una chispa explosiva de 1 daño a ${target.name}.`, true, actor.name);
-          addFloatingText(target.id, "-1 DAÑO KABOOM", "#f97316");
+          if (coverageGuardian) {
+            addLog(`⚡ ¡Sinergia Kaboom! La cobertura de ${coverageGuardian.name} recibe el daño ineludible destinado a ${target.name}.`, true, coverageGuardian.name);
+          } else {
+            addLog(`⚡ ¡Sinergia Kaboom de ${heroDef.displayName}! Dispara una chispa explosiva de 1 daño a ${target.name}.`, true, actor.name);
+          }
+          addFloatingText(damageRecipient.id, "-1 DAÑO KABOOM", "#f97316");
           sound.playPunchHit();
         }
         break;
