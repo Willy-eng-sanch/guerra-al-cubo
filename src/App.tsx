@@ -1611,7 +1611,7 @@ export default function App() {
     } else if (hero === CharacterType.CUBICULA) {
       const target = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
       if (!target || actor.actionPoints <= 0) return;
-      addLog(` ${actor.name} activa [Festín Sangriento] contra ${target.name}. Si inflige al menos 3 de daño efectivo, recuperará esa cantidad de HP.`.trim(), true, actor.name);
+      addLog(`${actor.name} activa [Festín Sangriento] contra ${target.name}. Si inflige al menos 3 de daño efectivo, recuperará esa cantidad de HP.`, true, actor.name);
       handleAttack(target.id, true);
     } else if (hero === CharacterType.FLAUCUBISTA_DESAFINADO) {
       // La apuesta del Flaucubista es una excepción explícita: usa D5, no el D6 general.
