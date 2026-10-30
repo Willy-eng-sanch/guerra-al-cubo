@@ -981,12 +981,28 @@ export default function App() {
   ) => {
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || attacker.isFrozen) return;
-    const target = players.find(p => p.id === targetId);
-    if (!target || target.isEliminated || target.hp <= 0 || target.id === attacker.id) return;
-    if (attacker.cubinarcaOrder?.kind === 'ATTACK_TARGET' && attacker.cubinarcaOrder.attackTargetId !== target.id) {
+    const intendedTarget = players.find(p => p.id === targetId);
+    if (!intendedTarget || intendedTarget.isEliminated || intendedTarget.hp <= 0 || intendedTarget.id === attacker.id) return;
+    if (attacker.cubinarcaOrder?.kind === 'ATTACK_TARGET' && attacker.cubinarcaOrder.attackTargetId !== intendedTarget.id) {
       addLog(`Discordia obliga a ${attacker.name} a atacar a ${players.find(player => player.id === attacker.cubinarcaOrder?.attackTargetId)?.name ?? 'su objetivo señalado'}.`);
       return;
     }
+
+    // A live Gladiacubon covering this ally becomes the actual defender and rolls its own die.
+    const coveringGladiacubon = players.find(player =>
+      player.id !== attacker.id &&
+      player.guardingAllyId === intendedTarget.id &&
+      !player.isEliminated &&
+      player.hp > 0 &&
+      (player.activeMorphCharacter || player.characterType) === CharacterType.GLADIACUBON
+    ) || null;
+    const target = coveringGladiacubon || intendedTarget;
+    const wasInterceptedByGladiacubon = Boolean(coveringGladiacubon);
+    if (wasInterceptedByGladiacubon) {
+      addLog(`¡Intercepción! ${coveringGladiacubon.name} intercepta el ataque dirigido a ${intendedTarget.name} y realizará la tirada de bloqueo con su propio dado.`, true, coveringGladiacubon.name);
+      addFloatingText(coveringGladiacubon.id, `¡INTERCEPCIÓN POR ${intendedTarget.name.toUpperCase()}!`, "#60a5fa");
+    }
+
     const secondaryTarget = secondaryTargetId === undefined
       ? null
       : players.find(p => p.id === secondaryTargetId) || null;
