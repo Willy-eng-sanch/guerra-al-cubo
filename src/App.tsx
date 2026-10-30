@@ -1137,6 +1137,14 @@ export default function App() {
       }
     }
 
+    if (wasInterceptedByGladiacubon) {
+      if (isPerfectBlock) {
+        addLog(`¡Cobertura cumplida! ${target.name} consiguió el Bloqueo Perfecto usando su propio dado y protegió a ${intendedTarget.name}. La cobertura queda liberada.`, true, target.name);
+      } else {
+        addLog(`La cobertura de ${target.name} sobre ${intendedTarget.name} continúa activa: aún debe conseguir un Bloqueo Perfecto para liberarla.`, false, target.name);
+      }
+    }
+
     // Special Face 6 Effect check for Defender
     if (defenderRolls.includes(6)) {
       if (!target.isBot) {
@@ -1501,6 +1509,7 @@ export default function App() {
                   hand: newHand,
                   preparedStance: updatedTargetStance,
                   shieldBarrier: targetBarrierRemaining,
+                  guardingAllyId: wasInterceptedByGladiacubon && isPerfectBlock ? null : p.guardingAllyId,
                   isEliminated: newHp <= 0,
                   perfectBlocks: (p.perfectBlocks || 0) + (isPerfectBlock ? 1 : 0),
                   cardsDrawn: (p.cardsDrawn || 0) + defenderDrawResult.drawnCount
