@@ -37,6 +37,9 @@ import { OnlineLobbyScreen } from './screens/OnlineLobbyScreen';
 import { DiceSpecialChoiceModal } from './components/DiceSpecialChoiceModal';
 import { CombatClashData } from './components/CartoonCombatClash';
 
+const getCharacterMaxHp = (characterType: CharacterType): number =>
+  characterType === CharacterType.CUBOGRO ? 25 : 20;
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<CurrentScreen>(CurrentScreen.TITLE);
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.QUICK_BATTLE);
@@ -219,8 +222,8 @@ export default function App() {
         id: (i * 2) + 1,
         name: `Tú: ${CHARACTERS[pHero].displayName.slice(0, 8)}`,
         characterType: pHero,
-        hp: 20,
-        maxHp: 20,
+        hp: getCharacterMaxHp(pHero),
+        maxHp: getCharacterMaxHp(pHero),
         actionPoints: 2,
         hand: [], // Empieza sin cartas en mano
         equippedWeapons: pWeapons,
@@ -247,8 +250,8 @@ export default function App() {
         id: (i * 2) + 2,
         name: `Rival: ${CHARACTERS[rHero].displayName.slice(0, 7)}`,
         characterType: rHero,
-        hp: 20,
-        maxHp: 20,
+        hp: getCharacterMaxHp(rHero),
+        maxHp: getCharacterMaxHp(rHero),
         actionPoints: 2,
         hand: [], // Empieza sin cartas en mano
         equippedWeapons: rWeapons,
@@ -307,8 +310,8 @@ export default function App() {
       id: 1,
       name: `Tú (${CHARACTERS[chosenHero].displayName.slice(0, 8)})`,
       characterType: chosenHero,
-      hp: 20,
-      maxHp: 20,
+      hp: getCharacterMaxHp(chosenHero),
+      maxHp: getCharacterMaxHp(chosenHero),
       actionPoints: 2,
       hand: [], // Empieza sin cartas
       equippedWeapons: p1Weapons,
@@ -335,8 +338,8 @@ export default function App() {
         id: i,
         name: `Bot ${i} (${CHARACTERS[botHero].displayName.slice(0, 7)})`,
         characterType: botHero,
-        hp: 20,
-        maxHp: 20,
+        hp: getCharacterMaxHp(botHero),
+        maxHp: getCharacterMaxHp(botHero),
         actionPoints: 2,
         hand: [], // Empieza sin cartas
         equippedWeapons: bWeapons,
@@ -393,8 +396,8 @@ export default function App() {
       id: 1,
       name: `Tú (${CHARACTERS[chosenHero].displayName.slice(0, 8)})`,
       characterType: chosenHero,
-      hp: 20,
-      maxHp: 20,
+      hp: getCharacterMaxHp(chosenHero),
+      maxHp: getCharacterMaxHp(chosenHero),
       actionPoints: 2,
       hand: [], // Empieza sin cartas
       equippedWeapons: pWeapons,
@@ -419,8 +422,8 @@ export default function App() {
       id: 2,
       name: `JEFE: ${CHARACTERS[bossHero].displayName.slice(0, 7)}`,
       characterType: bossHero,
-      hp: 20,
-      maxHp: 20,
+      hp: getCharacterMaxHp(bossHero),
+      maxHp: getCharacterMaxHp(bossHero),
       actionPoints: 2,
       hand: [], // Empieza sin cartas
       equippedWeapons: bossWeapons,
@@ -445,8 +448,8 @@ export default function App() {
         id: 3 + idx,
         name: `Esbirro: ${CHARACTERS[mHero].displayName.slice(0, 7)}`,
         characterType: mHero,
-        hp: 20,
-        maxHp: 20,
+        hp: getCharacterMaxHp(mHero),
+        maxHp: getCharacterMaxHp(mHero),
         actionPoints: 2,
         hand: [], // Empieza sin cartas
         equippedWeapons: mWeapons,
@@ -504,8 +507,8 @@ export default function App() {
         id: i,
         name: `Jugador ${i} (${CHARACTERS[hero].displayName.slice(0, 7)})`,
         characterType: hero,
-        hp: 20,
-        maxHp: 20,
+        hp: getCharacterMaxHp(hero),
+        maxHp: getCharacterMaxHp(hero),
         actionPoints: 2,
         hand: [], // Empieza sin cartas
         equippedWeapons: hWeapons,
@@ -583,8 +586,8 @@ export default function App() {
         id: (i * 2) + 1,
         name: `Tú: ${CHARACTERS[pHero].displayName.slice(0, 8)}`,
         characterType: pHero,
-        hp: 20,
-        maxHp: 20,
+        hp: getCharacterMaxHp(pHero),
+        maxHp: getCharacterMaxHp(pHero),
         actionPoints: 2,
         hand: [],
         equippedWeapons: pWeapons,
@@ -611,8 +614,8 @@ export default function App() {
         id: (i * 2) + 2,
         name: `${rivalName}: ${CHARACTERS[rHero].displayName.slice(0, 7)}`,
         characterType: rHero,
-        hp: 20,
-        maxHp: 20,
+        hp: getCharacterMaxHp(rHero),
+        maxHp: getCharacterMaxHp(rHero),
         actionPoints: 2,
         hand: [],
         equippedWeapons: rWeapons,
