@@ -1365,7 +1365,7 @@ export default function App() {
       defenderRolls,
       defenderFinalVal,
       isPerfectBlock,
-      damageDealt: primaryDamageTotal,
+      damageDealt: damageAssignedToPrimaryRecipient,
       phase: 'RUSH_TO_CENTER'
     });
 
@@ -1382,12 +1382,16 @@ export default function App() {
         if (isPerfectBlock) {
           sound.playPerfectBlock();
           addFloatingText(target.id, "¡SUPER-BLOQUEO HEROICO!", "#00e5ff");
-        } else if (primaryDamageTotal > 0) {
+        } else if (damageAssignedToPrimaryRecipient > 0) {
           sound.playPunchHit();
-          addFloatingText(target.id, `-${primaryDamageTotal} HP`, "#ff1744");
+          addFloatingText(
+            target.id,
+            `-${damageAssignedToPrimaryRecipient} HP${secondarySharesPrimaryRecipient ? " · COBERTURA" : ""}`,
+            secondarySharesPrimaryRecipient ? "#60a5fa" : "#ff1744"
+          );
         } else {
           sound.playCartoonBoing(260);
-          addFloatingText(target.id, "¡EVADIDO!", "#7c4dff");
+          addFloatingText(target.id, "¡EVADIDO!", "#7c3aed");
         }
         if (useDracubonBreath && secondaryTarget && secondaryDamageRecipient && !secondarySharesPrimaryRecipient) {
           addFloatingText(
@@ -1425,7 +1429,7 @@ export default function App() {
             defenderRolls,
             defenderFinalVal,
             isPerfectBlock,
-            damageDealt: primaryDamageTotal,
+            damageDealt: damageAssignedToPrimaryRecipient,
             attackerName: attacker.name,
             defenderName: useDracubonBreath ? `${target.name} (bloquea por ambos)` : target.name
           });
@@ -1496,7 +1500,7 @@ export default function App() {
               addLog(`¡Llamarada Doble preparada! El próximo Aliento de ${target.name} hará 1 de daño ineludible a ambos objetivos.`, true, target.name);
             }
           } else if (primaryDamageTotal > 0) {
-            narrator.narrateAttack(attacker.name, target.name, primaryDamageTotal, attackerFinalVal);
+            narrator.narrateAttack(attacker.name, target.name, damageAssignedToPrimaryRecipient, attackerFinalVal);
           }
 
           // Resolve card rewards outside the React state updater to keep deck mutations deterministic.
