@@ -1,38 +1,42 @@
 # Auditoría de habilidades y pasivas — Guerra Cúbita
 
-Fecha: 2026-10-30
-Rama auditada: `fix/flaucubista-d5-y-auditoria`
+Fecha de actualización: 2026-10-30
 
-## Hallazgos confirmados
+Esta auditoría distingue entre mecánicas que ya están en `main`, cambios propuestos en PR abiertos y aspectos que todavía necesitan revisión o pruebas de partida.
 
-### Habilidades activas
-En `src/App.tsx`, el controlador `handleUseHeroAbility` tiene ejecución específica para:
-- **Cubito de Hielo:** aplica `isFrozen` y enfriamiento 2.
-- **Pirata:** aplica `isFrozen` y enfriamiento 3; debe revisarse que la duración coincida con la pérdida de turno descrita.
-- **Flaucubista Desafinado:** apuesta, daño de área y autocastigo. Esta rama corrige la tirada a D5 real (1–5).
+## Mecánicas integradas en main
 
-Los otros diez personajes pasan por una rama genérica que solo registra el nombre y la descripción de su habilidad, sin ejecutar el efecto descrito: Hada al Cubo, Cubogro, Gladiacubon, Dracubon, Racubitero, Cubinarca, Cubinja, Cubícula, Tramcuboso y Cambiaformas.
+- **Flaucubista Desafinado (PR #3):** apuesta D5 real (1–5) y bono Acorde Violento para el siguiente ataque. La aplicación del bono a fuentes de daño que no sean ataques normales todavía requiere auditoría.
+- **Hada al Cubo (PR #4):** Suministro Mágico roba dos cartas, permite conservar una y transferir la otra a un aliado elegible.
+- **Dracubon (PR #6 y PR #8):** Escamas refleja daño cuando su tirada de defensa coincide; Aliento golpea a dos rivales con una sola tirada de ataque y una tirada de bloqueo designada para ambos. Llamarada Doble potencia el siguiente Aliento después de un Bloqueo Perfecto.
+- **Cubícula (PR #7):** Festín Sangriento y Reflejo de Noche integrados en el flujo de ataque, daño reflejado, barreras, curación y eliminación.
 
-### Pasivas: lógica parcial encontrada
-- **Cubogro:** duplicación de tiradas de ataque 1–3 codificada. Restricción de no usar/robar/equipar cartas pendiente de verificación.
-- **Tramcuboso:** doble tirada implementada en ataque y defensa; selección de carta doble al robar pendiente.
-- **Cubinja:** suma dos dados en ataque y tiene ranuras ilimitadas en varios puntos. Prohibición de trucos y regla especial de bloqueo pendientes de verificación.
-- **Gladiacubon:** reducción de daño >=3 y ranura extra aparecen implementadas.
-- **Racubitero:** robo al causar daño y robo doble con resultado 5 aparecen implementados.
-- **Hada al Cubo:** límite de mano y dos ranuras contemplados; Suministro Mágico pendiente.
-- **Flaucubista:** Acorde Violento ya acumula +1 al siguiente ataque cuando recibe daño de combate o autodaño por fallar su apuesta. El bono se consume al realizar el siguiente ataque. Daños causados por otras fuentes todavía requieren una auditoría global.
-- **Dracubon, Cubinarca, Cubícula y Cambiaformas:** sus efectos de ficha no se encontraron conectados en el flujo de ataque/defensa inspeccionado.
+## Cambio propuesto en PR #9 — Cubinarca
 
-## Corrección incluida
-La apuesta del Flaucubista selecciona y tira valores 1–5. Se elimina el disparador de Cara Especial 6 para esta habilidad. El D6 general del combate permanece intacto.
+La rama `feat/cubinarca-orden-imperativa` implementa:
 
-## Próximas tareas
-1. Extender y probar Acorde Violento para todas las fuentes de daño, no solo ataques y autodaño de la apuesta.
-2. Implementar Suministro Mágico con selección de aliado y transferencia real de carta.
-3. Resolver Dracubon, Cubícula y Cambiaformas con pruebas de ataque/bloqueo.
-4. Implementar órdenes y penalización de Cubinarca con estado persistente.
-5. Verificar duración de congelación de Cubito y Mal de Ojo del Pirata.
-6. Añadir pruebas automatizadas de daño, bloqueo perfecto, límites de mano y turnos.
+- Orden tras infligir daño efectivo o conseguir un Bloqueo Perfecto.
+- Tres órdenes posibles: atacar a un jugador vivo (incluidos aliados), transferir una carta de la víctima a Cubinarca o desequipar un arma.
+- Discordia mantiene la orden pendiente y deshabilita el bloqueo si la víctima desobedece o termina su turno sin cumplir.
+- La penalización se retira cuando se cumple la orden.
+- Modal para jugadores humanos y obediencia automática de bots.
 
-## Limitación
-Auditoría estática del código remoto. No se ejecutaron build, lint, pruebas automatizadas ni partidas en navegador/Android. No considerar el juego validado en runtime.
+**Interpretación aplicada:** “transferir 1 carta global” se implementó como entregar una carta de la mano de la víctima a Cubinarca. Al desequipar un arma, vuelve a la mano si hay espacio; de lo contrario se envía al descarte. Este PR no está fusionado en `main`.
+
+## Pendientes de auditoría
+
+- **Cubogro:** verificar la restricción de no usar, robar ni equipar cartas además de la modificación de tiradas bajas.
+- **Tramcuboso:** verificar la selección entre dos cartas al robar y los casos de empate en defensa.
+- **Cubinja:** verificar la prohibición de cartas Truco y la regla especial de Bloqueo Perfecto que no mitiga daño.
+- **Gladiacubon:** comprobar la reducción de daño y la ranura adicional en todos los caminos de equipamiento.
+- **Racubitero:** comprobar el robo por daño y el robo doble cuando aparece un 5 en todos los modos.
+- **Cambiaformas:** comprobar transformación, duración, reversión y conservación de estado.
+- **Cubito de Hielo y Pirata:** verificar exactamente cuánto dura la congelación/anulación de turno y sus efectos sobre bloqueo.
+- **Flaucubista:** revisar que Acorde Violento acumule bono con todas las fuentes de daño definidas por las reglas.
+- **Órdenes de Cubinarca:** probar órdenes en combate individual, escuadras, contra bots y entre jugadores humanos una vez que PR #9 se integre.
+
+## Verificación técnica
+
+Las revisiones de PR #3, #4, #6, #7, #8 y #9 han incluido inspección estática y despliegues de vista previa cuando estaban disponibles. Esto no equivale a una partida manual ni confirma todas las interacciones de combate.
+
+Todavía se necesita ejecutar `npm run lint`, `npm run build` y una batería de pruebas manuales que cubra daño, barreras, Bloqueo Perfecto, órdenes pendientes, límites de mano, armas y cambios de turno. No considerar el juego validado funcionalmente hasta completar esas pruebas.
