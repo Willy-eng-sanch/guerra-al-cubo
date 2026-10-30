@@ -819,6 +819,14 @@ export default function App() {
       modifiedAttackDamage += 1; // Batería de coche
     }
 
+    const flaucubistaBonus = attackerHero === CharacterType.FLAUCUBISTA_DESAFINADO
+      ? (attacker.nextAttackBonus || 0)
+      : 0;
+    modifiedAttackDamage += flaucubistaBonus;
+    if (flaucubistaBonus > 0) {
+      addLog(`Acorde Violento añade +${flaucubistaBonus} al próximo ataque de ${attacker.name}.`);
+    }
+
     // 2. Pre-calculate Defender Roll
     const defenderHero = target.activeMorphCharacter || target.characterType;
     const defenderRolls: number[] = [];
@@ -1054,7 +1062,10 @@ export default function App() {
                   actionPoints: Math.max(0, p.actionPoints - 1),
                   hand: newHand,
                   damageDealt: (p.damageDealt || 0) + finalDamage,
-                  cardsDrawn: (p.cardsDrawn || 0) + attackerDrawnCount
+                  cardsDrawn: (p.cardsDrawn || 0) + attackerDrawnCount,
+                  nextAttackBonus: attackerHero === CharacterType.FLAUCUBISTA_DESAFINADO && flaucubistaBonus > 0
+                    ? 0
+                    : p.nextAttackBonus
                 };
               } else if (p.id === target.id) {
                 const newHand = [...p.hand];
@@ -1081,6 +1092,9 @@ export default function App() {
                 return {
                   ...p,
                   hp: Math.min(p.maxHp, newHp + defenderHpHeal),
+                  nextAttackBonus: defenderHero === CharacterType.FLAUCUBISTA_DESAFINADO && finalDamage > 0
+                    ? (p.nextAttackBonus || 0) + 1
+                    : p.nextAttackBonus,
                   hand: newHand,
                   preparedStance: updatedTargetStance,
                   shieldBarrier: targetBarrierRemaining,
@@ -1414,21 +1428,12 @@ export default function App() {
       );
       addLog(`¡${actor.name} usó [Abordaje Cúbico] sobre ${target.name}! Anula su próximo turno.`, true);
     } else if (hero === CharacterType.FLAUCUBISTA_DESAFINADO) {
-      const chosenNum = extraOption || Math.floor(Math.random() * 6) + 1;
-      const roll = Math.floor(Math.random() * 6) + 1;
+      // La apuesta del Flaucubista es una excepción explícita: usa D5, no el D6 general.
+      const chosenNum = extraOption && extraOption >= 1 && extraOption <= 5
+        ? extraOption
+        : Math.floor(Math.random() * 5) + 1;
+      const roll = Math.floor(Math.random() * 5) + 1;
       sound.playDiceRoll();
-
-      if (roll === 6) {
-        if (!actor.isBot) {
-          setSpecialSixChoice({
-            playerId: actor.id,
-            actorName: actor.name,
-            isAttacker: true
-          });
-        } else {
-          handleApplySixChoice(actor.id, actor.hand.length < 2 ? 'CARD' : 'EXTRA_TURN');
-        }
-      }
 
       if (roll === chosenNum) {
         const affectedEnemies = players.filter(p => p.id !== actor.id && !p.isEliminated).length;
@@ -1452,7 +1457,12 @@ export default function App() {
       } else {
         const selfDamage = Math.max(1, Math.floor(roll / 2));
         setPlayers(prev =>
-          prev.map(p => (p.id === actor.id ? { ...p, hp: Math.max(0, p.hp - selfDamage), isEliminated: Math.max(0, p.hp - selfDamage) <= 0 } : p))
+          prev.map(p => (p.id === actor.id ? {
+            ...p,
+            hp: Math.max(0, p.hp - selfDamage),
+            nextAttackBonus: (p.nextAttackBonus || 0) + 1,
+            isEliminated: Math.max(0, p.hp - selfDamage) <= 0
+          } : p))
         );
         addLog(`Flaucubista desafinó (apostó ${chosenNum}, sacó ${roll}) y sufre ${selfDamage} de daño.`);
       }
