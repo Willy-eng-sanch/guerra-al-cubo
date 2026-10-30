@@ -68,6 +68,7 @@ export default function App() {
     actorName: string;
     isAttacker: boolean;
   } | null>(null);
+  const [supplyMagicOffer, setSupplyMagicOffer] = useState<{ actorId: number; cards: GameCard[] } | null>(null);
   const matchIntroCompletedRef = useRef(true);
 
   const speedMultiplier = isFastSpeed ? 0.5 : 1;
@@ -1397,13 +1398,120 @@ export default function App() {
     applyCardClassSynergy(attacker.id, card, targetId);
   };
 
+  // Complete Hada al Cubo's card transfer after the human selects a card and ally.
+  const handleConfirmSupplyMagic = (cardIndex: number, allyId: number) => {
+    const offer = supplyMagicOffer;
+    if (!offer || offer.cards.length !== 2 || cardIndex < 0 || cardIndex > 1) return;
+
+    const actor = players.find(p => p.id === offer.actorId);
+    const ally = players.find(p => p.id === allyId);
+    const allyHero = ally?.activeMorphCharacter || ally?.characterType;
+    if (
+      !actor ||
+      !ally ||
+      actor.id === ally.id ||
+      actor.teamId === undefined ||
+      ally.teamId !== actor.teamId ||
+      actor.isEliminated ||
+      actor.hp <= 0 ||
+      ally.isEliminated ||
+      ally.hp <= 0 ||
+      allyHero === CharacterType.CUBOGRO ||
+      actor.hand.length >= getMaxHandSize(actor) ||
+      ally.hand.length >= getMaxHandSize(ally)
+    ) {
+      return;
+    }
+
+    const giftedCard = offer.cards[cardIndex];
+    const retainedCard = offer.cards[1 - cardIndex];
+    setPlayers(prev => prev.map(p => {
+      if (p.id === actor.id) return { ...p, hand: [...p.hand, retainedCard] };
+      if (p.id === ally.id) return { ...p, hand: [...p.hand, giftedCard] };
+      return p;
+    }));
+    setSupplyMagicOffer(null);
+    addLog(`¡Suministro Mágico! ${actor.name} entregó [${giftedCard.name}] a ${ally.name} y conservó [${retainedCard.name}].`, true, actor.name);
+    addFloatingText(actor.id, "+1 CARTA CONSERVADA", "#34d399");
+    addFloatingText(ally.id, "+1 CARTA RECIBIDA", "#22d3ee");
+    sound.playStanceActivate();
+  };
+
   // Hero Ability
   const handleUseHeroAbility = (targetId?: number, extraOption?: number) => {
     const actor = currentTurnPlayer;
     if (!actor || actor.abilityCooldownRemaining > 0) return;
     const hero = actor.activeMorphCharacter || actor.characterType;
 
-    if (hero === CharacterType.CUBITO_DE_HIELO) {
+    if (hero === CharacterType.HADA_AL_CUBO) {
+      const availableAllies = actor.teamId !== undefined
+        ? players.filter(p => {
+            const allyHero = p.activeMorphCharacter || p.characterType;
+            return p.id !== actor.id &&
+              p.teamId === actor.teamId &&
+              !p.isEliminated &&
+              p.hp > 0 &&
+              allyHero !== CharacterType.CUBOGRO &&
+              p.hand.length < getMaxHandSize(p);
+          })
+        : [];
+
+      if (
+        actor.actionPoints <= 0 ||
+        actor.hand.length >= getMaxHandSize(actor) ||
+        availableAllies.length === 0
+      ) return;
+
+      const firstDraw = drawCardFromDeck(deck, discardPile);
+      if (!firstDraw.card) {
+        addLog("Suministro Mágico no pudo activarse: el mazo y el descarte están vacíos.");
+        return;
+      }
+      const secondDraw = drawCardFromDeck(firstDraw.newDeck, firstDraw.newDiscard);
+      if (!secondDraw.card) {
+        addLog("Suministro Mágico necesita dos cartas; no hay suficientes cartas disponibles.");
+        return;
+      }
+
+      const drawnCards = [firstDraw.card, secondDraw.card];
+      setDeck(secondDraw.newDeck);
+      setDiscardPile(secondDraw.newDiscard);
+      triggerDeckAnimation();
+      sound.playCardDraw();
+
+      if (actor.isBot) {
+        const ally = availableAllies[Math.floor(Math.random() * availableAllies.length)];
+        const giftIndex = Math.floor(Math.random() * drawnCards.length);
+        const giftedCard = drawnCards[giftIndex];
+        const retainedCard = drawnCards[1 - giftIndex];
+        setPlayers(prev => prev.map(p => {
+          if (p.id === actor.id) {
+            return {
+              ...p,
+              actionPoints: Math.max(0, p.actionPoints - 1),
+              hand: [...p.hand, retainedCard],
+              cardsDrawn: (p.cardsDrawn || 0) + 2
+            };
+          }
+          if (p.id === ally.id) return { ...p, hand: [...p.hand, giftedCard] };
+          return p;
+        }));
+        addLog(`Suministro Mágico automático: ${actor.name} entregó [${giftedCard.name}] a ${ally.name} y conservó [${retainedCard.name}].`, true, actor.name);
+        addFloatingText(actor.id, "+1 CARTA", "#34d399");
+        addFloatingText(ally.id, "+1 CARTA RECIBIDA", "#22d3ee");
+      } else {
+        setPlayers(prev => prev.map(p => p.id === actor.id
+          ? {
+              ...p,
+              actionPoints: Math.max(0, p.actionPoints - 1),
+              cardsDrawn: (p.cardsDrawn || 0) + 2
+            }
+          : p
+        ));
+        setSupplyMagicOffer({ actorId: actor.id, cards: drawnCards });
+        addLog(`${actor.name} usó Suministro Mágico: robó dos cartas y debe entregar una a un compañero.`, true, actor.name);
+      }
+    } else if (hero === CharacterType.CUBITO_DE_HIELO) {
       const target = players.find(p => p.id === targetId && !p.isEliminated && p.id !== actor.id);
       if (!target) return;
       sound.playStanceActivate();
@@ -1620,6 +1728,27 @@ export default function App() {
     if (!activePlayer || !activePlayer.isBot || activePlayer.isEliminated || activePlayer.hp <= 0) return;
 
     const timer = setTimeout(() => {
+      const activeHero = activePlayer.activeMorphCharacter || activePlayer.characterType;
+      const botHasSupplyAlly = activePlayer.teamId !== undefined && players.some(p => {
+        const allyHero = p.activeMorphCharacter || p.characterType;
+        return p.id !== activePlayer.id &&
+          p.teamId === activePlayer.teamId &&
+          !p.isEliminated &&
+          p.hp > 0 &&
+          allyHero !== CharacterType.CUBOGRO &&
+          p.hand.length < getMaxHandSize(p);
+      });
+      if (
+        activeHero === CharacterType.HADA_AL_CUBO &&
+        activePlayer.actionPoints === 2 &&
+        activePlayer.hand.length < getMaxHandSize(activePlayer) &&
+        botHasSupplyAlly &&
+        deck.length + discardPile.length >= 2
+      ) {
+        handleUseHeroAbility();
+        return;
+      }
+
       // 1. Try to equip weapon or prepare stance
       const weapon = activePlayer.hand.find(c => c.type === CardType.WEAPON);
       const stance = activePlayer.hand.find(
@@ -1735,6 +1864,8 @@ export default function App() {
           players={players}
           currentTurnPlayer={currentTurnPlayer}
           selectedTargetId={selectedTargetId}
+          supplyMagicOffer={supplyMagicOffer}
+          onConfirmSupplyMagic={handleConfirmSupplyMagic}
           deckCount={deck.length}
           discardPileCount={discardPile.length}
           log={log}
