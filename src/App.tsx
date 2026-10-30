@@ -944,7 +944,7 @@ export default function App() {
 
     const oldHp = target.hp;
     const newHp = Math.max(0, oldHp - finalDamage);
-    const attackerNewHp = Math.max(0, attacker.hp - reflectedDamageTaken);
+    const attackerNewHp = Math.min(attacker.maxHp, Math.max(0, attacker.hp - reflectedDamageTaken) + attackerLifeStealHeal);
 
     // =========================================================================
     // MULTI-STAGE CARTOON CLASH ANIMATION SEQUENCE
