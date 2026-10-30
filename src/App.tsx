@@ -2439,7 +2439,10 @@ export default function App() {
       )}
       {!specialSixChoice && tramcubosoCardChoices.length > 0 && (
         <TramcubosoCardChoiceModal
-          offer={tramcubosoCardChoices[0]}
+          playerName={tramcubosoCardChoices[0].playerName}
+          initialCard={tramcubosoCardChoices[0].initialCard}
+          alternativeCard={tramcubosoCardChoices[0].alternativeCard}
+          source={tramcubosoCardChoices[0].source}
           onChoose={resolveTramcubosoCardChoice}
         />
       )}
