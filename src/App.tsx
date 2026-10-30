@@ -1072,9 +1072,18 @@ export default function App() {
 
     // 2. Pre-calculate Defender Roll
     const defenderHero = target.activeMorphCharacter || target.characterType;
-    const pirateMalDeOjoTriggered = defenderHero === CharacterType.PIRATA &&
-      attacker.id !== target.id &&
-      (attacker.teamId === undefined || target.teamId === undefined || attacker.teamId !== target.teamId);
+    const isEnemyOfAttacker = (defender: PlayerState) =>
+      attacker.id !== defender.id &&
+      (attacker.teamId === undefined || defender.teamId === undefined || attacker.teamId !== defender.teamId);
+    const pirateCurseSources = [
+      ...(defenderHero === CharacterType.PIRATA && isEnemyOfAttacker(target) ? [target.name] : []),
+      ...(secondaryTarget &&
+          (secondaryTarget.activeMorphCharacter || secondaryTarget.characterType) === CharacterType.PIRATA &&
+          isEnemyOfAttacker(secondaryTarget)
+        ? [secondaryTarget.name]
+        : [])
+    ];
+    const pirateMalDeOjoTriggered = pirateCurseSources.length > 0;
     const defenderRolls: number[] = [];
     let defenderFinalVal: number;
     let isPerfectBlock = false;
@@ -1089,10 +1098,10 @@ export default function App() {
       isPerfectBlock = false;
       addLog(`Discordia: ${target.name} no puede lanzar dado de bloqueo hasta obedecer la orden pendiente.`, true);
     } else if (target.isFrozen) {
-      const r = Math.floor(Math.random() * 6) + 1;
-      defenderRolls.push(r);
-      defenderFinalVal = r;
-      isPerfectBlock = false; // Congelado no puede lanzar dado de bloqueo.
+      // Congelamiento Glacial removes the defender's block roll for this turn.
+      defenderFinalVal = 0;
+      isPerfectBlock = false;
+      addLog(`${target.name} está congelado y no puede lanzar dado de bloqueo esta ronda.`, true, target.name);
     } else if (hasReflejoFelino || hasElComodin) {
       defenderFinalVal = attackerFinalVal;
       defenderRolls.push(defenderFinalVal);
@@ -1245,7 +1254,7 @@ export default function App() {
       Math.max(0, attacker.hp - reflectedDamageTaken) + attackerLifeStealHeal
     );
     if (pirateMalDeOjoTriggered) {
-      addLog(`¡Mal de Ojo Represivo! ${target.name} maldice a ${attacker.name}: perderá su próximo turno completo por atacarlo directamente.`, true, target.name);
+      addLog(`¡Mal de Ojo Represivo! ${pirateCurseSources.join(" y ")} maldice(n) a ${attacker.name}: perderá su próximo turno completo por atacarlo(s) directamente.`, true, pirateCurseSources[0]);
     }
 
     // Consume posture
