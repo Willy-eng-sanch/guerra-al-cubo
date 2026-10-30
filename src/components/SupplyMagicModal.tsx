@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GameCard, PlayerState, getMaxHandSize } from '../types/game';
+import { CardType, GameCard, PlayerState, getMaxHandSize } from '../types/game';
 import { Gift, Check, Users, Package } from 'lucide-react';
 
 interface SupplyMagicModalProps {
@@ -55,7 +55,7 @@ export const SupplyMagicModal: React.FC<SupplyMagicModalProps> = ({
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[10px] font-black uppercase text-emerald-300">
-                        {card.type === 'WEAPON' ? 'Arma / Fierro' : 'Truco'}
+                        {card.type === CardType.WEAPON ? 'Arma / Fierro' : 'Truco'}
                       </span>
                       {selected && <Check className="w-4 h-4 text-emerald-300" />}
                     </div>
