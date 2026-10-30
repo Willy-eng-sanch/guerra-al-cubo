@@ -25,7 +25,7 @@ La rama `feat/cubinarca-orden-imperativa` implementa:
 
 ## Pendientes de auditoría
 
-- **Cubogro:** verificar la restricción de no usar, robar ni equipar cartas además de la modificación de tiradas bajas.
+- **Cubogro (este PR):** se centralizan los límites de mano y equipo en cero; se bloquean el robo de la Cara Especial 6, las recompensas de cartas, el uso de trucos, la preparación de posturas y el equipamiento normal o por reacción. La pasiva queda pendiente de lint/build y pruebas de partida.
 - **Tramcuboso:** verificar la selección entre dos cartas al robar y los casos de empate en defensa.
 - **Cubinja:** verificar la prohibición de cartas Truco y la regla especial de Bloqueo Perfecto que no mitiga daño.
 - **Gladiacubon:** comprobar la reducción de daño y la ranura adicional en todos los caminos de equipamiento.
