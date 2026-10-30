@@ -47,10 +47,14 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
 
         {/* Informative Explanation */}
         <div className="bg-cyan-950/40 border border-cyan-500/40 p-3 rounded-2xl text-xs text-cyan-200 leading-relaxed">
-          <p>
-            ¡Tu Bloqueo Perfecto abrió una <b className="text-white">ventana de reacción inmediata</b>!
-            Robaste del Mazo Global y tienes la oportunidad de <b className="text-yellow-300">equipar un arma</b>, <b className="text-purple-300">activar un truco</b> o <b className="text-cyan-300">preparar una postura</b> ahora mismo sin costo de turno.
-          </p>
+          {player.cannotUseCardsThisTurn ? (
+            <p>Congelamiento Glacial: este turno no puedes usar cartas, ni siquiera durante una reacción.</p>
+          ) : (
+            <p>
+              ¡Tu Bloqueo Perfecto abrió una <b className="text-white">ventana de reacción inmediata</b>!
+              Robaste del Mazo Global y tienes la oportunidad de <b className="text-yellow-300">equipar un arma</b>, <b className="text-purple-300">activar un truco</b> o <b className="text-cyan-300">preparar una postura</b> ahora mismo sin costo de turno.
+            </p>
+          )}
         </div>
 
         {/* Hand Cards Available to React With */}
@@ -113,6 +117,7 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
                     <div className="mt-2.5 pt-1.5 border-t border-neutral-800">
                       {isWeapon ? (
                         <button
+                          disabled={player.cannotUseCardsThisTurn}
                           onClick={() => onEquipReaction(card.id)}
                           className="w-full py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs rounded-lg tracking-wider transition-all flex items-center justify-center gap-1 shadow"
                         >
@@ -121,6 +126,7 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
                         </button>
                       ) : isStance ? (
                         <button
+                          disabled={player.cannotUseCardsThisTurn}
                           onClick={() => onPrepareReaction(card.id)}
                           className="w-full py-1.5 bg-cyan-400 hover:bg-cyan-300 text-black font-black text-xs rounded-lg tracking-wider transition-all flex items-center justify-center gap-1 shadow"
                         >
@@ -129,6 +135,7 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
                         </button>
                       ) : (
                         <button
+                          disabled={player.cannotUseCardsThisTurn}
                           onClick={() => onActivateReaction(card.id)}
                           className="w-full py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-black text-xs rounded-lg tracking-wider transition-all flex items-center justify-center gap-1 shadow"
                         >
