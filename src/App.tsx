@@ -1034,6 +1034,10 @@ export default function App() {
     const secondaryTarget = secondaryTargetId === undefined
       ? null
       : players.find(p => p.id === secondaryTargetId) || null;
+    const secondaryCoverGuardian = secondaryTarget
+      ? findGladiacubonCovering(players, secondaryTarget.id)
+      : null;
+    const secondaryDamageRecipient = secondaryCoverGuardian || secondaryTarget;
 
     // 1. Pre-calculate Attacker Roll
     const attackerHero = attacker.activeMorphCharacter || attacker.characterType;
@@ -1215,33 +1219,36 @@ export default function App() {
       addFloatingText(target.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
     }
 
-    // Aliento usa la misma tirada y el mismo resultado de bloqueo para ambos rivales;
-    // cada objetivo conserva sus propias reducciones y su propia Barrera de Escudo.
+    // Aliento comparte una tirada de bloqueo, pero cada impacto se asigna a su
+    // destinatario real. Si el segundo objetivo está cubierto, el daño pasa a Gladiacubon.
     let secondaryFinalDamage = 0;
-    let secondaryBarrierRemaining = secondaryTarget?.shieldBarrier || 0;
-    let updatedSecondaryStance = secondaryTarget?.preparedStance ?? null;
-    if (useDracubonBreath && secondaryTarget && !isPerfectBlock) {
+    let secondaryBarrierRemaining = secondaryDamageRecipient?.shieldBarrier || 0;
+    let updatedSecondaryStance = secondaryDamageRecipient?.preparedStance ?? null;
+    if (useDracubonBreath && secondaryTarget && secondaryDamageRecipient && !isPerfectBlock) {
       secondaryFinalDamage = modifiedAttackDamage;
-      if (secondaryTarget.preparedStance?.id === 35) {
+      if (secondaryDamageRecipient.preparedStance?.id === 35) {
         secondaryFinalDamage = 0;
         updatedSecondaryStance = null;
-        addLog(`${secondaryTarget.name} se desvanece en su Humo de Vape preparado!`);
+        addLog(`${secondaryDamageRecipient.name} se desvanece en su Humo de Vape preparado!`);
       }
-      if (secondaryFinalDamage === 1 && secondaryTarget.equippedWeapons.some(w => w.id === 4)) {
+      if (secondaryFinalDamage === 1 && secondaryDamageRecipient.equippedWeapons.some(w => w.id === 4)) {
         secondaryFinalDamage = 0;
-        addLog(`La Chaqueta de Cuero de ${secondaryTarget.name} anuló el daño de 1.`);
+        addLog(`La Chaqueta de Cuero de ${secondaryDamageRecipient.name} anuló el daño de 1.`);
       }
-      const secondaryHero = secondaryTarget.activeMorphCharacter || secondaryTarget.characterType;
+      const secondaryHero = secondaryDamageRecipient.activeMorphCharacter || secondaryDamageRecipient.characterType;
       if (secondaryHero === CharacterType.GLADIACUBON && secondaryFinalDamage >= 3) {
         secondaryFinalDamage = Math.max(1, Math.floor(secondaryFinalDamage / 2));
-        addLog(`Gladiacubon de ${secondaryTarget.name} mitiga el impacto a ${secondaryFinalDamage} de daño.`);
+        addLog(`Coraza de ${secondaryDamageRecipient.name} mitiga el impacto a ${secondaryFinalDamage} de daño.`);
       }
       if (secondaryFinalDamage > 0 && secondaryBarrierRemaining > 0) {
         const absorbed = Math.min(secondaryBarrierRemaining, secondaryFinalDamage);
         secondaryBarrierRemaining -= absorbed;
         secondaryFinalDamage -= absorbed;
-        addLog(`🛡️ ¡La Barrera de Escudo de ${secondaryTarget.name} absorbió ${absorbed} de daño! (Quedan: ${secondaryBarrierRemaining})`);
-        addFloatingText(secondaryTarget.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
+        addLog(`🛡️ ¡La Barrera de Escudo de ${secondaryDamageRecipient.name} absorbió ${absorbed} de daño! (Quedan: ${secondaryBarrierRemaining})`);
+        addFloatingText(secondaryDamageRecipient.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
+      }
+      if (secondaryCoverGuardian) {
+        addLog(`¡Intercepción! ${secondaryCoverGuardian.name} recibe el daño de Aliento dirigido a ${secondaryTarget.name}.`, true, secondaryCoverGuardian.name);
       }
     }
 
