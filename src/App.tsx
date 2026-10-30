@@ -1595,7 +1595,7 @@ export default function App() {
                   return latestPlayers;
                 } else {
                   const weapon = defender.hand.find(c => c.type === CardType.WEAPON);
-                  const stance = defender.hand.find(c => c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE);
+                  const stance = isCubinjaHero(defender) ? undefined : defender.hand.find(c => c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE);
                   const maxSlots = getMaxWeaponSlots(defender);
 
                   if (weapon && maxSlots > 0 && defender.equippedWeapons.length < maxSlots) {
@@ -1668,7 +1668,7 @@ export default function App() {
   };
 
   const handleActivateReaction = (cardId: number) => {
-    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0) return;
+    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0 || isCubinjaHero(reactionPlayer)) return;
     const card = reactionPlayer.hand.find(
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION
     );
@@ -1695,7 +1695,7 @@ export default function App() {
   };
 
   const handlePrepareReaction = (cardId: number) => {
-    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0) return;
+    if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0 || isCubinjaHero(reactionPlayer)) return;
     const card = reactionPlayer.hand.find(
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
     );
@@ -1768,7 +1768,7 @@ export default function App() {
   // Prepare Stance
   const handlePrepareStance = (cardId: number) => {
     const attacker = currentTurnPlayer;
-    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
+    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || isCubinjaHero(attacker)) return;
     const card = attacker.hand.find(
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
     );
@@ -1802,7 +1802,7 @@ export default function App() {
   // Play Action Trick
   const handlePlayActionTrick = (cardId: number, targetId?: number) => {
     const attacker = currentTurnPlayer;
-    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
+    if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || isCubinjaHero(attacker)) return;
     const card = attacker.hand.find(
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION
     );
@@ -2302,7 +2302,7 @@ export default function App() {
 
       // 1. Try to equip weapon or prepare stance
       const weapon = activePlayer.hand.find(c => c.type === CardType.WEAPON);
-      const stance = activePlayer.hand.find(
+      const stance = isCubinjaHero(activePlayer) ? undefined : activePlayer.hand.find(
         c => c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
       );
 
