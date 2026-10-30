@@ -1208,6 +1208,16 @@ export default function App() {
     }
 
     let reflectedDamageTaken = dracubonReflectedTaken + cubiculaReflectDamage;
+    // Coraza applies to every incoming damage instance, including reflected damage.
+    if (attackerHero === CharacterType.GLADIACUBON && reflectedDamageTaken >= 3) {
+      const damageBeforeCoraza = reflectedDamageTaken;
+      reflectedDamageTaken = Math.max(1, Math.floor(reflectedDamageTaken / 2));
+      addLog(
+        `¡Coraza! Gladiacubon ${attacker.name} reduce el daño reflejado de ${damageBeforeCoraza} a ${reflectedDamageTaken}.`,
+        true,
+        attacker.name
+      );
+    }
     if (reflectedDamageTaken > 0 && attackerBarrierRemaining > 0) {
       const absorbed = Math.min(attackerBarrierRemaining, reflectedDamageTaken);
       attackerBarrierRemaining -= absorbed;
