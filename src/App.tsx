@@ -37,7 +37,6 @@ import { ArenaScreen } from './screens/ArenaScreen';
 import { DraftScreen } from './screens/DraftScreen';
 import { OnlineLobbyScreen } from './screens/OnlineLobbyScreen';
 import { DiceSpecialChoiceModal } from './components/DiceSpecialChoiceModal';
-import { CubinarcaOrderModal } from './components/CubinarcaOrderModal';
 import { CombatClashData } from './components/CartoonCombatClash';
 
 const getCharacterMaxHp = (characterType: CharacterType): number =>
@@ -900,7 +899,7 @@ export default function App() {
     }
     if (attacker.cubinarcaOrder?.kind === 'ATTACK_TARGET') {
       setPlayers(prev => prev.map(player => player.id === attacker.id
-        ? { ...player, cubinarcaOrder: null, blocksDisabledByOrder: false }
+        ? { ...player, cubinarcaOrder: null, blocksDisabledByOrder: false, cubinarcaOrderDefiedThisTurn: false }
         : player
       ));
     }
