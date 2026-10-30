@@ -194,6 +194,7 @@ export interface PlayerState {
   nextBreathBonus?: boolean; // Llamarada Doble: +1 de daño ineludible a ambos en el siguiente Aliento
   cubinarcaOrder?: CubinarcaOrder | null; // Orden pendiente dictada por Cubinarca
   blocksDisabledByOrder?: boolean; // Penalización de Discordia mientras desobedezca
+  cubinarcaOrderDefiedThisTurn?: boolean; // Oculta el aviso hasta el siguiente turno tras desobedecer
 }
 
 export function getMaxHandSize(player: PlayerState): number {
