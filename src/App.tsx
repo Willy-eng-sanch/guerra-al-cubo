@@ -1056,6 +1056,7 @@ export default function App() {
       secondaryTargetId !== undefined &&
       (attackerHero !== CharacterType.DRACUBON ||
         !secondaryTarget ||
+        secondaryTarget.id === intendedTarget.id ||
         secondaryTarget.id === target.id ||
         secondaryTarget.id === attacker.id ||
         secondaryTarget.isEliminated ||
@@ -2202,7 +2203,12 @@ export default function App() {
           const incomingDamage = damageByRecipient.get(p.id) || 0;
           if (incomingDamage <= 0) return p;
           const nextHp = Math.max(0, p.hp - incomingDamage);
-          return { ...p, hp: nextHp, isEliminated: nextHp <= 0 };
+          return {
+            ...p,
+            hp: nextHp,
+            isEliminated: nextHp <= 0,
+            guardingAllyId: nextHp <= 0 ? null : p.guardingAllyId
+          };
         }));
         interceptedDamageByGuardian.forEach((entry, guardianId) => {
           addLog(
@@ -2210,7 +2216,7 @@ export default function App() {
             true,
             entry.name
           );
-          addFloatingText(guardianId, `+${entry.protectedNames.length * 2} DAÑO INTERCEPTADO`, "#60a5fa");
+          addFloatingText(guardianId, `INTERCEPCIÓN ×${entry.protectedNames.length}`, "#60a5fa");
         });
         damageByRecipient.forEach((damage, recipientId) => {
           addFloatingText(recipientId, `-${damage} DAÑO INELUDIBLE`, "#ff1744");
