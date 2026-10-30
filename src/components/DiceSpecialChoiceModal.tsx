@@ -6,15 +6,18 @@ import { sound } from '../audio/soundManager';
 interface DiceSpecialChoiceModalProps {
   actorName: string;
   isAttacker: boolean;
+  canDrawCard: boolean;
   onChoose: (choice: 'CARD' | 'EXTRA_TURN') => void;
 }
 
 export const DiceSpecialChoiceModal: React.FC<DiceSpecialChoiceModalProps> = ({
   actorName,
   isAttacker,
+  canDrawCard,
   onChoose
 }) => {
   const handleSelect = (choice: 'CARD' | 'EXTRA_TURN') => {
+    if (choice === 'CARD' && !canDrawCard) return;
     if (choice === 'CARD') {
       sound.playCardDraw();
     } else {
@@ -50,8 +53,9 @@ export const DiceSpecialChoiceModal: React.FC<DiceSpecialChoiceModalProps> = ({
         <div className="grid grid-cols-1 gap-3 my-5">
           {/* Option 1: Draw Card */}
           <button
+            disabled={!canDrawCard}
             onClick={() => handleSelect('CARD')}
-            className="p-4 rounded-2xl bg-gradient-to-r from-[#17263c] to-[#1e3454] hover:from-[#213554] hover:to-[#284672] active:scale-[0.98] border-2 border-cyan-400/70 text-left flex items-center gap-3.5 transition-all shadow-lg cursor-pointer group"
+            className={`p-4 rounded-2xl bg-gradient-to-r from-[#17263c] to-[#1e3454] hover:from-[#213554] hover:to-[#284672] active:scale-[0.98] border-2 border-cyan-400/70 text-left flex items-center gap-3.5 transition-all shadow-lg group ${canDrawCard ? 'cursor-pointer' : 'opacity-45 cursor-not-allowed grayscale'}`}
           >
             <div className="w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
               <Layers className="w-6 h-6" />
@@ -66,7 +70,9 @@ export const DiceSpecialChoiceModal: React.FC<DiceSpecialChoiceModalProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-neutral-300 mt-0.5">
-                Roba de inmediato una carta de truco o arma para tu mano.
+                {canDrawCard
+                  ? 'Roba de inmediato una carta de truco o arma para tu mano.'
+                  : 'Piel de Piedra impide robar cartas. Elige el punto de acción adicional.'}
               </p>
             </div>
           </button>
