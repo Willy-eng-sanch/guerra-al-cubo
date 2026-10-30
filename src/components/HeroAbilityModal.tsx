@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CharacterDef, CharacterType, PlayerState } from '../types/game';
+import { CharacterDef, CharacterType, PlayerState, CubiculaMode } from '../types/game';
 import { Sparkles, Zap, Shield, X, Check, Dices, Target, Snowflake, Info, Swords } from 'lucide-react';
 
 interface HeroAbilityModalProps {
@@ -8,7 +8,7 @@ interface HeroAbilityModalProps {
   validTargets: PlayerState[];
   selectedTargetId: number | null;
   onClose: () => void;
-  onActivate: (targetId?: number, extraOption?: number) => void;
+  onActivate: (targetId?: number, extraOption?: number, mode?: CubiculaMode) => void;
   canUseSupplyMagic: boolean;
   supplyMagicUnavailableReason: string;
   validAllies: PlayerState[];
@@ -35,6 +35,8 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
       : (selectedTargetId || (validTargets.length > 0 ? validTargets[0].id : null))
   );
   const [fluteBet, setFluteBet] = useState<number>(3);
+  const [cubiculaMode, setCubiculaMode] = useState<CubiculaMode>('DRAIN');
+  const [transferAmount, setTransferAmount] = useState<number>(3);
   const [dracubonBlockerId, setDracubonBlockerId] = useState<number | null>(() =>
     validTargets.find(target => target.id === selectedTargetId)?.id ?? validTargets[0]?.id ?? null
   );
@@ -48,21 +50,31 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   const isDracubon = heroType === CharacterType.DRACUBON;
   const isGladiacubon = heroType === CharacterType.GLADIACUBON;
   const isRacubitero = heroType === CharacterType.RACUBITERO;
-  const abilityTargets = isGladiacubon ? validAllies : validTargets;
+  const isCubogro = heroType === CharacterType.CUBOGRO;
+  const isCubicula = heroType === CharacterType.CUBICULA;
+  const isCubinja = heroType === CharacterType.CUBINJA;
+  const isTramcuboso = heroType === CharacterType.TRAMCUBOSO;
+  const abilityTargets = isGladiacubon || isCubicula || isCubinja ? validAllies : validTargets;
 
   // Does this ability require choosing a rival or an ally?
-  const needsTarget = heroType === CharacterType.CUBITO_DE_HIELO || heroType === CharacterType.PIRATA || heroType === CharacterType.CUBICULA || isGladiacubon;
-  const needsActionPoint = heroType === CharacterType.CUBICULA || isDracubon || isGladiacubon;
+  const needsTarget = heroType === CharacterType.CUBITO_DE_HIELO || heroType === CharacterType.PIRATA || isCubicula || isGladiacubon || isCubogro || isCubinja;
+  const needsActionPoint = isCubicula || isDracubon || isGladiacubon || isCubogro || isCubinja || isRacubitero;
   // Does this ability have a betting mechanic?
   const isFlute = heroType === CharacterType.FLAUCUBISTA_DESAFINADO;
   const isSupplyMagic = heroType === CharacterType.HADA_AL_CUBO;
 
-  const canActivate = !isRacubitero && !isCooldown && !isFrozen &&
+  const cubiculaModesUsed = player.cubiculaModesUsedThisTurn || [];
+  const isCubogroReady = !isCubogro || ((player.cubogroAbilityCharges || 0) > 0);
+  const hasCubinjaEquipment = !isCubinja || player.equippedWeapons.length > 0;
+  const isTramcubosoManualActivation = !isTramcuboso;
+  const canActivate = !isCooldown && !isFrozen && isTramcubosoManualActivation &&
     (!needsTarget || (currentTargetId !== null && abilityTargets.some(target => target.id === currentTargetId))) &&
     (!isDracubon || (validTargets.length >= 2 && dracubonBlockerId !== null && dracubonSecondTargetId !== null && dracubonBlockerId !== dracubonSecondTargetId)) &&
     (!needsActionPoint || player.actionPoints > 0) &&
     (!isGladiacubon || canUseInterception) &&
-    (!isSupplyMagic || canUseSupplyMagic);
+    (!isSupplyMagic || canUseSupplyMagic) &&
+    isCubogroReady && hasCubinjaEquipment &&
+    (!isCubicula || !cubiculaModesUsed.includes(cubiculaMode));
 
   const handleConfirmActivate = () => {
     if (!canActivate) return;
@@ -73,7 +85,8 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
     }
     onActivate(
       needsTarget ? (currentTargetId || undefined) : undefined,
-      isFlute ? fluteBet : undefined
+      isCubicula ? transferAmount : isFlute ? fluteBet : undefined,
+      isCubicula ? cubiculaMode : undefined
     );
   };
 
@@ -147,7 +160,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
 
               {isCooldown ? (
                 <span className="bg-red-950 text-red-300 border border-red-700 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full">
-                  Recarga: {player.abilityCooldownRemaining} turno(s)
+                  Enfriamiento: {player.abilityCooldownRemaining} ronda(s)
                 </span>
               ) : isFrozen ? (
                 <span className="bg-cyan-950 text-cyan-300 border border-cyan-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -185,7 +198,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
 
           {isGladiacubon && (
             <div className="rounded-xl border border-blue-500/40 bg-blue-950/30 p-3 text-xs text-blue-100 space-y-1">
-              <p className="font-black text-blue-200">Intercepción · Coste: 1 AP</p>
+              <p className="font-black text-blue-200">Intercepción · Coste: 1 Cúbit</p>
               <p>El aliado elegido queda bajo Cobertura. El siguiente ataque dirigido a él será recibido por Gladiacubon, que lanzará su propio dado.</p>
               <p>La cobertura solo se libera cuando Gladiacubon consigue un Bloqueo Perfecto. Si falla, sigue protegiendo al mismo aliado.</p>
               <p>Tras activar, no puede volver a usarse durante la ronda siguiente y tampoco mientras exista una cobertura pendiente.</p>
@@ -200,8 +213,38 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
 
           {isRacubitero && (
             <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 p-3 text-xs text-amber-100 space-y-1">
-              <p className="font-black text-amber-200">Pasiva automática · sin coste de AP</p>
-              <p>Hurto Sigiloso roba al causar daño efectivo. En Bloqueo Perfecto se activan Vaciado de Bolsillo y Desarme en Cadena; no se usan desde este botón.</p>
+              <p className="font-black text-amber-200">Saqueo Colectivo · Coste: 1 Cúbit · Enfriamiento: 3 rondas</p>
+              <p>Lanza un D6. Con 6, reúne las cartas de la mano de todos los rivales para conservar hasta dos, repartir una a cada aliado con espacio y devolver el resto a la Pila General. Con 1–5, recibe ese número como daño.</p>
+            </div>
+          )}
+          {isCubogro && (
+            <div className="rounded-xl border border-red-500/40 bg-red-950/30 p-3 text-xs text-red-100 space-y-1">
+              <p className="font-black text-red-200">Paliza Demoledora · Coste: 1 Cúbit y 1 carga</p>
+              <p>Cargas disponibles: {player.cubogroAbilityCharges || 0}/2. Si no hay coincidencia exacta entre los dados, el objetivo pierde la mitad de sus HP actuales.</p>
+            </div>
+          )}
+          {isCubicula && (
+            <div className="rounded-xl border border-pink-500/40 bg-pink-950/30 p-3 text-xs text-pink-100 space-y-2">
+              <p className="font-black text-pink-200">Transfusión Nocturna · Coste: 1 Cúbit por modo</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" disabled={cubiculaModesUsed.includes('DRAIN')} onClick={() => setCubiculaMode('DRAIN')} className={`rounded-lg border p-2 font-black ${cubiculaMode === 'DRAIN' ? 'border-pink-300 bg-pink-500/20' : 'border-pink-900'} disabled:opacity-40`}>DRENAJE</button>
+                <button type="button" disabled={cubiculaModesUsed.includes('DONATE')} onClick={() => setCubiculaMode('DONATE')} className={`rounded-lg border p-2 font-black ${cubiculaMode === 'DONATE' ? 'border-pink-300 bg-pink-500/20' : 'border-pink-900'} disabled:opacity-40`}>DONACIÓN</button>
+              </div>
+              <label className="block">Cantidad: <b>{transferAmount} HP</b></label>
+              <input type="range" min={1} max={6} value={transferAmount} onChange={event => setTransferAmount(Number(event.target.value))} className="w-full" />
+              {cubiculaModesUsed.length > 0 && <p>Ya utilizaste {cubiculaModesUsed.join(' y ')} en este turno; el otro modo sigue disponible y ambos comparten el enfriamiento posterior.</p>}
+            </div>
+          )}
+          {isCubinja && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 p-3 text-xs text-amber-100 space-y-1">
+              <p className="font-black text-amber-200">Préstamo de Arsenal · Coste: 1 Cúbit · Enfriamiento: 2 rondas</p>
+              <p>Presta los efectos de todas tus armas al aliado elegido sin mover las cartas. Necesitas tener al menos un arma equipada.</p>
+            </div>
+          )}
+          {isTramcuboso && (
+            <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/30 p-3 text-xs text-emerald-100">
+              <p className="font-black text-emerald-200">Revolución de la Mesa · Coste: 1 Cúbit · Enfriamiento: 2 rondas</p>
+              <p>Se activa automáticamente desde la ventana posterior a la tirada inicial de un combate, nunca desde este botón.</p>
             </div>
           )}
 
@@ -308,7 +351,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
             <div className="bg-[#151c2b] border-2 border-cyan-500/50 p-4 rounded-xl space-y-2.5">
               <span className="text-xs font-black text-cyan-300 flex items-center gap-1.5">
                 <Target className="w-4 h-4 text-cyan-400" />
-                <span>{isGladiacubon ? "Selecciona al aliado que quieres escudar:" : "Selecciona el objetivo para tu habilidad:"}</span>
+                <span>{isGladiacubon ? "Selecciona al aliado que quieres escudar:" : isCubicula ? "Selecciona al aliado que recibe la transferencia:" : isCubinja ? "Selecciona al aliado que recibirá el préstamo:" : "Selecciona el objetivo para tu habilidad:"}</span>
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -390,7 +433,13 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                 : isDracubon && validTargets.length < 2
                 ? 'SE NECESITAN 2 RIVALES VIVOS'
                 : needsActionPoint && player.actionPoints <= 0
-                ? 'SIN ACCIONES (0 AP)'
+                ? 'SIN CÚBITS'
+                : isCubogro && !isCubogroReady
+                ? 'SIN CARGAS'
+                : isCubinja && !hasCubinjaEquipment
+                ? 'EQUIPA UN ARMA PRIMERO'
+                : isTramcuboso
+                ? 'SE ACTIVA DESPUÉS DE LA TIRADA'
                 : '¡ACTIVAR HABILIDAD AHORA!'}
             </span>
           </button>

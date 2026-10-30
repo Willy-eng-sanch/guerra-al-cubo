@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, Trash2, Sparkles, ShieldCheck } from 'lucide-react';
+import { Layers, Sparkles, ShieldCheck } from 'lucide-react';
 
 interface GlobalDeckViewProps {
   deckCount: number;
@@ -18,7 +18,7 @@ export const GlobalDeckView: React.FC<GlobalDeckViewProps> = ({
     <div className={`flex flex-wrap items-center justify-between gap-3 bg-[#131722]/95 border-2 border-[#2b374f] p-2.5 px-4 rounded-2xl shadow-xl backdrop-blur-md select-none ${className}`}>
       {/* 3D Visual Deck Stack */}
       <div className="flex items-center gap-3">
-        <div className="relative group cursor-pointer" title="Mazo Global compartido de 60 cartas">
+        <div className="relative group cursor-pointer" title="Pila General compartida">
           {/* Deck card shadow layers */}
           <div className="absolute top-1 left-1 w-11 h-15 bg-[#1a1318] rounded-lg border border-[#3b2a32] shadow-sm transform rotate-3" />
           <div className="absolute top-0.5 left-0.5 w-11 h-15 bg-[#2a1b24] rounded-lg border border-[#4d3240] shadow-sm transform -rotate-2" />
@@ -56,7 +56,7 @@ export const GlobalDeckView: React.FC<GlobalDeckViewProps> = ({
         <div className="text-left">
           <div className="flex items-center gap-2">
             <span className="text-xs md:text-sm font-black text-white font-bungee">
-              MAZO GLOBAL
+              PILA GENERAL
             </span>
             <span className="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.2 rounded-full border border-purple-700 font-mono font-bold">
               {deckCount} / 60 cartas
@@ -81,18 +81,8 @@ export const GlobalDeckView: React.FC<GlobalDeckViewProps> = ({
         </div>
       </div>
 
-      {/* Discard Pile */}
-      <div className="flex items-center gap-2 pl-3 border-l border-[#273248]">
-        <div className="w-8 h-11 rounded-lg bg-[#181c26] border border-dashed border-neutral-600 flex flex-col items-center justify-center text-neutral-500">
-          <Trash2 className="w-3 h-3" />
-          <span className="text-[8px] font-mono font-bold text-neutral-400 mt-0.5">
-            {discardPileCount}
-          </span>
-        </div>
-        <div className="text-[10px] text-neutral-400 leading-tight">
-          <span className="block font-bold text-neutral-300">Descartes</span>
-          <span>{discardPileCount} usadas</span>
-        </div>
+      <div className="text-[10px] text-emerald-300 font-semibold text-right max-w-[180px]">
+        Las cartas usadas y retiradas regresan a esta misma pila.
       </div>
     </div>
   );

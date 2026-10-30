@@ -74,7 +74,8 @@ interface ArenaScreenProps {
   onEquipWeapon: (cardId: number) => void;
   onPrepareStance: (cardId: number) => void;
   onPlayActionTrick: (cardId: number, targetId?: number) => void;
-  onUseHeroAbility: (targetId?: number, extraOption?: number) => void;
+  onUseHeroAbility: (targetId?: number, extraOption?: number, mode?: 'DRAIN' | 'DONATE') => void;
+  onTransferTrick: (cardId: number) => void;
   onEndTurn: () => void;
   onDismissDiceRoll: () => void;
   onToggleSpeed: () => void;
@@ -118,6 +119,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   onPrepareStance,
   onPlayActionTrick,
   onUseHeroAbility,
+  onTransferTrick,
   onEndTurn,
   onDismissDiceRoll,
   onToggleSpeed,
@@ -187,7 +189,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
     ? players.find(p => p.id === currentTurnPlayer.guardingAllyId)?.name
     : null;
   const interceptionUnavailableReason = !currentTurnPlayer || currentTurnPlayer.actionPoints <= 0
-    ? 'Necesitas 1 Punto de Acción para activar Intercepción.'
+    ? 'Necesitas 1 Cúbit para activar Intercepción.'
     : currentTurnPlayer.isFrozen
     ? 'No puedes activar habilidades mientras estás congelado.'
     : hasPendingInterception
@@ -209,16 +211,16 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
       })
     : [];
   const hasSupplyMagicHandSpace = Boolean(currentTurnPlayer && currentTurnPlayer.actionPoints > 0 && currentTurnPlayer.hand.length < getMaxHandSize(currentTurnPlayer));
-  const hasTwoSupplyCards = deckCount + discardPileCount >= 2;
+  const hasTwoSupplyCards = deckCount >= 2;
   const canUseSupplyMagic = hasSupplyMagicHandSpace && supplyMagicAllies.length > 0 && hasTwoSupplyCards;
   const supplyMagicUnavailableReason = !currentTurnPlayer || currentTurnPlayer.actionPoints <= 0
-    ? 'Necesitas al menos 1 Punto de Acción para usar Suministro Mágico.'
+    ? 'Necesitas al menos 1 Cúbit para usar Suministro Mágico.'
     : currentTurnPlayer.hand.length >= getMaxHandSize(currentTurnPlayer)
     ? 'Deja al menos un espacio libre en la mano de Hada al Cubo para conservar la carta que no entregues.'
     : supplyMagicAllies.length === 0
     ? 'Necesitas un compañero vivo de tu mismo escuadrón con espacio disponible en su mano.'
     : !hasTwoSupplyCards
-    ? 'Se necesitan dos cartas disponibles entre el mazo y el descarte.'
+    ? 'Se necesitan dos cartas disponibles en la Pila General.'
     : '';
   const supplyMagicActor = supplyMagicOffer ? players.find(p => p.id === supplyMagicOffer.actorId) : null;
 
@@ -494,7 +496,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                   TUS CARTAS EN MANO ({currentTurnPlayer.hand.length}/{getMaxHandSize(currentTurnPlayer)})
                 </span>
                 <span className="text-yellow-400">
-                  Acciones restantes: <b>{currentTurnPlayer.actionPoints} AP</b>
+                  Cúbits disponibles: <b>{currentTurnPlayer.actionPoints} Cúbits</b>
                 </span>
               </div>
               {isCubinjaTurn && (
@@ -600,10 +602,11 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                             </button>
                           ) : isCubinjaTurn ? (
                             <button
-                              disabled
-                              className="w-full py-1 bg-neutral-800 text-neutral-500 font-black text-[10px] rounded-lg tracking-wider cursor-not-allowed"
+                              disabled={currentTurnPlayer.actionPoints <= 0}
+                              onClick={() => onTransferTrick(card.id)}
+                              className="w-full py-1 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-40 text-white font-black text-[10px] rounded-lg tracking-wider"
                             >
-                              PROHIBIDO
+                              TRANSFERIR · 1 CÚBIT
                             </button>
                           ) : isStance ? (
                             <button

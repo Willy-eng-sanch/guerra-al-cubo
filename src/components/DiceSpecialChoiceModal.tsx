@@ -72,7 +72,7 @@ export const DiceSpecialChoiceModal: React.FC<DiceSpecialChoiceModalProps> = ({
               <p className="text-[11px] text-neutral-300 mt-0.5">
                 {canDrawCard
                   ? 'Roba de inmediato una carta de truco o arma para tu mano.'
-                  : 'Piel de Piedra impide robar cartas. Elige el punto de acción adicional.'}
+                  : 'Piel de Piedra impide robar cartas. Elige el Cúbit adicional.'}
               </p>
             </div>
           </button>
@@ -88,16 +88,16 @@ export const DiceSpecialChoiceModal: React.FC<DiceSpecialChoiceModalProps> = ({
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <span className="font-black text-white text-sm group-hover:text-amber-300 transition-colors">
-                  TURNO EXTRA (+1 ACCIÓN)
+                  ACCIÓN ADICIONAL (+1 CÚBIT)
                 </span>
                 <span className="text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-500/50 px-2 py-0.5 rounded-full">
-                  +1 PA
+                  +1 CÚBIT
                 </span>
               </div>
               <p className="text-[11px] text-neutral-300 mt-0.5">
                 {isAttacker
-                  ? 'Ganas 1 punto de acción adicional para volver a atacar o jugar cartas.'
-                  : 'Ganas 1 acción extra que se sumará al inicio de tu siguiente turno.'}
+                  ? 'Ganas 1 Cúbit adicional para volver a atacar o jugar cartas.'
+                  : 'Ganas 1 acción extra que se añade a tus Cúbits disponibles.'}
               </p>
             </div>
           </button>

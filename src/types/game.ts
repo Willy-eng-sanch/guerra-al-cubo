@@ -167,6 +167,8 @@ export interface CubinarcaOrder {
   attackTargetId?: number;
 }
 
+export type CubiculaMode = 'DRAIN' | 'DONATE';
+
 export interface PlayerState {
   id: number;
   name: string;
@@ -198,6 +200,11 @@ export interface PlayerState {
   cubinarcaOrder?: CubinarcaOrder | null; // Orden pendiente dictada por Cubinarca
   blocksDisabledByOrder?: boolean; // Penalización de Discordia mientras desobedezca
   cubinarcaOrderDefiedThisTurn?: boolean; // Oculta el aviso hasta el siguiente turno tras desobedecer
+  cubogroAbilityCharges?: number; // Paliza Demoledora: máximo 2 cargas.
+  cubiculaModesUsedThisTurn?: CubiculaMode[]; // Modos usados en el turno actual.
+  borrowedEquipmentEffects?: GameCard[]; // Efectos prestados temporalmente por Cubinja.
+  borrowedEquipmentSourceId?: number | null;
+  morphFormsUsed?: CharacterType[]; // Formas ya copiadas durante la partida.
 }
 
 export function getMaxHandSize(player: PlayerState): number {
@@ -212,7 +219,7 @@ export function getMaxWeaponSlots(player: PlayerState): number {
   const activeChar = player.activeMorphCharacter || player.characterType;
   if (activeChar === CharacterType.CUBOGRO) return 0; // Piel de Piedra: no puede equipar armas.
   if (activeChar === CharacterType.CUBINJA) return 99;
-  if (activeChar === CharacterType.HADA_AL_CUBO || activeChar === CharacterType.GLADIACUBON) return 2;
+  if (activeChar === CharacterType.GLADIACUBON) return 2;
   return 1;
 }
 
