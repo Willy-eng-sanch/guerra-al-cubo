@@ -959,7 +959,12 @@ export default function App() {
             }
             if (p.id !== damageRecipient.id) return p;
             const newHp = Math.max(0, p.hp - 1);
-            return { ...p, hp: newHp, isEliminated: newHp <= 0 };
+            return {
+              ...p,
+              hp: newHp,
+              isEliminated: newHp <= 0,
+              guardingAllyId: newHp <= 0 ? null : p.guardingAllyId
+            };
           }));
           if (coverageGuardian) {
             addLog(`⚡ ¡Sinergia Kaboom! La cobertura de ${coverageGuardian.name} recibe el daño ineludible destinado a ${target.name}.`, true, coverageGuardian.name);
