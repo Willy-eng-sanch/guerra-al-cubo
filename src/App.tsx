@@ -1504,6 +1504,98 @@ export default function App() {
             attackerCardsToSteal = attackerRolls.includes(5) ? 2 : 1;
           }
 
+          // Racubitero's two defensive effects resolve on an actual Perfect Block.
+          // Vaciado de Bolsillo transfers up to two cards before Desarme en Cadena
+          // discards the attacker's remaining hand and performs its extra D6 roll.
+          const isRacubiteroPerfectBlock =
+            defenderHero === CharacterType.RACUBITERO && isPerfectBlock;
+          const racubiteroStolenCards: GameCard[] = [];
+          const racubiteroDiscardedCards: GameCard[] = [];
+          const racubiteroChainDisarmedPlayerIds = new Set<number>();
+          let attackerHandAfterRacubitero = [...attacker.hand];
+          let attackerWeaponsAfterRacubitero = [...attacker.equippedWeapons];
+          let racubiteroChainBonusDraws = 0;
+          let racubiteroChainRoll: number | null = null;
+
+          if (isRacubiteroPerfectBlock) {
+            const defenderFreeSlots = Math.max(
+              0,
+              getMaxHandSize(target) - target.hand.length
+            );
+            const cardsToPocket = Math.min(
+              2,
+              defenderFreeSlots,
+              attackerHandAfterRacubitero.length
+            );
+
+            for (let i = 0; i < cardsToPocket; i++) {
+              const randomIndex = Math.floor(Math.random() * attackerHandAfterRacubitero.length);
+              const [card] = attackerHandAfterRacubitero.splice(randomIndex, 1);
+              if (card) racubiteroStolenCards.push(card);
+            }
+
+            if (racubiteroStolenCards.length > 0) {
+              addLog(
+                `¡Vaciado de Bolsillo! ${target.name} roba ${racubiteroStolenCards.length} carta(s) al azar de ${attacker.name}.`,
+                true,
+                target.name
+              );
+              addFloatingText(target.id, `+${racubiteroStolenCards.length} CARTA(S) HURTADA(S)`, "#f59e0b");
+              sound.playCardDraw();
+            } else {
+              const reason = defenderFreeSlots === 0
+                ? "su mano está llena"
+                : `${attacker.name} no tiene cartas en la mano`;
+              addLog(`Vaciado de Bolsillo no puede transferir cartas: ${reason}.`, true, target.name);
+            }
+
+            // The attacker's remaining hand and every equipped weapon are discarded.
+            const remainingAttackerCards = [...attackerHandAfterRacubitero];
+            racubiteroDiscardedCards.push(...remainingAttackerCards, ...attackerWeaponsAfterRacubitero);
+            attackerHandAfterRacubitero = [];
+            attackerWeaponsAfterRacubitero = [];
+
+            addLog(
+              remainingAttackerCards.length > 0
+                ? `¡Desarme en Cadena! ${attacker.name} pierde las ${remainingAttackerCards.length} carta(s) que aún tenía en la mano; sus armas equipadas también van al descarte.`
+                : `¡Desarme en Cadena! ${attacker.name} pierde su mano restante; sus armas equipadas también van al descarte.`,
+              true,
+              target.name
+            );
+
+            sound.playDiceRoll();
+            racubiteroChainRoll = Math.floor(Math.random() * 6) + 1;
+            addLog(
+              `Racubitero relanza D6 por Desarme en Cadena: obtiene ${racubiteroChainRoll}.`,
+              true,
+              target.name
+            );
+            addFloatingText(target.id, `RELANZAMIENTO D6: ${racubiteroChainRoll}`, "#f59e0b");
+
+            if (racubiteroChainRoll === 5) {
+              const enemyPlayers = players.filter(player =>
+                player.id !== target.id &&
+                (target.teamId === undefined || player.teamId !== target.teamId)
+              );
+              let additionalDiscardCount = 0;
+
+              enemyPlayers.forEach(enemy => {
+                racubiteroChainDisarmedPlayerIds.add(enemy.id);
+                if (enemy.id === attacker.id) return; // Already emptied by the first part of the passive.
+                additionalDiscardCount += enemy.hand.length;
+                racubiteroDiscardedCards.push(...enemy.hand);
+              });
+
+              racubiteroChainBonusDraws = 2;
+              addLog(
+                `¡Desarme en Cadena culmina con un 5! Toda la mesa enemiga pierde la mano: ${additionalDiscardCount} carta(s) adicionales van al descarte. ${target.name} podrá robar hasta 2 cartas del Mazo Global, sujeto al espacio libre.`,
+                true,
+                target.name
+              );
+              addFloatingText(target.id, "¡CADENA COMPLETA: 5!", "#f59e0b");
+            }
+          }
+
           // Super-Bloqueo Heroico / Bloqueo Perfecto rewards for defender:
           let defenderCardsToAdd = 0;
           let defenderHpHeal = 0;
@@ -1521,7 +1613,16 @@ export default function App() {
               target.name
             );
           } else if (isPerfectBlock) {
-            defenderCardsToAdd = target.hand.length < getMaxHandSize(target) ? 1 : 0;
+            const defenderHandAfterVaciado = target.hand.length + racubiteroStolenCards.length;
+            const defenderFreeSlotsAfterVaciado = Math.max(
+              0,
+              getMaxHandSize(target) - defenderHandAfterVaciado
+            );
+            const standardPerfectBlockDraw = defenderFreeSlotsAfterVaciado > 0 ? 1 : 0;
+            defenderCardsToAdd = Math.min(
+              defenderFreeSlotsAfterVaciado,
+              standardPerfectBlockDraw + racubiteroChainBonusDraws
+            );
             defenderHpHeal = 2; // Recuperación heroica por Super-Bloqueo
             if (defenderCardsToAdd > 0) {
               triggerDeckAnimation();
@@ -1534,7 +1635,7 @@ export default function App() {
             }
             addLog(
               `🛡️⚡ ¡¡SUPER-BLOQUEO HEROICO!! ${target.name} igualó el número del atacante (${defenderFinalVal})! Anula el 100% del daño y desata su Superpoder [${targetHeroDef.signatureSuperpowerName}]: ${targetHeroDef.signatureSuperpowerDesc}! Recupera +${defenderHpHeal} HP${defenderCardsToAdd > 0
-                ? ' y roba 1 carta del Mazo Global.'
+                ? ` y puede robar hasta ${defenderCardsToAdd} carta(s) del Mazo Global.`
                 : getMaxHandSize(target) === 0
                 ? '. Piel de Piedra impide robar cartas.'
                 : ', pero no tiene espacio en la mano para robar.'}`,
@@ -1550,7 +1651,7 @@ export default function App() {
 
           // Resolve card rewards outside the React state updater to keep deck mutations deterministic.
           let currentDeckState = [...deck];
-          let currentDiscardState = [...discardPile];
+          let currentDiscardState = [...discardPile, ...racubiteroDiscardedCards];
           const prepareCombatDraws = (player: PlayerState, count: number, source: string) => {
             const cards: GameCard[] = [];
             const choices: TramcubosoCardChoice[] = [];
@@ -1600,7 +1701,7 @@ export default function App() {
           };
           const defenderAfterTheft: PlayerState = {
             ...target,
-            hand: targetHandAfterTheft
+            hand: [...targetHandAfterTheft, ...racubiteroStolenCards]
           };
           const attackerDrawSource = crossedMultiples.length > 0 ? "Umbral de vida" : "Recompensa de combate";
           const attackerDrawResult = prepareCombatDraws(attackerWithStolenCards, attackerCardsToAdd, attackerDrawSource);
@@ -1609,7 +1710,11 @@ export default function App() {
           setPlayers(prevPlayers =>
             prevPlayers.map(p => {
               if (p.id === attacker.id) {
-                const newHand = [...p.hand, ...stolenCards, ...attackerDrawResult.cards];
+                const newHand = [
+                  ...attackerHandAfterRacubitero,
+                  ...stolenCards,
+                  ...attackerDrawResult.cards
+                ];
                 const fulfilledAttackOrder = p.cubinarcaOrder?.kind === 'ATTACK_TARGET' && p.cubinarcaOrder.attackTargetId === target.id;
                 return {
                   ...p,
@@ -1620,6 +1725,7 @@ export default function App() {
                   shieldBarrier: attackerBarrierRemaining,
                   actionPoints: Math.max(0, p.actionPoints - 1),
                   hand: newHand,
+                  equippedWeapons: attackerWeaponsAfterRacubitero,
                   damageDealt: (p.damageDealt || 0) + primaryDamageTotal + secondaryDamageTotal,
                   nextBreathBonus: useDracubonBreath && p.nextBreathBonus ? false : p.nextBreathBonus,
                   cardsDrawn: (p.cardsDrawn || 0) + attackerDrawResult.drawnCount,
@@ -1628,7 +1734,11 @@ export default function App() {
                     : p.nextAttackBonus
                 };
               } else if (p.id === target.id) {
-                const newHand = [...p.hand.filter(card => !stolenCards.includes(card)), ...defenderDrawResult.cards];
+                const newHand = [
+                  ...p.hand.filter(card => !stolenCards.includes(card)),
+                  ...racubiteroStolenCards,
+                  ...defenderDrawResult.cards
+                ];
                 return {
                   ...p,
                   hp: Math.min(p.maxHp, newHp + defenderHpHeal + cubiculaReflectHeal),
@@ -1664,11 +1774,14 @@ export default function App() {
                   isEliminated: secondaryNewHp <= 0,
                   shieldBarrier: secondaryBarrierRemaining,
                   preparedStance: updatedSecondaryStance,
+                  hand: racubiteroChainDisarmedPlayerIds.has(p.id) ? [] : p.hand,
                   guardingAllyId: secondaryCoverGuardian && secondaryNewHp <= 0 ? null : p.guardingAllyId,
                   nextAttackBonus: secondaryHero === CharacterType.FLAUCUBISTA_DESAFINADO && secondaryDamageTotal > 0
                     ? (p.nextAttackBonus || 0) + 1
                     : p.nextAttackBonus
                 };
+              } else if (racubiteroChainDisarmedPlayerIds.has(p.id)) {
+                return { ...p, hand: [] };
               }
               return p;
             })
@@ -1684,6 +1797,15 @@ export default function App() {
 
           setDeck(currentDeckState);
           setDiscardPile(currentDiscardState);
+          if (isRacubiteroPerfectBlock && racubiteroChainRoll === 5) {
+            addLog(
+              defenderDrawResult.drawnCount > 0
+                ? `Vaciado de Bolsillo: ${target.name} roba ${defenderDrawResult.drawnCount} carta(s) del Mazo Global tras completar la cadena.`
+                : `Desarme en Cadena: ${target.name} no pudo robar las 2 cartas adicionales por falta de espacio o cartas disponibles.`,
+              true,
+              target.name
+            );
+          }
           const combatChoices = [...attackerDrawResult.choices, ...defenderDrawResult.choices];
           if (combatChoices.length > 0) {
             setTramcubosoCardChoices(prev => [...prev, ...combatChoices]);
