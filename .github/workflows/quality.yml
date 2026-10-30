@@ -18,8 +18,10 @@ jobs:
     name: Typecheck and production build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout PR branch head
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
