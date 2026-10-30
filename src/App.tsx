@@ -68,6 +68,7 @@ export default function App() {
     actorName: string;
     isAttacker: boolean;
   } | null>(null);
+  const [supplyMagicOffer, setSupplyMagicOffer] = useState<{ actorId: number; cards: GameCard[] } | null>(null);
   const matchIntroCompletedRef = useRef(true);
 
   const speedMultiplier = isFastSpeed ? 0.5 : 1;
@@ -832,6 +833,7 @@ export default function App() {
     const defenderRolls: number[] = [];
     let defenderFinalVal: number;
     let isPerfectBlock = false;
+    let dracubonReflectTriggered = false;
 
     const hasReflejoFelino = target.preparedStance?.id === 53;
     const hasElComodin = target.preparedStance?.id === 60;
@@ -862,7 +864,14 @@ export default function App() {
       const r = Math.floor(Math.random() * 6) + 1;
       defenderRolls.push(r);
       defenderFinalVal = r;
-      isPerfectBlock = attackerRolls.includes(r) || r === attackerFinalVal;
+      const matchedAttack = attackerRolls.includes(r) || r === attackerFinalVal;
+      if (defenderHero === CharacterType.DRACUBON) {
+        // Dracubon has no normal perfect block: a matching die reflects damage instead.
+        dracubonReflectTriggered = matchedAttack;
+        isPerfectBlock = false;
+      } else {
+        isPerfectBlock = matchedAttack;
+      }
     }
 
     // Special Face 6 Effect check for Defender
@@ -907,20 +916,9 @@ export default function App() {
       addFloatingText(target.id, `🛡️ -${absorbed} BARRERA`, "#60a5fa");
     }
 
-    // Consume posture
-    let updatedTargetStance = target.preparedStance;
-    if (target.preparedStance && [35, 53, 55, 57, 59, 60].includes(target.preparedStance.id)) {
-      updatedTargetStance = null;
-    }
-
-    const attackerLifeStealHeal = isCubiculaAbility &&
-      attackerHero === CharacterType.CUBICULA &&
-      finalDamage >= 3
-      ? finalDamage
-      : 0;
-    if (attackerLifeStealHeal > 0) {
-      addLog(`¡Festín Sangriento! ${attacker.name} recupera ${attackerLifeStealHeal} HP por el daño efectivo causado.`, true, attacker.name);
-    }
+    // Shared reflection and life-steal resolution (Dracubon + Cubícula).
+    let attackerBarrierRemaining = attacker.shieldBarrier || 0;
+    let dracubonReflectedTaken = dracubonReflectTriggered ? finalDamage : 0;
 
     let cubiculaReflectRoll: number | null = null;
     let cubiculaReflectHeal = 0;
@@ -932,9 +930,7 @@ export default function App() {
       addLog(`¡Reflejo de Noche! Cubícula relanza D6 (${cubiculaReflectRoll}), devuelve ${cubiculaReflectDamage} de daño y se cura ${cubiculaReflectHeal} HP.`, true, target.name);
     }
 
-    // La barrera del atacante puede absorber el daño devuelto por Reflejo de Noche.
-    let attackerBarrierRemaining = attacker.shieldBarrier || 0;
-    let reflectedDamageTaken = cubiculaReflectDamage;
+    let reflectedDamageTaken = dracubonReflectedTaken + cubiculaReflectDamage;
     if (reflectedDamageTaken > 0 && attackerBarrierRemaining > 0) {
       const absorbed = Math.min(attackerBarrierRemaining, reflectedDamageTaken);
       attackerBarrierRemaining -= absorbed;
@@ -942,9 +938,32 @@ export default function App() {
       addLog(`La barrera de ${attacker.name} absorbe ${absorbed} del daño reflejado.`);
     }
 
+    if (dracubonReflectTriggered && reflectedDamageTaken > 0) {
+      addLog(`¡Escamas de Dracubon! ${target.name} devuelve ${reflectedDamageTaken} de daño a ${attacker.name}.`, true, target.name);
+    }
+
+    const attackerLifeStealHeal = isCubiculaAbility &&
+      attackerHero === CharacterType.CUBICULA &&
+      finalDamage >= 3
+      ? finalDamage
+      : 0;
+    if (attackerLifeStealHeal > 0) {
+      addLog(`¡Festín Sangriento! ${attacker.name} recupera ${attackerLifeStealHeal} HP por el daño efectivo causado.`, true, attacker.name);
+    }
+
+    const attackerNewHp = Math.min(
+      attacker.maxHp,
+      Math.max(0, attacker.hp - reflectedDamageTaken) + attackerLifeStealHeal
+    );
+
+    // Consume posture
+    let updatedTargetStance = target.preparedStance;
+    if (target.preparedStance && [35, 53, 55, 57, 59, 60].includes(target.preparedStance.id)) {
+      updatedTargetStance = null;
+    }
+
     const oldHp = target.hp;
     const newHp = Math.max(0, oldHp - finalDamage);
-    const attackerNewHp = Math.min(attacker.maxHp, Math.max(0, attacker.hp - reflectedDamageTaken) + attackerLifeStealHeal);
 
     // =========================================================================
     // MULTI-STAGE CARTOON CLASH ANIMATION SEQUENCE
@@ -994,6 +1013,12 @@ export default function App() {
         } else {
           sound.playCartoonBoing(260);
           addFloatingText(target.id, "¡EVADIDO!", "#7c4dff");
+        }
+        if (dracubonReflectTriggered) {
+          addFloatingText(target.id, "¡ESCAMAS: REFLEJO!", "#fb923c");
+          if (dracubonReflectedTaken > 0) {
+            addFloatingText(attacker.id, `-${dracubonReflectedTaken} REFLEJADO`, "#ef4444");
+          }
         }
         if (attackerLifeStealHeal > 0) {
           addFloatingText(attacker.id, `+${attackerLifeStealHeal} HP FESTÍN`, "#f472b6");
@@ -1096,12 +1121,10 @@ export default function App() {
                   }
                 }
 
-                const hpAfterReflection = Math.max(0, p.hp - reflectedDamageTaken);
-                const updatedAttackerHp = Math.min(p.maxHp, hpAfterReflection + attackerLifeStealHeal);
                 return {
                   ...p,
-                  hp: updatedAttackerHp,
-                  isEliminated: updatedAttackerHp <= 0,
+                  hp: attackerNewHp,
+                  isEliminated: attackerNewHp <= 0,
                   shieldBarrier: attackerBarrierRemaining,
                   actionPoints: Math.max(0, p.actionPoints - 1),
                   hand: newHand,
@@ -1164,7 +1187,7 @@ export default function App() {
 
           if (attackerNewHp <= 0 && !attacker.isEliminated) {
             sound.playElimination();
-            addLog(`¡K.O.! ${attacker.name} cayó por el daño devuelto por Reflejo de Noche.`, true);
+            addLog(`¡K.O.! ${attacker.name} cayó por el daño devuelto por ${dracubonReflectTriggered ? "las Escamas de Dracubon" : "el Reflejo de Noche de Cubícula"}.`, true);
             narrator.narrateElimination(attacker.name);
           }
 
@@ -1448,13 +1471,120 @@ export default function App() {
     applyCardClassSynergy(attacker.id, card, targetId);
   };
 
+  // Complete Hada al Cubo's card transfer after the human selects a card and ally.
+  const handleConfirmSupplyMagic = (cardIndex: number, allyId: number) => {
+    const offer = supplyMagicOffer;
+    if (!offer || offer.cards.length !== 2 || cardIndex < 0 || cardIndex > 1) return;
+
+    const actor = players.find(p => p.id === offer.actorId);
+    const ally = players.find(p => p.id === allyId);
+    const allyHero = ally?.activeMorphCharacter || ally?.characterType;
+    if (
+      !actor ||
+      !ally ||
+      actor.id === ally.id ||
+      actor.teamId === undefined ||
+      ally.teamId !== actor.teamId ||
+      actor.isEliminated ||
+      actor.hp <= 0 ||
+      ally.isEliminated ||
+      ally.hp <= 0 ||
+      allyHero === CharacterType.CUBOGRO ||
+      actor.hand.length >= getMaxHandSize(actor) ||
+      ally.hand.length >= getMaxHandSize(ally)
+    ) {
+      return;
+    }
+
+    const giftedCard = offer.cards[cardIndex];
+    const retainedCard = offer.cards[1 - cardIndex];
+    setPlayers(prev => prev.map(p => {
+      if (p.id === actor.id) return { ...p, hand: [...p.hand, retainedCard] };
+      if (p.id === ally.id) return { ...p, hand: [...p.hand, giftedCard] };
+      return p;
+    }));
+    setSupplyMagicOffer(null);
+    addLog(`¡Suministro Mágico! ${actor.name} entregó [${giftedCard.name}] a ${ally.name} y conservó [${retainedCard.name}].`, true, actor.name);
+    addFloatingText(actor.id, "+1 CARTA CONSERVADA", "#34d399");
+    addFloatingText(ally.id, "+1 CARTA RECIBIDA", "#22d3ee");
+    sound.playStanceActivate();
+  };
+
   // Hero Ability
   const handleUseHeroAbility = (targetId?: number, extraOption?: number) => {
     const actor = currentTurnPlayer;
     if (!actor || actor.abilityCooldownRemaining > 0) return;
     const hero = actor.activeMorphCharacter || actor.characterType;
 
-    if (hero === CharacterType.CUBITO_DE_HIELO) {
+    if (hero === CharacterType.HADA_AL_CUBO) {
+      const availableAllies = actor.teamId !== undefined
+        ? players.filter(p => {
+            const allyHero = p.activeMorphCharacter || p.characterType;
+            return p.id !== actor.id &&
+              p.teamId === actor.teamId &&
+              !p.isEliminated &&
+              p.hp > 0 &&
+              allyHero !== CharacterType.CUBOGRO &&
+              p.hand.length < getMaxHandSize(p);
+          })
+        : [];
+
+      if (
+        actor.actionPoints <= 0 ||
+        actor.hand.length >= getMaxHandSize(actor) ||
+        availableAllies.length === 0
+      ) return;
+
+      const firstDraw = drawCardFromDeck(deck, discardPile);
+      if (!firstDraw.card) {
+        addLog("Suministro Mágico no pudo activarse: el mazo y el descarte están vacíos.");
+        return;
+      }
+      const secondDraw = drawCardFromDeck(firstDraw.newDeck, firstDraw.newDiscard);
+      if (!secondDraw.card) {
+        addLog("Suministro Mágico necesita dos cartas; no hay suficientes cartas disponibles.");
+        return;
+      }
+
+      const drawnCards = [firstDraw.card, secondDraw.card];
+      setDeck(secondDraw.newDeck);
+      setDiscardPile(secondDraw.newDiscard);
+      triggerDeckAnimation();
+      sound.playCardDraw();
+
+      if (actor.isBot) {
+        const ally = availableAllies[Math.floor(Math.random() * availableAllies.length)];
+        const giftIndex = Math.floor(Math.random() * drawnCards.length);
+        const giftedCard = drawnCards[giftIndex];
+        const retainedCard = drawnCards[1 - giftIndex];
+        setPlayers(prev => prev.map(p => {
+          if (p.id === actor.id) {
+            return {
+              ...p,
+              actionPoints: Math.max(0, p.actionPoints - 1),
+              hand: [...p.hand, retainedCard],
+              cardsDrawn: (p.cardsDrawn || 0) + 2
+            };
+          }
+          if (p.id === ally.id) return { ...p, hand: [...p.hand, giftedCard] };
+          return p;
+        }));
+        addLog(`Suministro Mágico automático: ${actor.name} entregó [${giftedCard.name}] a ${ally.name} y conservó [${retainedCard.name}].`, true, actor.name);
+        addFloatingText(actor.id, "+1 CARTA", "#34d399");
+        addFloatingText(ally.id, "+1 CARTA RECIBIDA", "#22d3ee");
+      } else {
+        setPlayers(prev => prev.map(p => p.id === actor.id
+          ? {
+              ...p,
+              actionPoints: Math.max(0, p.actionPoints - 1),
+              cardsDrawn: (p.cardsDrawn || 0) + 2
+            }
+          : p
+        ));
+        setSupplyMagicOffer({ actorId: actor.id, cards: drawnCards });
+        addLog(`${actor.name} usó Suministro Mágico: robó dos cartas y debe entregar una a un compañero.`, true, actor.name);
+      }
+    } else if (hero === CharacterType.CUBITO_DE_HIELO) {
       const target = players.find(p => p.id === targetId && !p.isEliminated && p.id !== actor.id);
       if (!target) return;
       sound.playStanceActivate();
@@ -1481,7 +1611,7 @@ export default function App() {
     } else if (hero === CharacterType.CUBICULA) {
       const target = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
       if (!target || actor.actionPoints <= 0) return;
-      addLog(`${actor.name} activa [Festín Sangriento] contra ${target.name}. Si inflige al menos 3 de daño efectivo, recuperará esa cantidad de HP.`, true, actor.name);
+      addLog(` ${actor.name} activa [Festín Sangriento] contra ${target.name}. Si inflige al menos 3 de daño efectivo, recuperará esa cantidad de HP.`.trim(), true, actor.name);
       handleAttack(target.id, true);
     } else if (hero === CharacterType.FLAUCUBISTA_DESAFINADO) {
       // La apuesta del Flaucubista es una excepción explícita: usa D5, no el D6 general.
@@ -1676,6 +1806,27 @@ export default function App() {
     if (!activePlayer || !activePlayer.isBot || activePlayer.isEliminated || activePlayer.hp <= 0) return;
 
     const timer = setTimeout(() => {
+      const activeHero = activePlayer.activeMorphCharacter || activePlayer.characterType;
+      const botHasSupplyAlly = activePlayer.teamId !== undefined && players.some(p => {
+        const allyHero = p.activeMorphCharacter || p.characterType;
+        return p.id !== activePlayer.id &&
+          p.teamId === activePlayer.teamId &&
+          !p.isEliminated &&
+          p.hp > 0 &&
+          allyHero !== CharacterType.CUBOGRO &&
+          p.hand.length < getMaxHandSize(p);
+      });
+      if (
+        activeHero === CharacterType.HADA_AL_CUBO &&
+        activePlayer.actionPoints === 2 &&
+        activePlayer.hand.length < getMaxHandSize(activePlayer) &&
+        botHasSupplyAlly &&
+        deck.length + discardPile.length >= 2
+      ) {
+        handleUseHeroAbility();
+        return;
+      }
+
       // 1. Try to equip weapon or prepare stance
       const weapon = activePlayer.hand.find(c => c.type === CardType.WEAPON);
       const stance = activePlayer.hand.find(
@@ -1796,6 +1947,8 @@ export default function App() {
           players={players}
           currentTurnPlayer={currentTurnPlayer}
           selectedTargetId={selectedTargetId}
+          supplyMagicOffer={supplyMagicOffer}
+          onConfirmSupplyMagic={handleConfirmSupplyMagic}
           deckCount={deck.length}
           discardPileCount={discardPile.length}
           log={log}
