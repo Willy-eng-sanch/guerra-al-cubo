@@ -16,6 +16,7 @@ import {
   CubinarcaOrder,
   CubinarcaOrderKind,
   TrickTiming,
+  CubiculaMode,
   getMaxHandSize,
   getMaxWeaponSlots
 } from './types/game';
@@ -39,6 +40,9 @@ import { DraftScreen } from './screens/DraftScreen';
 import { OnlineLobbyScreen } from './screens/OnlineLobbyScreen';
 import { DiceSpecialChoiceModal } from './components/DiceSpecialChoiceModal';
 import { TramcubosoCardChoiceModal } from './components/TramcubosoCardChoiceModal';
+import { TramcubosoRerollModal } from './components/TramcubosoRerollModal';
+import { RacubiteroLootModal } from './components/RacubiteroLootModal';
+import { CubinjaTransferModal } from './components/CubinjaTransferModal';
 import { CombatClashData } from './components/CartoonCombatClash';
 
 interface TramcubosoCardChoice {
@@ -47,6 +51,24 @@ interface TramcubosoCardChoice {
   initialCard: GameCard;
   alternativeCard: GameCard;
   source: string;
+}
+
+interface PendingDiceReroll {
+  tramcubosoId: number;
+  attackerId: number;
+  targetId: number;
+  secondaryTargetId?: number;
+  isCubiculaAbility: boolean;
+  isCubogroAbility: boolean;
+  attackerRolls: number[];
+  defenderRolls: number[];
+}
+
+interface CombatDiceOverride {
+  attackerRolls: number[];
+  defenderRolls: number[];
+  skipTramcubosoPrompt?: boolean;
+  spentCubitPlayerId?: number;
 }
 
 const getCharacterMaxHp = (characterType: CharacterType): number =>
@@ -103,9 +125,19 @@ export default function App() {
   const [supplyMagicOffer, setSupplyMagicOffer] = useState<{ actorId: number; cards: GameCard[] } | null>(null);
   const [tramcubosoCardChoices, setTramcubosoCardChoices] = useState<TramcubosoCardChoice[]>([]);
   const [cubinarcaOrderOffer, setCubinarcaOrderOffer] = useState<{ issuerId: number; victimId: number } | null>(null);
+  const [pendingDiceReroll, setPendingDiceReroll] = useState<PendingDiceReroll | null>(null);
+  const [racubiteroLootOffer, setRacubiteroLootOffer] = useState<{ actorId: number; cards: GameCard[] } | null>(null);
+  const [cubinjaTransferOffer, setCubinjaTransferOffer] = useState<{ actorId: number; card: GameCard } | null>(null);
   const botOrderTurnRef = useRef<number | null>(null);
   const playersRef = useRef<PlayerState[]>([]);
   useEffect(() => { playersRef.current = players; }, [players]);
+
+  // Pila única: toda carta consumida, reemplazada o desequipada vuelve a mezclarse aquí.
+  const returnCardsToGlobalPile = (cards: GameCard[]) => {
+    if (cards.length === 0) return;
+    setDeck(previous => [...previous, ...cards].sort(() => Math.random() - 0.5));
+    setDiscardPile([]);
+  };
 
   // Release a stale cover if its ally was eliminated or the guardian changed into another hero.
   useEffect(() => {
@@ -158,7 +190,7 @@ export default function App() {
         return { ...p, actionPoints: p.actionPoints + 1 };
       }));
       addFloatingText(playerId, "+1 TURNO EXTRA (PA)", "#ffd600");
-      addLog(`¡Cara Especial 6! ${actorName} elige TURNO EXTRA (+1 Punto de Acción).`, true);
+      addLog(`¡Cara Especial 6! ${actorName} elige TURNO EXTRA (+1 Cúbit).`, true);
       sound.playStanceActivate();
       narrator.narrateSpecialFaceSix(actorName, "Turno Extra");
     } else {
@@ -167,7 +199,7 @@ export default function App() {
         addLog("No quedan cartas disponibles en el mazo ni en el descarte.", true);
       } else {
         setDeck(drawResult.newDeck);
-        setDiscardPile(drawResult.newDiscard);
+        setDiscardPile([]);
         setPlayers(prev => prev.map(p => p.id === playerId ? {
           ...p,
           hand: [...p.hand, ...drawResult.cards],
@@ -197,7 +229,7 @@ export default function App() {
     if (hero === CharacterType.GLADIACUBON) {
       const idx = deckArr.findIndex(c => c.type === CardType.WEAPON);
       if (idx !== -1) {
-        const weapon = deckArr.splice(idx, 1)[0];
+        const weapon = deckArr[idx];
         return [{
           ...weapon,
           uid: generateUniqueCardUid(weapon.id)
@@ -331,7 +363,7 @@ export default function App() {
           : prev;
       });
     }
-    setDiscardPile(prev => [...prev, discardedCard]);
+    returnCardsToGlobalPile([discardedCard]);
     setTramcubosoCardChoices(prev => prev.slice(1));
     addLog("¡Selección Afortunada! " + offer.playerName + " conserva [" + selectedCard.name + "] y descarta [" + discardedCard.name + "] (" + offer.source + ").", true, offer.playerName);
     sound.playCardDraw();
@@ -407,7 +439,11 @@ export default function App() {
     }
 
     setDeck(currentDeck);
-    setDiscardPile(currentDiscard);
+    setDiscardPile([]);
+    newPlayers.forEach(player => {
+      if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
+      if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
+    });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -494,7 +530,11 @@ export default function App() {
     }
 
     setDeck(currentDeck);
-    setDiscardPile(currentDiscard);
+    setDiscardPile([]);
+    newPlayers.forEach(player => {
+      if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
+      if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
+    });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -604,7 +644,11 @@ export default function App() {
     });
 
     setDeck(currentDeck);
-    setDiscardPile(currentDiscard);
+    setDiscardPile([]);
+    newPlayers.forEach(player => {
+      if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
+      if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
+    });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -663,7 +707,11 @@ export default function App() {
     }
 
     setDeck(currentDeck);
-    setDiscardPile(currentDiscard);
+    setDiscardPile([]);
+    newPlayers.forEach(player => {
+      if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
+      if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
+    });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -771,7 +819,11 @@ export default function App() {
     }
 
     setDeck(currentDeck);
-    setDiscardPile(currentDiscard);
+    setDiscardPile([]);
+    newPlayers.forEach(player => {
+      if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
+      if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
+    });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -896,7 +948,7 @@ export default function App() {
       blocksDisabledByOrder: false,
       cubinarcaOrderDefiedThisTurn: false
     } : player));
-    if (!hasHandSpace) setDiscardPile(prev => [...prev, weapon]);
+    if (!hasHandSpace) returnCardsToGlobalPile([weapon]);
     addLog(`${victim.name} cumple la orden y desequipa [${weapon.name}]${hasHandSpace ? ', devolviéndola a su mano.' : '; su mano está llena y el arma va al descarte.'}`, true, victim.name);
     sound.playStanceActivate();
   };
@@ -985,7 +1037,7 @@ export default function App() {
             if (p.id !== actorId) return p;
             return { ...p, actionPoints: p.actionPoints + 1 };
           }));
-          addLog(`🧠 ¡Sinergia Cerebral de ${heroDef.displayName}! Reembolsa +1 Punto de Acción con ingenio táctico.`, true, actor.name);
+          addLog(`🧠 ¡Sinergia Cerebral de ${heroDef.displayName}! Reembolsa +1 Cúbit con ingenio táctico.`, true, actor.name);
           addFloatingText(actorId, "+1 PA CEREBRAL", "#c084fc");
         } else {
           if (actor.hand.length >= getMaxHandSize(actor)) {
@@ -995,7 +1047,7 @@ export default function App() {
           const drawResult = drawForPlayer(actor, deck, discardPile, "Sinergia Cerebral");
           if (drawResult.cards.length > 0) {
             setDeck(drawResult.newDeck);
-            setDiscardPile(drawResult.newDiscard);
+            setDiscardPile([]);
             setPlayers(prev => prev.map(p => p.id === actorId ? {
               ...p,
               hand: [...p.hand, ...drawResult.cards],
@@ -1026,7 +1078,9 @@ export default function App() {
   const handleAttack = (
     targetId: number,
     isCubiculaAbility: boolean = false,
-    secondaryTargetId?: number
+    secondaryTargetId?: number,
+    diceOverride?: CombatDiceOverride,
+    isCubogroAbility: boolean = false
   ) => {
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || attacker.isFrozen) return;
@@ -1078,10 +1132,16 @@ export default function App() {
         : player
       ));
     }
-    const attackerRolls: number[] = [];
+    const attackerRolls: number[] = diceOverride ? [...diceOverride.attackerRolls] : [];
     let attackerFinalVal: number;
 
-    if (attackerHero === CharacterType.TRAMCUBOSO) {
+    if (diceOverride) {
+      attackerFinalVal = attackerHero === CharacterType.CUBINJA
+        ? attackerRolls.reduce((sum, value) => sum + value, 0)
+        : attackerHero === CharacterType.TRAMCUBOSO
+        ? Math.max(...attackerRolls)
+        : (attackerRolls[0] || 1);
+    } else if (attackerHero === CharacterType.TRAMCUBOSO) {
       const r1 = Math.floor(Math.random() * 6) + 1;
       const r2 = Math.floor(Math.random() * 6) + 1;
       attackerRolls.push(r1, r2);
@@ -1094,38 +1154,27 @@ export default function App() {
     } else if (attackerHero === CharacterType.CUBOGRO) {
       const r = Math.floor(Math.random() * 6) + 1;
       attackerRolls.push(r);
-      attackerFinalVal = r === 1 ? 2 : r === 2 ? 4 : r === 3 ? 6 : r;
+      attackerFinalVal = r;
     } else {
       const r = Math.floor(Math.random() * 6) + 1;
       attackerRolls.push(r);
       attackerFinalVal = r;
     }
 
-    // Special Face 6 Effect check for Attacker
-    if (attackerRolls.includes(6)) {
-      if (!attacker.isBot) {
-        setSpecialSixChoice({
-          playerId: attacker.id,
-          actorName: attacker.name,
-          isAttacker: true
-        });
-      } else {
-        const botChoice = getMaxHandSize(attacker) === 0
-        ? 'EXTRA_TURN'
-        : attacker.hand.length < 2 ? 'CARD' : 'EXTRA_TURN';
-        handleApplySixChoice(attacker.id, botChoice);
-      }
-    }
-
+    // The special-face reward is resolved only after the optional reroll window;
+    // replaced initial dice never grant rewards.
+    
     // Attacker Weapon Modifiers
-    let modifiedAttackDamage = attackerFinalVal;
-    if (attacker.equippedWeapons.some(w => w.id === 1) && modifiedAttackDamage >= 3) {
+    let modifiedAttackDamage = isCubogroAbility
+      ? Math.max(1, Math.floor(target.hp / 2))
+      : attackerFinalVal;
+    if (!isCubogroAbility && attacker.equippedWeapons.some(w => w.id === 1) && modifiedAttackDamage >= 3) {
       modifiedAttackDamage += 1; // Bate de aluminio
     }
-    if (attacker.equippedWeapons.some(w => w.id === 6)) {
+    if (!isCubogroAbility && attacker.equippedWeapons.some(w => w.id === 6)) {
       modifiedAttackDamage += 2; // Puño de hierro
     }
-    if (attacker.equippedWeapons.some(w => w.id === 22)) {
+    if (!isCubogroAbility && attacker.equippedWeapons.some(w => w.id === 22)) {
       modifiedAttackDamage += 1; // Batería de coche
     }
 
@@ -1160,6 +1209,20 @@ export default function App() {
       defenderRolls.push(defenderFinalVal);
       isPerfectBlock = true;
       addLog(`¡${target.name} activa El Esquive de Callejón y consigue un Bloqueo Perfecto!`, true, target.name);
+    } else if (diceOverride) {
+      defenderRolls.push(...diceOverride.defenderRolls);
+      if (defenderHero === CharacterType.TRAMCUBOSO) {
+        const matches = defenderRolls.filter(value => attackerRolls.includes(value));
+        isPerfectBlock = matches.length > 0;
+        defenderFinalVal = matches.length > 0 ? Math.max(...matches) : Math.max(...defenderRolls);
+      } else {
+        defenderFinalVal = defenderRolls[0] ?? 0;
+        const matchedAttack = attackerRolls.includes(defenderFinalVal);
+        if (defenderHero === CharacterType.CUBINJA) isCubinjaCardBlock = matchedAttack;
+        else if (defenderHero === CharacterType.DRACUBON) dracubonReflectTriggered = matchedAttack;
+        else isPerfectBlock = matchedAttack;
+        if (isCubinjaCardBlock) addLog(`¡Arsenal Ilimitado! ${target.name} coincide en defensa: obtiene una carta, pero el daño no se bloquea ni se reduce.`, true, target.name);
+      }
     } else if (target.isFrozen) {
       const r = Math.floor(Math.random() * 6) + 1;
       defenderRolls.push(r);
@@ -1169,7 +1232,7 @@ export default function App() {
       const r = Math.floor(Math.random() * 6) + 1;
       defenderRolls.push(r);
       defenderFinalVal = r;
-      isCubinjaCardBlock = attackerRolls.includes(r) || r === attackerFinalVal;
+      isCubinjaCardBlock = attackerRolls.includes(r);
       if (isCubinjaCardBlock) {
         addLog(`¡Avaricia! ${target.name} iguala el ataque con ${r}; la coincidencia no bloquea el daño y solo concede el robo de una carta.`, true, target.name);
       }
@@ -1179,17 +1242,15 @@ export default function App() {
       defenderRolls.push(r1, r2);
       isPerfectBlock =
         attackerRolls.includes(r1) ||
-        attackerRolls.includes(r2) ||
-        r1 === attackerFinalVal ||
-        r2 === attackerFinalVal;
+        attackerRolls.includes(r2);
       defenderFinalVal = isPerfectBlock
-        ? (attackerRolls.includes(r1) || r1 === attackerFinalVal ? r1 : r2)
+        ? Math.max(...[r1, r2].filter(value => attackerRolls.includes(value)))
         : Math.max(r1, r2);
     } else {
       const r = Math.floor(Math.random() * 6) + 1;
       defenderRolls.push(r);
       defenderFinalVal = r;
-      const matchedAttack = attackerRolls.includes(r) || r === attackerFinalVal;
+      const matchedAttack = attackerRolls.includes(r);
       if (defenderHero === CharacterType.DRACUBON) {
         // Dracubon has no normal perfect block: a matching die reflects damage instead.
         dracubonReflectTriggered = matchedAttack;
@@ -1197,6 +1258,50 @@ export default function App() {
       } else {
         isPerfectBlock = matchedAttack;
       }
+    }
+
+    const tramcubosoCandidate =
+      attackerHero === CharacterType.TRAMCUBOSO &&
+      attacker.actionPoints > 0 &&
+      attacker.abilityCooldownRemaining === 0 &&
+      !attacker.isFrozen
+        ? attacker
+        : defenderHero === CharacterType.TRAMCUBOSO &&
+          defenderRolls.some(value => value > 0) &&
+          target.actionPoints > 0 &&
+          target.abilityCooldownRemaining === 0 &&
+          !target.isFrozen
+        ? target
+        : null;
+
+    if (!diceOverride?.skipTramcubosoPrompt && tramcubosoCandidate) {
+      setPendingDiceReroll({
+        tramcubosoId: tramcubosoCandidate.id,
+        attackerId: attacker.id,
+        targetId: intendedTarget.id,
+        secondaryTargetId,
+        isCubiculaAbility,
+        isCubogroAbility,
+        attackerRolls: [...attackerRolls],
+        defenderRolls: [...defenderRolls]
+      });
+      addLog(`Revolución de la Mesa: ${tramcubosoCandidate.name} puede conservar la tirada o pagar 1 Cúbit para relanzar todos los dados del enfrentamiento.`, true, tramcubosoCandidate.name);
+      return;
+    }
+
+    const attackerShowsSix = attackerHero === CharacterType.TRAMCUBOSO
+      ? attackerFinalVal === 6
+      : attackerRolls.includes(6);
+    const defenderShowsSix = defenderHero === CharacterType.TRAMCUBOSO
+      ? defenderFinalVal === 6
+      : defenderRolls.includes(6);
+    if (attackerShowsSix) {
+      if (!attacker.isBot) setSpecialSixChoice({ playerId: attacker.id, actorName: attacker.name, isAttacker: true });
+      else handleApplySixChoice(attacker.id, getMaxHandSize(attacker) === 0 || attacker.hand.length >= getMaxHandSize(attacker) ? 'EXTRA_TURN' : 'CARD');
+    }
+    if (defenderShowsSix) {
+      if (!target.isBot) setSpecialSixChoice({ playerId: target.id, actorName: target.name, isAttacker: false });
+      else handleApplySixChoice(target.id, target.hand.length < getMaxHandSize(target) ? 'CARD' : 'EXTRA_TURN');
     }
 
     if (wasInterceptedByGladiacubon) {
@@ -1304,17 +1409,11 @@ export default function App() {
     let attackerBarrierRemaining = attacker.shieldBarrier || 0;
     let dracubonReflectedTaken = dracubonReflectTriggered ? finalDamage : 0;
 
-    let cubiculaReflectRoll: number | null = null;
-    let cubiculaReflectHeal = 0;
-    let cubiculaReflectDamage = 0;
-    if (defenderHero === CharacterType.CUBICULA && isPerfectBlock) {
-      cubiculaReflectRoll = Math.floor(Math.random() * 6) + 1;
-      cubiculaReflectHeal = cubiculaReflectRoll;
-      cubiculaReflectDamage = Math.floor(cubiculaReflectRoll / 2);
-      addLog(`¡Reflejo de Noche! Cubícula relanza D6 (${cubiculaReflectRoll}), devuelve ${cubiculaReflectDamage} de daño y se cura ${cubiculaReflectHeal} HP.`, true, target.name);
-    }
+    const cubiculaReflectRoll: number | null = null;
+    const cubiculaReflectHeal = 0;
+    const cubiculaReflectDamage = 0;
 
-    let reflectedDamageTaken = dracubonReflectedTaken + cubiculaReflectDamage;
+    let reflectedDamageTaken = dracubonReflectedTaken;
     // Coraza applies to every incoming damage instance, including reflected damage.
     if (attackerHero === CharacterType.GLADIACUBON && reflectedDamageTaken >= 3) {
       const damageBeforeCoraza = reflectedDamageTaken;
@@ -1336,13 +1435,13 @@ export default function App() {
       addLog(`¡Escamas de Dracubon! ${target.name} devuelve ${reflectedDamageTaken} de daño a ${attacker.name}.`, true, target.name);
     }
 
-    const attackerLifeStealHeal = isCubiculaAbility &&
-      attackerHero === CharacterType.CUBICULA &&
-      finalDamage >= 3
-      ? finalDamage
+    const cubiculaActualHpLoss = Math.min(target.hp, Math.max(0, finalDamage));
+    const attackerLifeStealHeal = attackerHero === CharacterType.CUBICULA &&
+      cubiculaActualHpLoss >= 1 && cubiculaActualHpLoss <= 3
+      ? cubiculaActualHpLoss
       : 0;
     if (attackerLifeStealHeal > 0) {
-      addLog(`¡Festín Sangriento! ${attacker.name} recupera ${attackerLifeStealHeal} HP por el daño efectivo causado.`, true, attacker.name);
+      addLog(`¡Vampirismo! ${attacker.name} recupera ${attackerLifeStealHeal} HP por la pérdida real de vida causada.`, true, attacker.name);
     }
 
     const attackerNewHp = Math.min(
@@ -1490,95 +1589,35 @@ export default function App() {
             attackerCardsToSteal = attackerRolls.includes(5) ? 2 : 1;
           }
 
-          // Racubitero's two defensive effects resolve on an actual Perfect Block.
-          // Vaciado de Bolsillo transfers up to two cards before Desarme en Cadena
-          // discards the attacker's remaining hand and performs its extra D6 roll.
+          // Desarme en Cadena: on a perfect block, steal up to two cards from
+          // the attacker's hand and return every equipped weapon to the Pila General.
+          // The remaining hand is preserved; there is no secondary global hand wipe.
           const isRacubiteroPerfectBlock =
             defenderHero === CharacterType.RACUBITERO && isPerfectBlock;
           const racubiteroStolenCards: GameCard[] = [];
           const racubiteroDiscardedCards: GameCard[] = [];
-          const racubiteroChainDisarmedPlayerIds = new Set<number>();
           let attackerHandAfterRacubitero = [...attacker.hand];
           let attackerWeaponsAfterRacubitero = [...attacker.equippedWeapons];
-          let racubiteroChainDrawCount = 0;
-          let racubiteroChainRoll: number | null = null;
 
           if (isRacubiteroPerfectBlock) {
-            const defenderFreeSlots = Math.max(
-              0,
-              getMaxHandSize(target) - target.hand.length
-            );
-            const cardsToPocket = Math.min(
-              2,
-              defenderFreeSlots,
-              attackerHandAfterRacubitero.length
-            );
-
+            const defenderFreeSlots = Math.max(0, getMaxHandSize(target) - target.hand.length);
+            const cardsToPocket = Math.min(2, defenderFreeSlots, attackerHandAfterRacubitero.length);
             for (let i = 0; i < cardsToPocket; i++) {
               const randomIndex = Math.floor(Math.random() * attackerHandAfterRacubitero.length);
               const [card] = attackerHandAfterRacubitero.splice(randomIndex, 1);
               if (card) racubiteroStolenCards.push(card);
             }
-
             if (racubiteroStolenCards.length > 0) {
-              addLog(
-                `¡Vaciado de Bolsillo! ${target.name} roba ${racubiteroStolenCards.length} carta(s) al azar de ${attacker.name}.`,
-                true,
-                target.name
-              );
+              addLog(`¡Desarme en Cadena! ${target.name} roba ${racubiteroStolenCards.length} carta(s) de la mano de ${attacker.name} y devuelve todas sus armas a la Pila General.`, true, target.name);
               addFloatingText(target.id, `+${racubiteroStolenCards.length} CARTA(S) HURTADA(S)`, "#f59e0b");
               sound.playCardDraw();
             } else {
-              const reason = defenderFreeSlots === 0
-                ? "su mano está llena"
-                : `${attacker.name} no tiene cartas en la mano`;
-              addLog(`Vaciado de Bolsillo no puede transferir cartas: ${reason}.`, true, target.name);
+              addLog(`Desarme en Cadena: ${attacker.name} no tenía cartas en la mano o Racubitero no tenía espacio.`, true, target.name);
             }
-
-            // The attacker's remaining hand and every equipped weapon are discarded.
-            const remainingAttackerCards = [...attackerHandAfterRacubitero];
-            racubiteroDiscardedCards.push(...remainingAttackerCards, ...attackerWeaponsAfterRacubitero);
-            attackerHandAfterRacubitero = [];
+            racubiteroDiscardedCards.push(...attackerWeaponsAfterRacubitero);
             attackerWeaponsAfterRacubitero = [];
-
-            addLog(
-              remainingAttackerCards.length > 0
-                ? `¡Desarme en Cadena! ${attacker.name} pierde las ${remainingAttackerCards.length} carta(s) que aún tenía en la mano; sus armas equipadas también van al descarte.`
-                : `¡Desarme en Cadena! ${attacker.name} pierde su mano restante; sus armas equipadas también van al descarte.`,
-              true,
-              target.name
-            );
-
-            sound.playDiceRoll();
-            racubiteroChainRoll = Math.floor(Math.random() * 6) + 1;
-            addLog(
-              `Racubitero relanza D6 por Desarme en Cadena: obtiene ${racubiteroChainRoll}.`,
-              true,
-              target.name
-            );
-            addFloatingText(target.id, `RELANZAMIENTO D6: ${racubiteroChainRoll}`, "#f59e0b");
-
-            if (racubiteroChainRoll === 5) {
-              const enemyPlayers = players.filter(player =>
-                player.id !== target.id &&
-                (target.teamId === undefined || player.teamId !== target.teamId)
-              );
-              let additionalDiscardCount = 0;
-
-              enemyPlayers.forEach(enemy => {
-                racubiteroChainDisarmedPlayerIds.add(enemy.id);
-                if (enemy.id === attacker.id) return; // Already emptied by the first part of the passive.
-                additionalDiscardCount += enemy.hand.length;
-                racubiteroDiscardedCards.push(...enemy.hand);
-              });
-
-              racubiteroChainDrawCount = 2;
-              addLog(
-                `¡Desarme en Cadena culmina con un 5! Toda la mesa enemiga pierde la mano: ${additionalDiscardCount} carta(s) adicionales van al descarte. ${target.name} podrá robar hasta 2 cartas del Mazo Global, sujeto al espacio libre.`,
-                true,
-                target.name
-              );
-              addFloatingText(target.id, "¡CADENA COMPLETA: 5!", "#f59e0b");
+            if (racubiteroDiscardedCards.length > 0) {
+              addLog(`Desarme en Cadena devuelve ${racubiteroDiscardedCards.length} arma(s) a la Pila General; la mano restante de ${attacker.name} se conserva.`, true, target.name);
             }
           }
 
@@ -1631,13 +1670,7 @@ export default function App() {
               getMaxHandSize(target) - defenderHandAfterVaciado
             );
             const standardPerfectBlockDraw = defenderFreeSlotsAfterVaciado > 0 ? 1 : 0;
-            const requestedPerfectBlockDraws = racubiteroChainDrawCount > 0
-              ? racubiteroChainDrawCount
-              : standardPerfectBlockDraw;
-            defenderCardsToAdd = Math.min(
-              defenderFreeSlotsAfterVaciado,
-              requestedPerfectBlockDraws
-            );
+            defenderCardsToAdd = standardPerfectBlockDraw;
             defenderHpHeal = 2; // Recuperación heroica por Super-Bloqueo
             if (defenderCardsToAdd > 0) {
               triggerDeckAnimation();
@@ -1665,8 +1698,8 @@ export default function App() {
           }
 
           // Resolve card rewards outside the React state updater to keep deck mutations deterministic.
-          let currentDeckState = [...deck];
-          let currentDiscardState = [...discardPile, ...racubiteroDiscardedCards];
+          let currentDeckState = [...deck, ...racubiteroDiscardedCards].sort(() => Math.random() - 0.5);
+          let currentDiscardState: GameCard[] = [];
           const prepareCombatDraws = (player: PlayerState, count: number, source: string) => {
             const cards: GameCard[] = [];
             const choices: TramcubosoCardChoice[] = [];
@@ -1739,7 +1772,11 @@ export default function App() {
                   cubinarcaOrder: fulfilledAttackOrder ? null : p.cubinarcaOrder,
                   blocksDisabledByOrder: fulfilledAttackOrder ? false : p.blocksDisabledByOrder,
                   shieldBarrier: attackerBarrierRemaining,
-                  actionPoints: Math.max(0, p.actionPoints - 1),
+                  actionPoints: Math.max(0, p.actionPoints - 1 - (diceOverride?.spentCubitPlayerId === p.id ? 1 : 0)),
+                  abilityCooldownRemaining: diceOverride?.spentCubitPlayerId === p.id ? 2 : p.abilityCooldownRemaining,
+                  cubogroAbilityCharges: attackerHero === CharacterType.CUBOGRO
+                    ? Math.min(2, Math.max(0, (p.cubogroAbilityCharges ?? 1) - (isCubogroAbility ? 1 : 0) + (!isCubogroAbility && attackerRolls.includes(6) ? 1 : 0)))
+                    : p.cubogroAbilityCharges,
                   hand: newHand,
                   equippedWeapons: attackerWeaponsAfterRacubitero,
                   damageDealt: (p.damageDealt || 0) + primaryDamageTotal + secondaryDamageTotal,
@@ -1758,6 +1795,11 @@ export default function App() {
                 return {
                   ...p,
                   hp: Math.min(p.maxHp, newHp + defenderHpHeal + cubiculaReflectHeal),
+                  actionPoints: diceOverride?.spentCubitPlayerId === p.id ? Math.max(0, p.actionPoints - 1) : p.actionPoints,
+                  abilityCooldownRemaining: diceOverride?.spentCubitPlayerId === p.id ? 2 : p.abilityCooldownRemaining,
+                  cubogroAbilityCharges: defenderHero === CharacterType.CUBOGRO
+                    ? Math.min(2, Math.max(0, (p.cubogroAbilityCharges ?? 1) + ((isPerfectBlock || defenderRolls.includes(6)) ? 1 : 0)))
+                    : p.cubogroAbilityCharges,
                   damageDealt: (p.damageDealt || 0) + reflectedDamageTaken,
                   nextAttackBonus: defenderHero === CharacterType.FLAUCUBISTA_DESAFINADO && primaryDamageTotal > 0
                     ? (p.nextAttackBonus || 0) + 1
@@ -1790,14 +1832,11 @@ export default function App() {
                   isEliminated: secondaryNewHp <= 0,
                   shieldBarrier: secondaryBarrierRemaining,
                   preparedStance: updatedSecondaryStance,
-                  hand: racubiteroChainDisarmedPlayerIds.has(p.id) ? [] : p.hand,
                   guardingAllyId: secondaryCoverGuardian && secondaryNewHp <= 0 ? null : p.guardingAllyId,
                   nextAttackBonus: secondaryHero === CharacterType.FLAUCUBISTA_DESAFINADO && secondaryDamageTotal > 0
                     ? (p.nextAttackBonus || 0) + 1
                     : p.nextAttackBonus
                 };
-              } else if (racubiteroChainDisarmedPlayerIds.has(p.id)) {
-                return { ...p, hand: [] };
               }
               return p;
             })
@@ -1811,17 +1850,8 @@ export default function App() {
             dailyMissionsManager.recordPerfectBlock();
           }
 
-          setDeck(currentDeckState);
-          setDiscardPile(currentDiscardState);
-          if (isRacubiteroPerfectBlock && racubiteroChainRoll === 5) {
-            addLog(
-              defenderDrawResult.drawnCount > 0
-                ? `Vaciado de Bolsillo: ${target.name} roba ${defenderDrawResult.drawnCount} carta(s) del Mazo Global tras completar la cadena.`
-                : `Desarme en Cadena: ${target.name} no pudo robar hasta 2 cartas por falta de espacio o cartas disponibles.`,
-              true,
-              target.name
-            );
-          }
+          setDeck([...currentDeckState, ...currentDiscardState].sort(() => Math.random() - 0.5));
+          setDiscardPile([]);
           const combatChoices = [...attackerDrawResult.choices, ...defenderDrawResult.choices];
           if (combatChoices.length > 0) {
             setTramcubosoCardChoices(prev => [...prev, ...combatChoices]);
@@ -1925,6 +1955,27 @@ export default function App() {
     }, 450 * speedMultiplier);
   };
 
+  const resolveTramcubosoReroll = (shouldReroll: boolean) => {
+    const pending = pendingDiceReroll;
+    if (!pending) return;
+    const tramcuboso = players.find(player => player.id === pending.tramcubosoId);
+    if (!tramcuboso) { setPendingDiceReroll(null); return; }
+    if (shouldReroll && (tramcuboso.actionPoints <= 0 || tramcuboso.abilityCooldownRemaining > 0 || tramcuboso.isFrozen)) return;
+    const rollMany = (count: number) => Array.from({ length: count }, () => Math.floor(Math.random() * 6) + 1);
+    const attackerRolls = shouldReroll ? rollMany(pending.attackerRolls.length) : pending.attackerRolls;
+    const defenderRolls = shouldReroll ? rollMany(pending.defenderRolls.length) : pending.defenderRolls;
+    setPendingDiceReroll(null);
+    addLog(shouldReroll
+      ? `¡Revolución de la Mesa! ${tramcuboso.name} reemplaza todos los dados iniciales. La nueva tirada será definitiva.`
+      : `${tramcuboso.name} conserva los resultados iniciales.`, true, tramcuboso.name);
+    handleAttack(pending.targetId, pending.isCubiculaAbility, pending.secondaryTargetId, {
+      attackerRolls,
+      defenderRolls,
+      skipTramcubosoPrompt: true,
+      spentCubitPlayerId: shouldReroll ? tramcuboso.id : undefined
+    }, pending.isCubogroAbility);
+  };
+
   // Reaction handlers for Perfect Block
   const handleEquipReaction = (cardId: number) => {
     if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0) return;
@@ -1941,7 +1992,7 @@ export default function App() {
       discarded = newWeapons.shift() || null;
     }
     newWeapons.push(card);
-    if (discarded) setDiscardPile(prev => [...prev, discarded!]);
+    if (discarded) returnCardsToGlobalPile([discarded!]);
 
     setPlayers(prev =>
       prev.map(p =>
@@ -1963,7 +2014,7 @@ export default function App() {
     if (!card) return;
     sound.playCardDraw();
     const newHand = reactionPlayer.hand.filter(c => c.id !== cardId);
-    setDiscardPile(prev => [...prev, card]);
+    returnCardsToGlobalPile([card]);
 
     let heal = 0;
     if (card.id === 33) heal = 3;
@@ -1991,7 +2042,7 @@ export default function App() {
     sound.playStanceActivate();
     const newHand = reactionPlayer.hand.filter(c => c.id !== cardId);
     if (reactionPlayer.preparedStance) {
-      setDiscardPile(prev => [...prev, reactionPlayer.preparedStance!]);
+      returnCardsToGlobalPile([reactionPlayer.preparedStance!]);
     }
 
     setPlayers(prev =>
@@ -2032,7 +2083,7 @@ export default function App() {
     newWeapons.push(card);
 
     if (discarded) {
-      setDiscardPile(prev => [...prev, discarded!]);
+      returnCardsToGlobalPile([discarded!]);
     }
 
     setPlayers(prev =>
@@ -2099,7 +2150,7 @@ export default function App() {
     sound.playCardDraw();
     if (!attacker.isBot) dailyMissionsManager.recordCardPlayed();
     const newHand = attacker.hand.filter(c => c.id !== cardId);
-    setDiscardPile(prev => [...prev, card]);
+    returnCardsToGlobalPile([card]);
 
     let heal = 0;
     let extraAp = 0;
@@ -2165,7 +2216,7 @@ export default function App() {
   };
 
   // Hero Ability
-  const handleUseHeroAbility = (targetId?: number, extraOption?: number) => {
+  const handleUseHeroAbility = (targetId?: number, extraOption?: number, cubiculaMode?: CubiculaMode) => {
     const actor = currentTurnPlayer;
     if (!actor || actor.abilityCooldownRemaining > 0) return;
     const hero = actor.activeMorphCharacter || actor.characterType;
@@ -2202,7 +2253,7 @@ export default function App() {
 
       const drawnCards = [firstDraw.card, secondDraw.card];
       setDeck(secondDraw.newDeck);
-      setDiscardPile(secondDraw.newDiscard);
+      setDiscardPile([]);
       triggerDeckAnimation();
       sound.playCardDraw();
 
@@ -2291,7 +2342,7 @@ export default function App() {
         : p
       ));
       addLog(
-        `¡Intercepción! ${actor.name} gasta 1 AP y activa Cobertura sobre ${ally.name}. El siguiente ataque dirigido a ese aliado será interceptado con el dado de ${actor.name}; no podrá reactivar en la próxima ronda ni antes de consumir esta cobertura.`,
+        `¡Intercepción! ${actor.name} gasta 1 Cúbit y activa Cobertura sobre ${ally.name}. El siguiente ataque dirigido a ese aliado será interceptado con el dado de ${actor.name}; no podrá reactivar en la próxima ronda ni antes de consumir esta cobertura.`,
         true,
         actor.name
       );
@@ -2307,11 +2358,81 @@ export default function App() {
       if (actor.actionPoints <= 0 || !validEnemy(blocker) || !validEnemy(secondTarget) || blocker.id === secondTarget.id) return;
       addLog(`¡${actor.name} activa [Aliento]! ${blocker.name} realizará una única tirada de bloqueo para proteger a ambos rivales.`, true, actor.name);
       handleAttack(blocker.id, false, secondTarget.id);
+    } else if (hero === CharacterType.CUBOGRO) {
+      const target = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id &&
+        (actor.teamId === undefined || p.teamId !== actor.teamId));
+      if (!target || actor.actionPoints <= 0 || (actor.cubogroAbilityCharges || 0) <= 0) return;
+      addLog(`¡${actor.name} prepara [Paliza Demoledora]! Consume 1 Cúbit y una carga; el golpe equivale a la mitad de los HP actuales de ${target.name} si no iguala el dado de ataque.`, true, actor.name);
+      handleAttack(target.id, false, undefined, undefined, true);
+    } else if (hero === CharacterType.RACUBITERO) {
+      if (actor.actionPoints <= 0) return;
+      const roll = Math.floor(Math.random() * 6) + 1;
+      const rivals = players.filter(p => p.id !== actor.id && !p.isEliminated && p.hp > 0 &&
+        (actor.teamId === undefined || p.teamId !== actor.teamId));
+      setPlayers(prev => prev.map(p => {
+        if (p.id === actor.id) {
+          const nextHp = roll === 6 ? p.hp : Math.max(0, p.hp - roll);
+          return { ...p, hp: nextHp, isEliminated: nextHp <= 0,
+            actionPoints: Math.max(0, p.actionPoints - 1), abilityCooldownRemaining: 3 };
+        }
+        if (roll === 6 && rivals.some(rival => rival.id === p.id)) return { ...p, hand: [] };
+        return p;
+      }));
+      addLog(roll === 6
+        ? `¡Saqueo Colectivo! ${actor.name} obtiene 6: las manos rivales quedan reunidas para distribuirlas.`
+        : `¡Robo fallido! ${actor.name} obtiene ${roll} y recibe ${roll} de daño por el linchamiento.`,
+        true, actor.name);
+      if (roll === 6) {
+        const pooledCards = rivals.flatMap(rival => rival.hand);
+        if (pooledCards.length > 0) setRacubiteroLootOffer({ actorId: actor.id, cards: pooledCards });
+        else addLog("Saqueo Colectivo: los rivales no tenían cartas en sus manos.", false, actor.name);
+      } else {
+        addFloatingText(actor.id, `-${roll} HP · ROBO FALLIDO`, "#ef4444");
+        if (actor.hp - roll <= 0) sound.playElimination();
+        setTimeout(() => checkVictory(), 250);
+      }
+      sound.playDiceRoll();
+    } else if (hero === CharacterType.CUBINJA) {
+      const ally = players.find(p => p.id === targetId && p.id !== actor.id && !p.isEliminated && p.hp > 0 &&
+        actor.teamId !== undefined && p.teamId === actor.teamId);
+      if (!ally || actor.actionPoints <= 0 || actor.equippedWeapons.length === 0 || ally.borrowedEquipmentEffects?.length) return;
+      setPlayers(prev => prev.map(p => {
+        if (p.id === actor.id) return { ...p, actionPoints: Math.max(0, p.actionPoints - 1), abilityCooldownRemaining: 2 };
+        if (p.id === ally.id) return { ...p, borrowedEquipmentEffects: [...actor.equippedWeapons], borrowedEquipmentSourceId: actor.id };
+        return p;
+      }));
+      addLog(`¡Préstamo de Arsenal! ${actor.name} presta los efectos de ${actor.equippedWeapons.length} arma(s) a ${ally.name} sin mover las cartas. Termina al finalizar el siguiente turno de ${ally.name}.`, true, actor.name);
+      sound.playStanceActivate();
     } else if (hero === CharacterType.CUBICULA) {
-      const target = players.find(p => p.id === targetId && !p.isEliminated && p.hp > 0 && p.id !== actor.id);
-      if (!target || actor.actionPoints <= 0) return;
-      addLog(`${actor.name} activa [Festín Sangriento] contra ${target.name}. Si inflige al menos 3 de daño efectivo, recuperará esa cantidad de HP.`, true, actor.name);
-      handleAttack(target.id, true);
+      const mode = cubiculaMode || 'DRAIN';
+      const target = players.find(p => p.id === targetId && p.id !== actor.id && !p.isEliminated && p.hp > 0 &&
+        actor.teamId !== undefined && p.teamId === actor.teamId);
+      const usedModes = actor.cubiculaModesUsedThisTurn || [];
+      const requested = Math.max(1, Math.min(6, extraOption || 1));
+      if (!target || actor.actionPoints <= 0 || usedModes.includes(mode)) return;
+      const donor = mode === 'DRAIN' ? target : actor;
+      const receiver = mode === 'DRAIN' ? actor : target;
+      const transferred = Math.min(requested, Math.max(0, donor.hp - 1), Math.max(0, receiver.maxHp - receiver.hp));
+      if (transferred <= 0) {
+        addLog("Transfusión Nocturna no puede transferir vida: el donante debe conservar 1 HP y el receptor no tiene espacio.", false, actor.name);
+        return;
+      }
+      setPlayers(prev => prev.map(p => {
+        if (p.id === actor.id) return {
+          ...p,
+          hp: mode === 'DRAIN' ? Math.min(p.maxHp, p.hp + transferred) : Math.max(1, p.hp - transferred),
+          actionPoints: Math.max(0, p.actionPoints - 1),
+          cubiculaModesUsedThisTurn: [...usedModes, mode]
+        };
+        if (p.id === target.id) return {
+          ...p,
+          hp: mode === 'DRAIN' ? Math.max(1, p.hp - transferred) : Math.min(p.maxHp, p.hp + transferred)
+        };
+        return p;
+      }));
+      addLog(`${actor.name} usa Transfusión Nocturna · ${mode === 'DRAIN' ? 'Drenaje' : 'Donación'}: transfiere ${transferred} HP ${mode === 'DRAIN' ? 'desde' : 'hacia'} ${target.name}. Ambos modos comparten enfriamiento de 3 rondas al terminar el turno.`, true, actor.name);
+      addFloatingText(mode === 'DRAIN' ? actor.id : target.id, `+${transferred} HP`, "#f472b6");
+      addFloatingText(mode === 'DRAIN' ? target.id : actor.id, `-${transferred} HP`, "#ef4444");
     } else if (hero === CharacterType.FLAUCUBISTA_DESAFINADO) {
       // La apuesta del Flaucubista es una excepción explícita: usa D5, no el D6 general.
       const chosenNum = extraOption && extraOption >= 1 && extraOption <= 5
@@ -2385,6 +2506,71 @@ export default function App() {
     }
   };
 
+  const resolveRacubiteroLoot = (assignments: string[]) => {
+    const offer = racubiteroLootOffer;
+    const actor = offer ? players.find(player => player.id === offer.actorId) : null;
+    if (!offer || !actor || assignments.length !== offer.cards.length) return;
+    const selfCards: GameCard[] = [];
+    const pileCards: GameCard[] = [];
+    const gifts = new Map<number, GameCard>();
+    offer.cards.forEach((card, index) => {
+      const destination = assignments[index] || 'PILE';
+      if (destination === 'SELF') selfCards.push(card);
+      else if (destination.startsWith('ALLY:')) {
+        const allyId = Number(destination.slice(5));
+        if (!gifts.has(allyId)) gifts.set(allyId, card);
+        else pileCards.push(card);
+      } else pileCards.push(card);
+    });
+    const selfCapacity = Math.max(0, getMaxHandSize(actor) - actor.hand.length);
+    const acceptedSelf = selfCards.slice(0, selfCapacity);
+    pileCards.push(...selfCards.slice(selfCapacity));
+    const acceptedGifts = new Map<number, GameCard>();
+    gifts.forEach((card, allyId) => {
+      const ally = players.find(player => player.id === allyId);
+      if (ally && !ally.isEliminated && ally.hp > 0 && ally.hand.length < getMaxHandSize(ally)) acceptedGifts.set(allyId, card);
+      else pileCards.push(card);
+    });
+    setPlayers(prev => prev.map(player => {
+      if (player.id === actor.id) return { ...player, hand: [...player.hand, ...acceptedSelf] };
+      const gift = acceptedGifts.get(player.id);
+      return gift ? { ...player, hand: [...player.hand, gift] } : player;
+    }));
+    if (pileCards.length > 0) returnCardsToGlobalPile(pileCards);
+    setRacubiteroLootOffer(null);
+    addLog(`Saqueo Colectivo: ${acceptedSelf.length} carta(s) conservadas, ${acceptedGifts.size} entregadas a aliados y ${pileCards.length} devueltas a la Pila General.`, true, actor.name);
+    sound.playCardDraw();
+  };
+
+  const openCubinjaTransfer = (cardId: number) => {
+    const actor = currentTurnPlayer;
+    if (!actor || (actor.activeMorphCharacter || actor.characterType) !== CharacterType.CUBINJA ||
+        actor.actionPoints <= 0 || actor.isFrozen) return;
+    const card = actor.hand.find(item => item.id === cardId && item.type === CardType.TRICK);
+    if (card) setCubinjaTransferOffer({ actorId: actor.id, card });
+  };
+
+  const confirmCubinjaTransfer = (targetId: number) => {
+    const offer = cubinjaTransferOffer;
+    const actor = offer ? players.find(player => player.id === offer.actorId) : null;
+    const target = players.find(player => player.id === targetId);
+    if (!offer || !actor || !target || actor.actionPoints <= 0 ||
+        !actor.hand.some(card => card.uid === offer.card.uid) ||
+        target.isEliminated || target.hp <= 0 || target.hand.length >= getMaxHandSize(target) ||
+        (target.activeMorphCharacter || target.characterType) === CharacterType.CUBOGRO) return;
+    setPlayers(prev => prev.map(player => {
+      if (player.id === actor.id) return {
+        ...player,
+        actionPoints: Math.max(0, player.actionPoints - 1),
+        hand: player.hand.filter(card => card.uid !== offer.card.uid)
+      };
+      if (player.id === target.id) return { ...player, hand: [...player.hand, offer.card] };
+      return player;
+    }));
+    setCubinjaTransferOffer(null);
+    addLog(`Arsenal Ilimitado: ${actor.name} transfiere [${offer.card.name}] a ${target.name} por 1 Cúbit.`, true, actor.name);
+  };
+
   // End Turn
   const handleEndTurn = () => {
     const turnPlayers = playersRef.current.length > 0 ? playersRef.current : players;
@@ -2422,11 +2608,17 @@ export default function App() {
     const nextRound = (nextIdx <= turnIndex) ? round + 1 + roundsToAdd : round + roundsToAdd;
 
     const updated = turnPlayers.map((p, idx) => {
-      if (idx === turnIndex && p.cubinarcaOrder) {
+      if (idx === turnIndex) {
         return {
           ...p,
-          blocksDisabledByOrder: true,
-          cubinarcaOrderDefiedThisTurn: p.blocksDisabledByOrder ? p.cubinarcaOrderDefiedThisTurn : false
+          ...(p.cubinarcaOrder ? {
+            blocksDisabledByOrder: true,
+            cubinarcaOrderDefiedThisTurn: p.blocksDisabledByOrder ? p.cubinarcaOrderDefiedThisTurn : false
+          } : {}),
+          abilityCooldownRemaining: p.cubiculaModesUsedThisTurn?.length ? 3 : p.abilityCooldownRemaining,
+          cubiculaModesUsedThisTurn: [],
+          borrowedEquipmentEffects: p.borrowedEquipmentEffects ? [] : p.borrowedEquipmentEffects,
+          borrowedEquipmentSourceId: p.borrowedEquipmentEffects ? null : p.borrowedEquipmentSourceId
         };
       }
       if (idx === nextIdx) {
@@ -2434,6 +2626,7 @@ export default function App() {
           ...p,
           actionPoints: 2,
           isFrozen: false,
+          cubiculaModesUsedThisTurn: [],
           abilityCooldownRemaining: Math.max(0, p.abilityCooldownRemaining - 1),
           cubinarcaOrderDefiedThisTurn: false
         };
@@ -2935,7 +3128,8 @@ export default function App() {
           onEquipWeapon={id => handleEquipWeapon(id)}
           onPrepareStance={id => handlePrepareStance(id)}
           onPlayActionTrick={(cId, tId) => handlePlayActionTrick(cId, tId)}
-          onUseHeroAbility={(tId, opt) => handleUseHeroAbility(tId, opt)}
+          onUseHeroAbility={(tId, opt, mode) => handleUseHeroAbility(tId, opt, mode)}
+          onTransferTrick={openCubinjaTransfer}
           onEndTurn={handleEndTurn}
           onDismissDiceRoll={() => setActiveDiceRoll(null)}
           onToggleSpeed={() => setIsFastSpeed(!isFastSpeed)}
@@ -2959,6 +3153,36 @@ export default function App() {
         />
       )}
 
+      {pendingDiceReroll && (() => {
+        const tram = players.find(player => player.id === pendingDiceReroll.tramcubosoId);
+        const attacker = players.find(player => player.id === pendingDiceReroll.attackerId);
+        const defender = players.find(player => player.id === (activeClash?.defenderId ?? -1));
+        return tram && attacker ? (
+          <TramcubosoRerollModal
+            actorName={tram.name}
+            attackerName={attacker.name}
+            defenderName={defender?.name || 'Defensor'}
+            attackerRolls={pendingDiceReroll.attackerRolls}
+            defenderRolls={pendingDiceReroll.defenderRolls}
+            onKeep={() => resolveTramcubosoReroll(false)}
+            onReroll={() => resolveTramcubosoReroll(true)}
+          />
+        ) : null;
+      })()}
+      {racubiteroLootOffer && (() => {
+        const actor = players.find(player => player.id === racubiteroLootOffer.actorId);
+        if (!actor) return null;
+        const allies = players.filter(player =>
+          player.id !== actor.id && !player.isEliminated && player.hp > 0 &&
+          (actor.teamId !== undefined ? player.teamId === actor.teamId : true) &&
+          player.hand.length < getMaxHandSize(player)
+        );
+        return <RacubiteroLootModal cards={racubiteroLootOffer.cards} actor={actor} allies={allies} onConfirm={resolveRacubiteroLoot} />;
+      })()}
+      {cubinjaTransferOffer && (() => {
+        const actor = players.find(player => player.id === cubinjaTransferOffer.actorId);
+        return actor ? <CubinjaTransferModal actor={actor} card={cubinjaTransferOffer.card} players={players} onConfirm={confirmCubinjaTransfer} onCancel={() => setCubinjaTransferOffer(null)} /> : null;
+      })()}
       {specialSixChoice && (
         <DiceSpecialChoiceModal
           actorName={specialSixChoice.actorName}
