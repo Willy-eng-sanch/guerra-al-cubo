@@ -25,8 +25,8 @@ La rama `feat/cubinarca-orden-imperativa` implementa:
 
 ## Pendientes de auditoría
 
-- **Cubogro (este PR):** se centralizan los límites de mano y equipo en cero; se bloquean el robo de la Cara Especial 6, las recompensas de cartas, el uso de trucos, la preparación de posturas y el equipamiento normal o por reacción. La pasiva queda pendiente de lint/build y pruebas de partida.
-- **Tramcuboso:** verificar la selección entre dos cartas al robar y los casos de empate en defensa.
+- **Cubogro (PR #10 integrado):** Piel de Piedra fija la capacidad de mano y ranuras de equipo en cero; bloquea las rutas de robo, uso, equipamiento, reacciones y transferencias. Falta validación funcional de partida.
+- **Tramcuboso (este PR):** Selección Afortunada aplica dos cartas por cada robo del mazo global, conserva una y descarta la otra. Los bots eligen mediante una heurística basada en rareza, sinergia y espacios de equipo/postura. Dados Trucados aún requiere pruebas manuales de empates y bloqueos.
 - **Cubinja:** verificar la prohibición de cartas Truco y la regla especial de Bloqueo Perfecto que no mitiga daño.
 - **Gladiacubon:** comprobar la reducción de daño y la ranura adicional en todos los caminos de equipamiento.
 - **Racubitero:** comprobar el robo por daño y el robo doble cuando aparece un 5 en todos los modos.

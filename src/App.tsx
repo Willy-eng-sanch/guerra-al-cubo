@@ -38,7 +38,16 @@ import { ArenaScreen } from './screens/ArenaScreen';
 import { DraftScreen } from './screens/DraftScreen';
 import { OnlineLobbyScreen } from './screens/OnlineLobbyScreen';
 import { DiceSpecialChoiceModal } from './components/DiceSpecialChoiceModal';
+import { TramcubosoCardChoiceModal } from './components/TramcubosoCardChoiceModal';
 import { CombatClashData } from './components/CartoonCombatClash';
+
+interface TramcubosoCardChoice {
+  playerId: number;
+  playerName: string;
+  initialCard: GameCard;
+  alternativeCard: GameCard;
+  source: string;
+}
 
 const getCharacterMaxHp = (characterType: CharacterType): number =>
   characterType === CharacterType.CUBOGRO ? 25 : 20;
@@ -72,6 +81,7 @@ export default function App() {
     isAttacker: boolean;
   } | null>(null);
   const [supplyMagicOffer, setSupplyMagicOffer] = useState<{ actorId: number; cards: GameCard[] } | null>(null);
+  const [tramcubosoCardChoices, setTramcubosoCardChoices] = useState<TramcubosoCardChoice[]>([]);
   const [cubinarcaOrderOffer, setCubinarcaOrderOffer] = useState<{ issuerId: number; victimId: number } | null>(null);
   const botOrderTurnRef = useRef<number | null>(null);
   const playersRef = useRef<PlayerState[]>([]);
@@ -98,8 +108,8 @@ export default function App() {
       setSpecialSixChoice(null);
       return;
     }
-    if (choice === 'CARD' && getMaxHandSize(actor) === 0) {
-      addLog(`¡Piel de Piedra! ${actorName} no puede robar cartas.`, true);
+    if (choice === 'CARD' && actor.hand.length >= getMaxHandSize(actor)) {
+      addLog(actorName + " no tiene espacio para robar una carta.", true);
       setSpecialSixChoice(null);
       return;
     }
@@ -114,29 +124,26 @@ export default function App() {
       sound.playStanceActivate();
       narrator.narrateSpecialFaceSix(actorName, "Turno Extra");
     } else {
-      // Draw 1 card from deck
-      setDeck(prevDeck => {
-        if (prevDeck.length === 0) return prevDeck;
-        const [drawn, ...rest] = prevDeck;
-        const cardInstance: GameCard = {
-          ...drawn,
-          uid: generateUniqueCardUid(drawn.id)
-        };
-        setPlayers(prev => prev.map(p => {
-          if (p.id !== playerId) return p;
-          return {
-            ...p,
-            hand: [...p.hand, cardInstance],
-            cardsDrawn: (p.cardsDrawn || 0) + 1
-          };
-        }));
+      const drawResult = drawForPlayer(actor, deck, discardPile, "Cara Especial 6");
+      if (drawResult.cards.length === 0) {
+        addLog("No quedan cartas disponibles en el mazo ni en el descarte.", true);
+      } else {
+        setDeck(drawResult.newDeck);
+        setDiscardPile(drawResult.newDiscard);
+        setPlayers(prev => prev.map(p => p.id === playerId ? {
+          ...p,
+          hand: [...p.hand, ...drawResult.cards],
+          cardsDrawn: (p.cardsDrawn || 0) + drawResult.cards.length
+        } : p));
+        if (drawResult.choices.length > 0) {
+          setTramcubosoCardChoices(prev => [...prev, ...drawResult.choices]);
+        }
         addFloatingText(playerId, "+1 CARTA MAZO", "#00e5ff");
-        addLog(`¡Cara Especial 6! ${actorName} elige ROBAR CARTA y toma 1 del Mazo Global.`, true);
+        addLog("¡Cara Especial 6! " + actorName + " roba del Mazo Global.", true);
         triggerDeckAnimation();
         sound.playCardDraw();
         narrator.narrateSpecialFaceSix(actorName, "Robar Carta");
-        return rest;
-      });
+      }
     }
 
     setSpecialSixChoice(null);
@@ -217,6 +224,79 @@ export default function App() {
         }
       : null;
     return { card, newDeck: d, newDiscard: disc };
+  };
+
+  // Tramcuboso's Selección Afortunada applies to each draw from the global pile.
+  const scoreTramcubosoCard = (player: PlayerState, card: GameCard): number => {
+    const rarityScore: Record<string, number> = { LEGENDARIA: 5, SUPER_RARA: 4, RARA: 3 };
+    let score = rarityScore[card.rarity] ?? 1;
+    const activeHero = player.activeMorphCharacter || player.characterType;
+    const heroDef = CHARACTERS[activeHero];
+    if (heroDef && heroDef.classes.includes(card.category)) score += 1.5;
+    if (card.type === CardType.WEAPON) score += player.equippedWeapons.length < getMaxWeaponSlots(player) ? 2 : -1;
+    if (card.type === CardType.TRICK && card.timing === TrickTiming.PREPARED_STANCE) score += player.preparedStance ? -0.5 : 2;
+    return score;
+  };
+
+  const drawForPlayer = (
+    player: PlayerState,
+    currentDeck: GameCard[],
+    currentDiscard: GameCard[],
+    source: string
+  ): { cards: GameCard[]; choices: TramcubosoCardChoice[]; newDeck: GameCard[]; newDiscard: GameCard[] } => {
+    const first = drawCardFromDeck(currentDeck, currentDiscard);
+    if (!first.card) return { cards: [], choices: [], newDeck: first.newDeck, newDiscard: first.newDiscard };
+    const activeHero = player.activeMorphCharacter || player.characterType;
+    if (activeHero !== CharacterType.TRAMCUBOSO) {
+      return { cards: [first.card], choices: [], newDeck: first.newDeck, newDiscard: first.newDiscard };
+    }
+    const second = drawCardFromDeck(first.newDeck, first.newDiscard);
+    if (!second.card) return { cards: [first.card], choices: [], newDeck: second.newDeck, newDiscard: second.newDiscard };
+    const offer: TramcubosoCardChoice = {
+      playerId: player.id,
+      playerName: player.name,
+      initialCard: first.card,
+      alternativeCard: second.card,
+      source
+    };
+    if (!player.isBot) {
+      return { cards: [first.card], choices: [offer], newDeck: second.newDeck, newDiscard: second.newDiscard };
+    }
+    const chooseAlternative = scoreTramcubosoCard(player, second.card) > scoreTramcubosoCard(player, first.card);
+    const selectedCard = chooseAlternative ? second.card : first.card;
+    const discardedCard = chooseAlternative ? first.card : second.card;
+    return { cards: [selectedCard], choices: [], newDeck: second.newDeck, newDiscard: [...second.newDiscard, discardedCard] };
+  };
+
+  const resolveTramcubosoCardChoice = (choiceIndex: 0 | 1) => {
+    const offer = tramcubosoCardChoices[0];
+    if (!offer) return;
+    const selectedCard = choiceIndex === 0 ? offer.initialCard : offer.alternativeCard;
+    const discardedCard = choiceIndex === 0 ? offer.alternativeCard : offer.initialCard;
+    if (choiceIndex === 1) {
+      setPlayers(prev => prev.map(player => {
+        if (player.id !== offer.playerId) return player;
+        const hasInitial = player.hand.some(card => card.uid === offer.initialCard.uid);
+        return {
+          ...player,
+          hand: hasInitial
+            ? player.hand.map(card => card.uid === offer.initialCard.uid ? selectedCard : card)
+            : player.hand.length < getMaxHandSize(player) ? [...player.hand, selectedCard] : player.hand
+        };
+      }));
+      // A perfect-block reaction can be waiting behind this modal; keep its snapshot in sync.
+      setReactionPlayer(prev => {
+        if (!prev || prev.id !== offer.playerId) return prev;
+        const hasInitial = prev.hand.some(card => card.uid === offer.initialCard.uid);
+        return hasInitial
+          ? { ...prev, hand: prev.hand.map(card => card.uid === offer.initialCard.uid ? selectedCard : card) }
+          : prev;
+      });
+    }
+    setDiscardPile(prev => [...prev, discardedCard]);
+    setTramcubosoCardChoices(prev => prev.slice(1));
+    addLog("¡Selección Afortunada! " + offer.playerName + " conserva [" + selectedCard.name + "] y descarta [" + discardedCard.name + "] (" + offer.source + ").", true, offer.playerName);
+    sound.playCardDraw();
   };
 
   // Start 3 vs 3 Draft Battle
@@ -859,29 +939,29 @@ export default function App() {
           addLog(`🧠 ¡Sinergia Cerebral de ${heroDef.displayName}! Reembolsa +1 Punto de Acción con ingenio táctico.`, true, actor.name);
           addFloatingText(actorId, "+1 PA CEREBRAL", "#c084fc");
         } else {
-          setDeck(prevDeck => {
-            if (prevDeck.length === 0) return prevDeck;
-            const [drawn, ...rest] = prevDeck;
-            const maxH = getMaxHandSize(actor);
-            const cardInstance: GameCard = {
-              ...drawn,
-              uid: generateUniqueCardUid(drawn.id)
-            };
-            setPlayers(prev => prev.map(p => {
-              if (p.id !== actorId) return p;
-              if (p.hand.length >= maxH) return p;
-              return {
-                ...p,
-                hand: [...p.hand, cardInstance],
-                cardsDrawn: (p.cardsDrawn || 0) + 1
-              };
-            }));
+          if (actor.hand.length >= getMaxHandSize(actor)) {
+            addLog("🧠 La Sinergia Cerebral de " + heroDef.displayName + " no encuentra espacio libre en la mano.", false, actor.name);
+            break;
+          }
+          const drawResult = drawForPlayer(actor, deck, discardPile, "Sinergia Cerebral");
+          if (drawResult.cards.length > 0) {
+            setDeck(drawResult.newDeck);
+            setDiscardPile(drawResult.newDiscard);
+            setPlayers(prev => prev.map(p => p.id === actorId ? {
+              ...p,
+              hand: [...p.hand, ...drawResult.cards],
+              cardsDrawn: (p.cardsDrawn || 0) + drawResult.cards.length
+            } : p));
+            if (drawResult.choices.length > 0) {
+              setTramcubosoCardChoices(prev => [...prev, ...drawResult.choices]);
+            }
             triggerDeckAnimation();
             sound.playCardDraw();
-            addLog(`🧠 ¡Sinergia Cerebral de ${heroDef.displayName}! Roba 1 carta táctica extra del Mazo Global.`, true, actor.name);
+            addLog("🧠 ¡Sinergia Cerebral de " + heroDef.displayName + "! Roba del Mazo Global.", true, actor.name);
             addFloatingText(actorId, "+1 CARTA CEREBRAL", "#c084fc");
-            return rest;
-          });
+          } else {
+            addLog("La Sinergia Cerebral no pudo robar: no quedan cartas disponibles.", false, actor.name);
+          }
         }
         break;
       }
@@ -1337,29 +1417,32 @@ export default function App() {
             narrator.narrateAttack(attacker.name, target.name, primaryDamageTotal, attackerFinalVal);
           }
 
-          // Update state
+          // Resolve card rewards outside the React state updater to keep deck mutations deterministic.
           let currentDeckState = [...deck];
           let currentDiscardState = [...discardPile];
+          const prepareCombatDraws = (player: PlayerState, count: number, source: string) => {
+            const cards: GameCard[] = [];
+            const choices: TramcubosoCardChoice[] = [];
+            let simulatedPlayer = player;
+            for (let i = 0; i < count && simulatedPlayer.hand.length < getMaxHandSize(simulatedPlayer); i++) {
+              const result = drawForPlayer(simulatedPlayer, currentDeckState, currentDiscardState, source);
+              currentDeckState = result.newDeck;
+              currentDiscardState = result.newDiscard;
+              if (result.cards.length === 0) break;
+              cards.push(...result.cards);
+              choices.push(...result.choices);
+              simulatedPlayer = { ...simulatedPlayer, hand: [...simulatedPlayer.hand, ...result.cards] };
+            }
+            return { cards, choices, drawnCount: cards.length };
+          };
+          const attackerDrawSource = crossedMultiples.length > 0 ? "Umbral de vida" : "Robo de Racubitero";
+          const attackerDrawResult = prepareCombatDraws(attacker, attackerCardsToAdd, attackerDrawSource);
+          const defenderDrawResult = prepareCombatDraws(target, defenderCardsToAdd, "Bloqueo Perfecto");
 
           setPlayers(prevPlayers =>
             prevPlayers.map(p => {
               if (p.id === attacker.id) {
-                const newHand = [...p.hand];
-                const maxH = getMaxHandSize(p);
-
-                let attackerDrawnCount = 0;
-                for (let i = 0; i < attackerCardsToAdd; i++) {
-                  if (newHand.length < maxH) {
-                    const drawRes = drawCardFromDeck(currentDeckState, currentDiscardState);
-                    currentDeckState = drawRes.newDeck;
-                    currentDiscardState = drawRes.newDiscard;
-                    if (drawRes.card) {
-                      newHand.push(drawRes.card);
-                      attackerDrawnCount++;
-                    }
-                  }
-                }
-
+                const newHand = [...p.hand, ...attackerDrawResult.cards];
                 const fulfilledAttackOrder = p.cubinarcaOrder?.kind === 'ATTACK_TARGET' && p.cubinarcaOrder.attackTargetId === target.id;
                 return {
                   ...p,
@@ -1372,28 +1455,13 @@ export default function App() {
                   hand: newHand,
                   damageDealt: (p.damageDealt || 0) + primaryDamageTotal + secondaryDamageTotal,
                   nextBreathBonus: useDracubonBreath && p.nextBreathBonus ? false : p.nextBreathBonus,
-                  cardsDrawn: (p.cardsDrawn || 0) + attackerDrawnCount,
+                  cardsDrawn: (p.cardsDrawn || 0) + attackerDrawResult.drawnCount,
                   nextAttackBonus: attackerHero === CharacterType.FLAUCUBISTA_DESAFINADO && flaucubistaBonus > 0
                     ? 0
                     : p.nextAttackBonus
                 };
               } else if (p.id === target.id) {
-                const newHand = [...p.hand];
-                const maxH = getMaxHandSize(p);
-
-                let defenderDrawnCount = 0;
-                for (let i = 0; i < defenderCardsToAdd; i++) {
-                  if (newHand.length < maxH) {
-                    const drawRes = drawCardFromDeck(currentDeckState, currentDiscardState);
-                    currentDeckState = drawRes.newDeck;
-                    currentDiscardState = drawRes.newDiscard;
-                    if (drawRes.card) {
-                      newHand.push(drawRes.card);
-                      defenderDrawnCount++;
-                    }
-                  }
-                }
-
+                const newHand = [...p.hand, ...defenderDrawResult.cards];
                 return {
                   ...p,
                   hp: Math.min(p.maxHp, newHp + defenderHpHeal + cubiculaReflectHeal),
@@ -1409,7 +1477,7 @@ export default function App() {
                   shieldBarrier: targetBarrierRemaining,
                   isEliminated: newHp <= 0,
                   perfectBlocks: (p.perfectBlocks || 0) + (isPerfectBlock ? 1 : 0),
-                  cardsDrawn: (p.cardsDrawn || 0) + defenderDrawnCount
+                  cardsDrawn: (p.cardsDrawn || 0) + defenderDrawResult.drawnCount
                 };
               } else if (secondaryTarget && p.id === secondaryTarget.id) {
                 const secondaryHero = secondaryTarget.activeMorphCharacter || secondaryTarget.characterType;
@@ -1438,6 +1506,10 @@ export default function App() {
 
           setDeck(currentDeckState);
           setDiscardPile(currentDiscardState);
+          const combatChoices = [...attackerDrawResult.choices, ...defenderDrawResult.choices];
+          if (combatChoices.length > 0) {
+            setTramcubosoCardChoices(prev => [...prev, ...combatChoices]);
+          }
 
           if (attackerNewHp <= 0 && !attacker.isEliminated) {
             sound.playElimination();
@@ -2369,8 +2441,17 @@ export default function App() {
         <DiceSpecialChoiceModal
           actorName={specialSixChoice.actorName}
           isAttacker={specialSixChoice.isAttacker}
-          canDrawCard={players.some(p => p.id === specialSixChoice.playerId && getMaxHandSize(p) > 0)}
+          canDrawCard={players.some(p => p.id === specialSixChoice.playerId && p.hand.length < getMaxHandSize(p))}
           onChoose={(choice) => handleApplySixChoice(specialSixChoice.playerId, choice)}
+        />
+      )}
+      {!specialSixChoice && tramcubosoCardChoices.length > 0 && (
+        <TramcubosoCardChoiceModal
+          playerName={tramcubosoCardChoices[0].playerName}
+          initialCard={tramcubosoCardChoices[0].initialCard}
+          alternativeCard={tramcubosoCardChoices[0].alternativeCard}
+          source={tramcubosoCardChoices[0].source}
+          onChoose={resolveTramcubosoCardChoice}
         />
       )}
     </div>
