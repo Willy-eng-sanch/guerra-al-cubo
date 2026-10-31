@@ -2801,7 +2801,20 @@ export default function App() {
       return;
     }
     const { players: updated, turnIndex: nextIdx, round: nextRound } = transition;
-    recordReplayEvent('TURN_ADVANCED', { endingPlayerId: turnPlayers[turnIndex]?.id ?? null, nextPlayerId: updated[nextIdx]?.id ?? null, turnIndex: nextIdx, round: nextRound });
+    const skippedFrozenPlayers = turnPlayers.filter((player, index) =>
+      index !== nextIdx && player.isFrozen && !updated[index]?.isFrozen
+    );
+    skippedFrozenPlayers.forEach(player => {
+      recordReplayEvent('TURN_SKIPPED', { playerId: player.id, reason: 'FROZEN' });
+      addLog(`${player.name} pierde su turno por Congelación.`, true, player.name);
+    });
+    recordReplayEvent('TURN_ADVANCED', {
+      endingPlayerId: turnPlayers[turnIndex]?.id ?? null,
+      nextPlayerId: updated[nextIdx]?.id ?? null,
+      skippedFrozenPlayerIds: skippedFrozenPlayers.map(player => player.id),
+      turnIndex: nextIdx,
+      round: nextRound
+    });
     recordReplayCheckpoint('round-' + nextRound + '-turn-' + (updated[nextIdx]?.id ?? 'unknown'), {
       players: updated,
       turnIndex: nextIdx,
