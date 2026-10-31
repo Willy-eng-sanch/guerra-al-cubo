@@ -162,12 +162,19 @@ export default function App() {
   const replayExecutionRef = useRef<ReplayExecutionController | null>(null);
   const replayCommandDispatcherRef = useRef<((payload: any, event: any) => Promise<void>) | null>(null);
   const replayStateSnapshotRef = useRef<any>(null);
+  const replayObservedEventsRef = useRef<Array<{ type: string; payload: any }>>([]);
   const [isReplayPlayback, setIsReplayPlayback] = useState(false);
   const [replayProgress, setReplayProgress] = useState<any>(null);
   const [replayFailure, setReplayFailure] = useState<string | null>(null);
   useEffect(() => { playersRef.current = players; }, [players]);
 
   const recordReplayEvent = (type: string, payload: Record<string, unknown> = {}) => {
+    if (isReplayPlayback) {
+      replayObservedEventsRef.current.push({
+        type,
+        payload: JSON.parse(JSON.stringify(payload))
+      });
+    }
     if (replayRecorderRef.current) appendReplayEvent(replayRecorderRef.current, type, payload);
   };
 
@@ -3272,6 +3279,7 @@ export default function App() {
       setReplayFailure(null);
       setReplayProgress({ status: 'RESTORING', consumedEvents: 0, totalEvents: replay.events.length });
       replayRecorderRef.current = null;
+      replayObservedEventsRef.current = [];
       stopGameplayRandomSession();
       resetCardUidCounter(initial.cardUidCounter ?? 0);
       const restoredPlayers = JSON.parse(JSON.stringify(initial.players)) as PlayerState[];
@@ -3316,7 +3324,18 @@ export default function App() {
           if (!replayCommandDispatcherRef.current) throw new Error('El dispatcher de comandos de replay no está disponible.');
           await replayCommandDispatcherRef.current(payload, event);
         },
-        verifyBotDecision: applyReplayBotDecision,
+        verifyBotDecision: async (payload: any, event: any) => {
+          const matchStarted = replay.events.find((candidate: any) => candidate.type === 'MATCH_STARTED');
+          const isPreMatchDecision = matchStarted && event.sequence < matchStarted.sequence;
+          const observed = replayObservedEventsRef.current[0];
+          if (!isPreMatchDecision && observed?.type === event.type &&
+              hashReplayState(observed.payload) === hashReplayState(event.payload)) {
+            replayObservedEventsRef.current.shift();
+            await applyReplayBotDecision(payload);
+            return;
+          }
+          await applyReplayBotDecision(payload);
+        },
         waitForIdle: async (event: any) => {
           const isCombatAction = event.type === 'PLAYER_ACTION' && (
             event.payload?.kind === 'ATTACK' ||
@@ -3371,6 +3390,37 @@ export default function App() {
             round: snapshot.round,
             deck: snapshot.deck
           };
+        },
+        verifyEvent: async (event: any) => {
+          const matchStarted = replay.events.find((candidate: any) => candidate.type === 'MATCH_STARTED');
+          if (
+            event.type === 'RANDOM_RESULT' ||
+            event.type === 'MATCH_RECORDING_STARTED' ||
+            event.type === 'MATCH_STARTED' ||
+            event.type === 'MATCH_FINISHED' ||
+            event.type === 'REPLAY_EXPORTED' ||
+            (matchStarted && event.sequence < matchStarted.sequence)
+          ) return;
+
+          const startedAt = Date.now();
+          while (replayObservedEventsRef.current.length === 0 && Date.now() - startedAt < 12000) {
+            await new Promise(resolve => setTimeout(resolve, 25));
+          }
+          const observed = replayObservedEventsRef.current.shift();
+          if (!observed) {
+            throw new Error('Falta el evento observado ' + event.type + ' en la secuencia ' + event.sequence + '.');
+          }
+          if (
+            observed.type !== event.type ||
+            hashReplayState(observed.payload) !== hashReplayState(event.payload)
+          ) {
+            throw new Error(
+              'Primer evento divergente en la secuencia ' + event.sequence +
+              ': esperado ' + event.type + ', observado ' + observed.type +
+              '. payload esperado=' + JSON.stringify(event.payload) +
+              '; payload observado=' + JSON.stringify(observed.payload)
+            );
+          }
         },
         assertRandomFullyConsumed: () => {
           const randomSession = getGameplayRandomSession();
