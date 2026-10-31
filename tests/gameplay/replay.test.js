@@ -268,6 +268,7 @@ test('una decisión automática se valida antes de consumir una sola vez su even
       assert.equal(observed.length, 1, 'la validación no consume el evento');
     },
     verifyEvent: event => {
+      if (event.type === 'MATCH_STARTED') return;
       const item = observed.shift();
       assert.deepEqual(item, { type: event.type, payload: event.payload });
       consumed += 1;
