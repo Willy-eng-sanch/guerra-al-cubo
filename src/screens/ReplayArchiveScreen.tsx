@@ -17,6 +17,7 @@ interface ReplaySummary {
 
 interface ReplayArchiveScreenProps {
   showDiagnostics?: boolean;
+  onImportReplay?: (file: File) => void;
   onBack: () => void;
   onReplay: (replay: unknown) => void;
 }
@@ -39,7 +40,7 @@ const modeLabel = (mode: string) => ({
   ONLINE_PVP: 'Multijugador'
 }[mode] || mode);
 
-export const ReplayArchiveScreen: React.FC<ReplayArchiveScreenProps> = ({ onBack, onReplay, showDiagnostics = false }) => {
+export const ReplayArchiveScreen: React.FC<ReplayArchiveScreenProps> = ({ onBack, onReplay, showDiagnostics = false, onImportReplay }) => {
   const [matches, setMatches] = useState<ReplaySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
@@ -106,6 +107,26 @@ export const ReplayArchiveScreen: React.FC<ReplayArchiveScreenProps> = ({ onBack
           </button>
         </header>
 
+        {showDiagnostics && (
+          <details className="mb-4 rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs text-amber-100">
+            <summary className="cursor-pointer font-bold">Herramientas de diagnóstico (solo desarrollo)</summary>
+            <p className="mt-2 text-slate-300">Importa una repetición externa únicamente para reproducir y depurar una sesión.</p>
+            <label className="mt-3 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-lg border border-amber-400/40 bg-slate-900 px-3 py-2 font-bold text-amber-100 hover:bg-slate-800">
+              Importar replay de prueba (.gcreplay)
+              <input
+                type="file"
+                accept=".gcreplay,application/json"
+                className="sr-only"
+                onChange={event => {
+                  const file = event.currentTarget.files?.[0];
+                  if (file) onImportReplay?.(file);
+                  event.currentTarget.value = '';
+                }}
+              />
+            </label>
+          </details>
+        )}
+
         {error && <div role="alert" className="mb-4 rounded-xl border border-rose-500/40 bg-rose-950/40 p-3 text-sm text-rose-200">{error}</div>}
 
         {loading ? (
@@ -140,13 +161,14 @@ export const ReplayArchiveScreen: React.FC<ReplayArchiveScreenProps> = ({ onBack
                     <Play className="h-4 w-4" /> Ver repetición
                   </button>
                   {showDiagnostics && (
+                    <>
                     <button disabled={workingId === match.matchId} onClick={() => void withReplay(match.matchId, replay => downloadReplayLog(replay))} className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/50 bg-emerald-950/50 px-3 py-2.5 text-xs font-bold text-emerald-200 hover:bg-emerald-900/60 disabled:opacity-50">
                       <FileText className="h-4 w-4" /> Exportar log
                     </button>
                     <button disabled={workingId === match.matchId} onClick={() => void withReplay(match.matchId, replay => downloadStoredReplay(replay))} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 disabled:opacity-50">
                       <Download className="h-4 w-4" /> Exportar replay
                     </button>
-  
+                    </>
                   )}
                   <button disabled={workingId === match.matchId} onClick={() => void remove(match.matchId)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-500/40 bg-rose-950/30 px-3 py-2.5 text-xs font-bold text-rose-200 hover:bg-rose-900/50 disabled:opacity-50">
                     <Trash2 className="h-4 w-4" /> Eliminar
