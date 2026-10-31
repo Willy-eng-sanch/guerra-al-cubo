@@ -714,3 +714,11 @@ button:disabled {
   border-image-width: 12px;
   border-image-repeat: stretch;
 }
+
+
+.gc-raster-sprite {
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  image-rendering: auto;
+  vertical-align: middle;
+}
