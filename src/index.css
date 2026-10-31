@@ -373,3 +373,20 @@ button:disabled {
     scroll-behavior: auto !important;
   }
 }
+
+
+.gc-menu-section-label {
+  margin-top: 0.35rem;
+  padding-inline: 0.25rem;
+  color: #91a0b7;
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.gc-menu-primary {
+  min-height: 3rem;
+  box-shadow: 0 8px 24px rgba(8, 145, 178, 0.12);
+}
