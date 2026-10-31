@@ -28,4 +28,8 @@
   <symbol id="icon-flame" viewBox="0 0 48 48"><path d="M26 4c2 10-8 12-5 22 2-3 5-5 8-7 8 8 12 14 8 22-3 5-8 7-14 6-9-1-15-8-13-17 1-6 6-12 9-16 0 7 2 10 4 12C21 16 29 12 26 4Z" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 28c5 4 6 8 3 12-2 2-6 2-8 0-3-3-1-8 5-12Z" fill="currentColor"/></symbol>
   <symbol id="icon-zap" viewBox="0 0 48 48"><path d="M27 3 8 27h13l-2 18 21-27H26l1-15Z" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"/></symbol>
   <symbol id="icon-help" viewBox="0 0 48 48"><circle cx="24" cy="24" r="19" fill="none" stroke="currentColor" stroke-width="3.3"/><path d="M18 18c1-7 13-8 14 0 0 5-8 6-8 12M24 36h.02" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></symbol>
+  <symbol id="icon-arrow-right" viewBox="0 0 48 48"><path d="m20 8 16 16-16 16M35 24H8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="icon-plus" viewBox="0 0 48 48"><path d="M24 7v34M7 24h34" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/></symbol>
+  <symbol id="icon-search" viewBox="0 0 48 48"><circle cx="21" cy="21" r="13" fill="none" stroke="currentColor" stroke-width="3.5"/><path d="m31 31 11 11" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></symbol>
+  <symbol id="icon-star" viewBox="0 0 48 48"><path d="m24 4 6.2 13.1L45 19l-10.5 10.2L37 44l-13-7.1L11 44l2.5-14.8L3 19l14.8-1.9L24 4Z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></symbol>
 </svg>
