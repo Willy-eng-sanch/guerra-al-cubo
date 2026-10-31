@@ -53,3 +53,12 @@ detallada por campos.
 La pantalla inicial incluye ahora un acceso de importación de archivos `.gcreplay` para probar el motor. Todavía no es una biblioteca persistente: IndexedDB, historial de partidas guardadas y administración del archivo local se implementarán después de validar el reproductor.
 
 **Límite de validación:** la CI valida pruebas unitarias del controlador, TypeScript y compilación; no demuestra por sí sola que una partida interactiva completa exportada desde la arena se reconstruya con todos sus checkpoints y ganador idénticos. Ese ensayo end-to-end sigue siendo el criterio obligatorio de aceptación antes de fusionar la PR #37.
+
+
+## Reproducción en modo de solo lectura
+
+La reproducción no debe acreditar progresión ni volver a ejecutar bots sobre el estado reconstruido:
+- Los registros de daño, bloqueos, cartas jugadas, resultado de partida y monedas se omiten mientras `replayPlaybackActiveRef` está activo.
+- Al completar, fallar o detener una reproducción, el modo protegido permanece activo y cubre la arena con un panel de resultado.
+- La sesión solo se desactiva cuando el usuario elige explícitamente salir de la repetición.
+- El estado inicial de una nueva reproducción limpia el controlador anterior, ventanas de selección pendientes y velocidad acelerada.
