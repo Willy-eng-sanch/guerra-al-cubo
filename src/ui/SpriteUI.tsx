@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactNode } from 'react';
 
 export type GcSpriteName =
   | 'icon-dice' | 'icon-swords' | 'icon-shield' | 'icon-history' | 'icon-trophy'
@@ -23,13 +23,15 @@ export interface GcSpriteIconProps {
   size?: number;
   className?: string;
   label?: string;
+  style?: CSSProperties;
 }
 
 /** A single reusable vector sprite reference. Artwork stays in the external atlas. */
-export function GcSpriteIcon({ name, size = 24, className, label }: GcSpriteIconProps) {
+export function GcSpriteIcon({ name, size = 24, className, label, style }: GcSpriteIconProps) {
   return (
     <svg
       className={className}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 48 48"
