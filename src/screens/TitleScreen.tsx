@@ -18,7 +18,6 @@ interface TitleScreenProps {
   onRosterClick: () => void;
   onCardsClick: () => void;
   onOnlineClick: () => void;
-  onReplayFile: (file: File) => void;
   onReplayArchiveClick: () => void;
 }
 
@@ -30,7 +29,6 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   onRosterClick,
   onCardsClick,
   onOnlineClick,
-  onReplayFile,
   onReplayArchiveClick
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
@@ -60,7 +58,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   }, []);
 
   return (
-    <div className="relative w-full min-h-screen overflow-y-auto flex flex-col justify-between p-3 sm:p-5 select-none bg-[#0f1116]">
+    <div className="gc-screen gc-screen--menu relative w-full min-h-screen overflow-y-auto flex flex-col p-3 sm:p-5 bg-[#0f1116]">
       {/* Background Banner with Dark Vignette */}
       <div className="absolute inset-0 z-0">
         <img
@@ -166,7 +164,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       </div>
 
       {/* Navigation Buttons Dock */}
-      <div className="relative z-10 flex flex-col gap-2.5 max-w-md mx-auto w-full pb-4">
+      <div className="gc-menu-actions relative z-10 flex flex-col gap-2.5 max-w-md mx-auto w-full pb-4">
         {/* MODO ALEATORIO (LA DEMO GRATUITA) */}
         <button
           onClick={onDraftClick}
@@ -230,28 +228,13 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <span>SELECCIONAR TUS 3 PERSONAJES (DIRECTO)</span>
         </button>
 
-        {/* Importar una partida grabada para comprobar la reconstrucción determinista */}
-        <label className="w-full py-2.5 bg-cyan-950/50 hover:bg-cyan-900/60 active:scale-[0.98] text-cyan-200 font-bold text-xs md:text-sm rounded-xl border border-cyan-500/40 flex items-center justify-center gap-2 transition-all cursor-pointer">
-          <History className="w-4 h-4 text-cyan-300" />
-          <span>REPRODUCIR PARTIDA GUARDADA (.GCREPLAY)</span>
-          <input
-            type="file"
-            accept=".gcreplay,application/json"
-            className="hidden"
-            onChange={event => {
-              const file = event.currentTarget.files?.[0];
-              if (file) onReplayFile(file);
-              event.currentTarget.value = '';
-            }}
-          />
-        </label>
-
         <button
           onClick={onReplayArchiveClick}
-          className="w-full py-2.5 bg-[#151b2a] hover:bg-[#202b40] active:scale-[0.98] text-cyan-200 font-black text-xs md:text-sm rounded-xl border border-cyan-500/50 flex items-center justify-center gap-2 transition-all cursor-pointer"
+          aria-label="Abrir mis partidas guardadas"
+          className="gc-menu-primary w-full py-3 bg-gradient-to-r from-cyan-950/90 to-blue-950/80 hover:brightness-125 active:scale-[0.98] text-cyan-100 font-black text-xs md:text-sm rounded-xl border border-cyan-400/60 flex items-center justify-center gap-2 transition-all shadow-lg"
         >
           <History className="w-4 h-4 text-cyan-300" />
-          <span>ARCHIVO DE PARTIDAS JUGADAS</span>
+          <span>MIS PARTIDAS · VER REPETICIONES</span>
         </button>
 
         {/* Tutorial & Manual Táctico */}
