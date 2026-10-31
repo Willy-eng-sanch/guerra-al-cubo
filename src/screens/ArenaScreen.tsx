@@ -505,7 +505,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                 </span>
               </div>
             )}
-            {/* Hand Cards Horizontal Carousel with PvZ Heroes Class & Synergy System */}
+            {/* Hand Cards: class and synergy system */}
             <div>
               <div className="flex items-center justify-between text-[11px] text-neutral-400 font-semibold mb-1.5 px-1">
                 <span>
