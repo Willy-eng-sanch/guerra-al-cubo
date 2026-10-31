@@ -11,7 +11,13 @@ export const GC_SPRITE_CATALOG = {
     panel: { file: '/assets/ui/sprites/panel-frame.svg', viewBox: '0 0 180 180', slice: 34, role: 'dialog and content panel' },
     card: { file: '/assets/ui/sprites/card-frame.svg', viewBox: '0 0 160 200', slice: 32, role: 'character, card and archive tile' },
     tab: { file: '/assets/ui/sprites/tab-frame.svg', viewBox: '0 0 128 72', slice: 24, role: 'tab and filter' },
-    badge: { file: '/assets/ui/sprites/badge-frame.svg', viewBox: '0 0 128 72', slice: 20, role: 'status, rarity and counters' }
+    badge: { file: '/assets/ui/sprites/badge-frame.svg', viewBox: '0 0 128 72', slice: 20, role: 'status, rarity and counters' },
+    portrait: { file: '/assets/ui/sprites/portrait-frame.svg', viewBox: '0 0 160 160', slice: 30, role: 'hero and player portrait frame' },
+    titleBanner: { file: '/assets/ui/sprites/title-banner.svg', viewBox: '0 0 180 100', slice: 26, role: 'screen and modal title ribbon' },
+    progressTrack: { file: '/assets/ui/sprites/progress-track.svg', viewBox: '0 0 120 48', slice: 20, role: 'loading and activity progress track' },
+    progressFill: { file: '/assets/ui/sprites/progress-fill.svg', viewBox: '0 0 120 48', slice: 20, role: 'loading and activity progress fill' },
+    slot: { file: '/assets/ui/sprites/slot-frame.svg', viewBox: '0 0 128 128', slice: 28, role: 'empty squad, card and equipment slot' },
+    modal: { file: '/assets/ui/sprites/modal-frame.svg', viewBox: '0 0 180 180', slice: 34, role: 'generic modal and dialog frame' }
   },
   backgrounds: {
     seamlessDiceTile: {
