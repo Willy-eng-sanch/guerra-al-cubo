@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, Play, FileText, Download, Trash2, RefreshCw, Swords, CalendarClock, Users } from 'lucide-react';
 import { deleteSavedReplay, downloadReplayLog, downloadStoredReplay, getSavedReplay, listSavedReplays } from '../gameplay/replay-storage.js';
+import { GcSpriteCard } from '../ui/SpriteUI';
 
 interface ReplaySummary {
   matchId: string;
@@ -140,7 +141,7 @@ export const ReplayArchiveScreen: React.FC<ReplayArchiveScreenProps> = ({ onBack
         ) : (
           <div className="space-y-3">
             {matches.map(match => (
-              <article key={match.matchId} className="rounded-2xl border border-slate-700 bg-[#131a27] p-4 shadow-lg">
+              <GcSpriteCard key={match.matchId} className="rounded-2xl p-4 shadow-lg">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="break-all text-sm font-black text-white">{modeLabel(match.mode)}</h2>
@@ -174,7 +175,7 @@ export const ReplayArchiveScreen: React.FC<ReplayArchiveScreenProps> = ({ onBack
                     <Trash2 className="h-4 w-4" /> Eliminar
                   </button>
                 </div>
-              </article>
+              </GcSpriteCard>
             ))}
           </div>
         )}
