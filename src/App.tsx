@@ -2363,7 +2363,7 @@ export default function App() {
     } : p));
 
     addLog(`${attacker.name} preparó la postura: [${card.name}]`, true);
-    if (!attacker.isBot) dailyMissionsManager.recordCardPlayed();
+    if (!replayPlaybackActiveRef.current && !attacker.isBot) dailyMissionsManager.recordCardPlayed();
     applyCardClassSynergy(attacker.id, card, selectedTargetId);
   };
 
@@ -2378,7 +2378,7 @@ export default function App() {
     recordPlayerAction('PLAY_ACTION_TRICK', { cardId, cardUid: card.uid, targetId: targetId ?? null });
 
     sound.playCardDraw();
-    if (!attacker.isBot) dailyMissionsManager.recordCardPlayed();
+    if (!replayPlaybackActiveRef.current && !attacker.isBot) dailyMissionsManager.recordCardPlayed();
     const newHand = attacker.hand.filter(c => c.id !== cardId);
     returnCardsToGlobalPile([card]);
 
@@ -2902,7 +2902,7 @@ export default function App() {
       }
       addLog(`+15 Aura de Calle obtenida por aguantar la refriega.`, true, "Aura");
       if (gameMode === GameMode.ONLINE_PVP) {
-        if (!replayPlaybackActiveRef.current) collectionManager.addCoins(25);
+        if (!replayPlaybackActiveRef.current) if (!replayPlaybackActiveRef.current) collectionManager.addCoins(25);
         addFloatingText(playersList[0]?.id || 1, "+25 Cubi-Monedas de Consuelo", "#fbbf24");
       }
       return;
@@ -2921,7 +2921,7 @@ export default function App() {
       addLog(`¡¡+35 AURA DE CALLE Y +1 CAJA DE 3 DADOS DESBLOQUEADA!!`, true, "Aura");
       addFloatingText(playersList[0]?.id || 1, "¡+1 CAJA DE 3 DADOS!", "#ffd600");
       if (gameMode === GameMode.ONLINE_PVP) {
-        if (!replayPlaybackActiveRef.current) collectionManager.addCoins(60);
+        if (!replayPlaybackActiveRef.current) if (!replayPlaybackActiveRef.current) collectionManager.addCoins(60);
         addFloatingText(playersList[0]?.id || 1, "¡+60 Cubi-Monedas de Victoria!", "#ffd600");
       }
       return;
@@ -2949,12 +2949,12 @@ export default function App() {
           addLog(`¡¡+35 AURA DE COMBATE Y +1 CAJA DE 3 DADOS GANADA!!`, true, "Aura");
           addFloatingText(champ.id, "¡+1 CAJA DE 3 DADOS!", "#ffd600");
           if (gameMode === GameMode.ONLINE_PVP) {
-            collectionManager.addCoins(60);
+            if (!replayPlaybackActiveRef.current) collectionManager.addCoins(60);
           }
         } else {
           addLog(`+15 Aura de combate disputado.`, true, "Aura");
           if (gameMode === GameMode.ONLINE_PVP) {
-            collectionManager.addCoins(25);
+            if (!replayPlaybackActiveRef.current) collectionManager.addCoins(25);
           }
         }
       }
