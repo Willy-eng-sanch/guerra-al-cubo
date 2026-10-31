@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GcSpriteIcon } from '../ui/SpriteUI';
+import { GcSpriteCard, GcSpriteIcon } from '../ui/SpriteUI';
 import {
   ActiveDiceRoll,
   CombatLogEntry,
@@ -538,9 +538,9 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                     const hasSynergy = actorHeroDef?.classes.includes(card.category);
 
                     return (
-                      <div
+                      <GcSpriteCard
                         key={`hand-card-${card.uid || card.id}-${idx}`}
-                        className={`p-2.5 rounded-xl border flex flex-col justify-between transition-all relative overflow-hidden ${
+                        className={`gc-sprite-card--arena-hand p-2.5 flex flex-col justify-between transition-all relative overflow-hidden ${
                           hasSynergy
                             ? 'ring-2 ring-yellow-400/90 shadow-[0_0_14px_rgba(250,204,21,0.4)]'
                             : ''
@@ -642,7 +642,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                             </button>
                           )}
                         </div>
-                      </div>
+                      </GcSpriteCard>
                     );
                   })}
                 </div>
