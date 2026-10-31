@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { deleteSavedReplay, downloadReplayLog, downloadStoredReplay, getSavedReplay, listSavedReplays } from '../gameplay/replay-storage.js';
 import { GcSpriteCard, GcSpriteIcon } from '../ui/SpriteUI';
+import { SpriteCatalogPreview } from '../ui/SpriteCatalogPreview';
 
 interface ReplaySummary {
   matchId: string;
@@ -124,6 +125,15 @@ export const ReplayArchiveScreen: React.FC<ReplayArchiveScreenProps> = ({ onBack
                 }}
               />
             </label>
+          </details>
+        )}
+
+        {showDiagnostics && (
+          <details className="mb-4 rounded-xl border border-cyan-500/30 bg-slate-950/70 p-3">
+            <summary className="cursor-pointer text-xs font-bold text-cyan-200">Laboratorio visual de sprites</summary>
+            <div className="mt-3">
+              <SpriteCatalogPreview />
+            </div>
           </details>
         )}
 
