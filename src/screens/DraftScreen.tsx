@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CharacterDef, CharacterType, DraftState, CATEGORY_INFO } from '../types/game';
 import { CHARACTER_LIST, CHARACTERS } from '../data/characters';
 import { Dice3DVisual } from '../components/Dice3DVisual';
 import { DiceCupShaker } from '../components/DiceCupShaker';
 import { HeroDiceCard } from '../components/HeroDiceCard';
 import { sound } from '../audio/soundManager';
-import { ArrowLeft, Dices, Shield, Swords, Sparkles, Check, Lock, Users, Info } from 'lucide-react';
-
 interface DraftScreenProps {
   onStartBattle: (playerTeam: CharacterType[], rivalTeam: CharacterType[]) => void;
   onBack: () => void;
@@ -254,13 +253,13 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
           onClick={onBack}
           className="p-2 rounded-xl bg-[#171c26] hover:bg-[#202736] border border-[#2c374d] text-neutral-300 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <GcSpriteIcon name="icon-back" className="w-4 h-4"  />
           <span>Volver al Menú</span>
         </button>
 
         <div className="text-center">
           <h2 className="text-sm md:text-lg font-black tracking-wide text-white font-bungee flex items-center justify-center gap-2">
-            <Dices className="w-5 h-5 text-yellow-400" />
+            <GcSpriteIcon name="icon-dice" className="w-5 h-5 text-yellow-400"  />
             <span>MODO ALEATORIO · DADOS D6</span>
           </h2>
           <p className="text-[10px] text-cyan-300 hidden sm:block">
@@ -341,7 +340,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
               disabled={draftState.isRolling}
               className="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:brightness-110 active:scale-95 text-black font-black text-sm md:text-base rounded-2xl shadow-xl border-2 border-amber-300 transition-all flex items-center gap-2 mx-auto disabled:opacity-50 cursor-pointer"
             >
-              <Dices className="w-5 h-5 text-black" />
+              <GcSpriteIcon name="icon-dice" className="w-5 h-5 text-black"  />
               <span>{draftState.isRolling ? 'Tirando Dados...' : '¡LANZAR DADOS PARA DECIDIR ORDEN!'}</span>
             </button>
           </div>
@@ -554,7 +553,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
                   disabled={draftState.turn !== 'PLAYER' || draftState.playerTeam.length >= 3}
                   className="w-full md:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-black font-black text-xs md:text-sm shadow-xl flex items-center justify-center gap-2 shrink-0 cursor-pointer active:scale-95 transition-all"
                 >
-                  <Dices className="w-4 h-4 text-black" />
+                  <GcSpriteIcon name="icon-dice" className="w-4 h-4 text-black"  />
                   <span>SELECCIONAR DADO (2º CLIC)</span>
                 </button>
               </div>
@@ -564,7 +563,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
             <div className="bg-[#121622] border-2 border-[#263148] rounded-3xl p-3 md:p-4 shadow-xl">
               <div className="flex items-center justify-between mb-3 px-1">
                 <span className="text-xs font-black uppercase text-amber-400 flex items-center gap-1.5 font-bungee">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <GcSpriteIcon name="icon-spark" className="w-4 h-4 text-amber-400"  />
                   <span>Pool de Dados Disponibles (13 Personajes)</span>
                 </span>
                 <span className="text-[10px] text-neutral-400">
@@ -637,7 +636,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
             </div>
 
             <div className="flex items-center justify-center gap-2 text-yellow-400 font-mono text-xs font-black animate-pulse">
-              <Sparkles className="w-4 h-4 animate-spin" />
+              <GcSpriteIcon name="icon-spark" className="w-4 h-4 animate-spin"  />
               <span>Agitando cubilete y repartiendo dados al azar...</span>
             </div>
           </div>
@@ -793,7 +792,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
                 className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#1d2436] hover:bg-[#252f47] text-neutral-300 font-bold text-xs border border-neutral-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 title="Volver a barajar los mismos 6 dados escogidos"
               >
-                <Dices className="w-4 h-4 text-amber-400" />
+                <GcSpriteIcon name="icon-dice" className="w-4 h-4 text-amber-400"  />
                 <span>Volver a Repartir los 6 Dados</span>
               </button>
 
@@ -808,7 +807,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
                 )}
                 className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-500 hover:brightness-110 active:scale-95 text-black font-black text-sm uppercase tracking-wider border-2 border-white shadow-[0_0_25px_rgba(250,204,21,0.6)] transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                <Swords className="w-5 h-5 text-black" />
+                <GcSpriteIcon name="icon-swords" className="w-5 h-5 text-black"  />
                 <span>¡ENTRAR A LA ARENA DE COMBATE!</span>
               </button>
             </div>
@@ -820,7 +819,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
       {/* Pick Banner Toast */}
       {recentPickBanner && (
         <div className="fixed top-16 inset-x-4 max-w-md mx-auto z-40 bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 text-black font-black px-5 py-3 rounded-2xl shadow-2xl border-2 border-white text-center animate-bounce flex items-center justify-center gap-2">
-          <Sparkles className="w-5 h-5 text-black" />
+          <GcSpriteIcon name="icon-spark" className="w-5 h-5 text-black"  />
           <span className="text-sm">
             {recentPickBanner.picker === 'PLAYER'
               ? `¡Has seleccionado a ${recentPickBanner.name}!`
