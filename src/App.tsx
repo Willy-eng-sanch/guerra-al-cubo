@@ -21,7 +21,7 @@ import {
   getMaxPreparedStanceSlots,
   getMaxWeaponSlots
 } from './types/game';
-import { ALL_CARDS, createShuffledDeck, generateUniqueCardUid } from './data/cards';
+import { ALL_CARDS, createShuffledDeck, generateUniqueCardUid, getCardUidCounter } from './data/cards';
 import { CHARACTER_LIST, CHARACTERS } from './data/characters';
 import { DEFAULT_CHAPTERS } from './data/campaign';
 import { sound } from './audio/soundManager';
@@ -30,6 +30,8 @@ import { narrator } from './audio/narratorManager';
 import { collectionManager } from './data/collectionManager';
 import { dailyMissionsManager } from './data/dailyMissionsManager';
 import { advanceTurnState, getMatchOutcome, resolveCubiculaTransfer } from './gameplay/rules.js';
+import { createMatchSeed, gameplayRandomInt, gameplayRandomPick, gameplayShuffle, startGameplayRandomRecording } from './gameplay/random.js';
+import { appendReplayEvent, createMatchReplay, downloadMatchReplay, setReplayFinalResult, setReplayInitialState } from './gameplay/replay.js';
 
 import { TitleScreen } from './screens/TitleScreen';
 import { SetupScreen } from './screens/SetupScreen';
@@ -147,14 +149,77 @@ export default function App() {
   const botOrderTurnRef = useRef<number | null>(null);
   const playersRef = useRef<PlayerState[]>([]);
   const deckRef = useRef<GameCard[]>([]);
+  const replayRecorderRef = useRef<any>(null);
+  const replayUiEventCounterRef = useRef(0);
   useEffect(() => { playersRef.current = players; }, [players]);
   useEffect(() => { deckRef.current = deck; }, [deck]);
+
+  const recordReplayEvent = (type: string, payload: Record<string, unknown> = {}) => {
+    if (replayRecorderRef.current) appendReplayEvent(replayRecorderRef.current, type, payload);
+  };
+
+  const beginMatchRecording = (mode: string, metadata: Record<string, unknown> = {}) => {
+    const seed = createMatchSeed();
+    const replay = createMatchReplay({ seed, mode, metadata, engineVersion: '1.0.0' });
+    replayRecorderRef.current = replay;
+    startGameplayRandomRecording(seed, randomResult => appendReplayEvent(replay, 'RANDOM_RESULT', randomResult));
+    appendReplayEvent(replay, 'MATCH_RECORDING_STARTED', { mode, seed });
+  };
+
+  const captureMatchInitialState = (
+    gameModeAtStart: GameMode,
+    initialPlayers: PlayerState[],
+    initialDeck: GameCard[],
+    additional: Record<string, unknown> = {}
+  ) => {
+    const deckOrder = initialDeck.map(card => ({ id: card.id, uid: card.uid }));
+    setReplayInitialState(replayRecorderRef.current, {
+      gameMode: gameModeAtStart,
+      round: 1,
+      turnIndex: 0,
+      cardUidCounter: getCardUidCounter(),
+      players: initialPlayers,
+      deck: initialDeck,
+      deckOrder,
+      ...additional
+    });
+    recordReplayEvent('MATCH_STARTED', { gameMode: gameModeAtStart, deckOrder });
+  };
+
+  const recordPlayerAction = (kind: string, payload: Record<string, unknown> = {}) => {
+    recordReplayEvent('PLAYER_ACTION', {
+      kind,
+      actorId: players[turnIndex]?.id ?? null,
+      round,
+      ...payload
+    });
+  };
+
+  const exportMatchReplay = () => {
+    const replay = replayRecorderRef.current;
+    if (!replay || !replay.initialState) return;
+    appendReplayEvent(replay, 'REPLAY_EXPORTED', { eventCount: replay.events.length });
+    downloadMatchReplay(replay);
+  };
+
+  const nextReplayUiEventId = () => {
+    replayUiEventCounterRef.current += 1;
+    return replayUiEventCounterRef.current;
+  };
+
 
   // Pila única: toda carta consumida, reemplazada o desequipada vuelve a mezclarse aquí.
   const returnCardsToGlobalPile = (cards: GameCard[]) => {
     if (cards.length === 0) return;
-    setDeck(previous => [...previous, ...cards].sort(() => Math.random() - 0.5));
+    const currentDeck = deckRef.current.length > 0 ? deckRef.current : deck;
+    const shuffledDeck = gameplayShuffle([...currentDeck, ...cards], 'deck.return-cards');
+    deckRef.current = shuffledDeck;
+    setDeck(shuffledDeck);
     setDiscardPile([]);
+    recordReplayEvent('DECK_SHUFFLED', {
+      purpose: 'deck.return-cards',
+      cardOrder: shuffledDeck.map(card => ({ id: card.id, uid: card.uid }))
+    });
   };
 
   useEffect(() => {
@@ -213,6 +278,7 @@ export default function App() {
   };
 
   const handleApplySixChoice = (playerId: number, choice: 'CARD' | 'EXTRA_TURN') => {
+    recordPlayerAction('SPECIAL_SIX_CHOICE', { playerId, choice });
     const latestPlayers = playersRef.current.length > 0 ? playersRef.current : players;
     const actor = latestPlayers.find(p => p.id === playerId);
     const actorName = actor ? actor.name : 'Jugador';
@@ -291,7 +357,7 @@ export default function App() {
   // Add floating combat text
   const addFloatingText = (playerId: number, text: string, colorHex: string) => {
     const newText: FloatingCombatText = {
-      id: Date.now() + Math.random(),
+      id: nextReplayUiEventId(),
       playerId,
       text,
       colorHex,
@@ -307,12 +373,13 @@ export default function App() {
   const addLog = (message: string, isCritical: boolean = false, actorOverride?: string) => {
     const actor = actorOverride || (players[turnIndex]?.name ?? "Árbitro");
     const entry: CombatLogEntry = {
-      id: Date.now() + Math.random(),
+      id: nextReplayUiEventId(),
       round,
       actorName: actor,
       message,
       isCritical
     };
+    recordReplayEvent('GAME_LOG', { round, actorName: actor, message, isCritical });
     setLog(prev => [entry, ...prev.slice(0, 35)]);
   };
 
@@ -322,6 +389,7 @@ export default function App() {
     if (cards.length === 0) return { card: null, newDeck: cards, newDiscard: [] };
     const rawCard = cards.shift() || null;
     const card = rawCard ? { ...rawCard, uid: generateUniqueCardUid(rawCard.id) } : null;
+    if (card) recordReplayEvent('CARD_DRAWN', { cardId: card.id, cardUid: card.uid });
     return { card, newDeck: cards, newDiscard: [] };
   };
 
@@ -367,12 +435,13 @@ export default function App() {
     const chooseAlternative = scoreTramcubosoCard(player, second.card) > scoreTramcubosoCard(player, first.card);
     const selectedCard = chooseAlternative ? second.card : first.card;
     const discardedCard = chooseAlternative ? first.card : second.card;
-    return { cards: [selectedCard], choices: [], newDeck: [...second.newDeck, discardedCard].sort(() => Math.random() - 0.5), newDiscard: [] };
+    return { cards: [selectedCard], choices: [], newDeck: gameplayShuffle([...second.newDeck, discardedCard], 'deck.tramcuboso-rejected-card'), newDiscard: [] };
   };
 
   const resolveTramcubosoCardChoice = (choiceIndex: 0 | 1) => {
     const offer = tramcubosoCardChoices[0];
     if (!offer) return;
+    recordPlayerAction('TRAMCUBOSO_CARD_CHOICE', { playerId: offer.playerId, choiceIndex, initialCardUid: offer.initialCard.uid, alternativeCardUid: offer.alternativeCard.uid });
     const selectedCard = choiceIndex === 0 ? offer.initialCard : offer.alternativeCard;
     const discardedCard = choiceIndex === 0 ? offer.alternativeCard : offer.initialCard;
     if (choiceIndex === 1) {
@@ -405,6 +474,7 @@ export default function App() {
   const startDraftMatch = (playerTeam: CharacterType[], rivalTeam: CharacterType[]) => {
     matchIntroCompletedRef.current = false;
     setIsMatchIntroPlaying(true);
+    beginMatchRecording('TEAM_DRAFT_3V3', { playerTeam, rivalTeam });
     let currentDeck = createShuffledDeck();
     let currentDiscard: GameCard[] = [];
 
@@ -470,6 +540,7 @@ export default function App() {
       });
     }
 
+    captureMatchInitialState(GameMode.QUICK_BATTLE, newPlayers, currentDeck, { matchType: 'DRAFT_3V3' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -502,10 +573,11 @@ export default function App() {
   // Start Quick Battle
   const startQuickMatch = (playerCount: number = 3, chosenHero: CharacterType = CharacterType.TRAMCUBOSO) => {
     triggerMatchIntro();
+    beginMatchRecording('QUICK_BATTLE', { playerCount, chosenHero });
     let currentDeck = createShuffledDeck();
     let currentDiscard: GameCard[] = [];
 
-    const otherHeroes = CHARACTER_LIST.filter(c => c.type !== chosenHero).sort(() => Math.random() - 0.5);
+    const otherHeroes = gameplayShuffle(CHARACTER_LIST.filter(c => c.type !== chosenHero), 'match.quick.other-heroes');
     const newPlayers: PlayerState[] = [];
 
     // Player 1 (Human)
@@ -562,6 +634,7 @@ export default function App() {
       });
     }
 
+    captureMatchInitialState(GameMode.QUICK_BATTLE, newPlayers, currentDeck, { matchType: 'QUICK_BATTLE' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -594,6 +667,7 @@ export default function App() {
   // Start Campaign Match
   const startCampaignMatch = (chapter: CampaignChapter, chosenHero: CharacterType = CharacterType.TRAMCUBOSO) => {
     triggerMatchIntro();
+    beginMatchRecording('STREET_CAMPAIGN', { chapterTitle: chapter.title, chosenHero });
     let currentDeck = createShuffledDeck();
     let currentDiscard: GameCard[] = [];
 
@@ -677,6 +751,7 @@ export default function App() {
       });
     });
 
+    captureMatchInitialState(GameMode.STREET_CAMPAIGN, newPlayers, currentDeck, { matchType: 'STREET_CAMPAIGN' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -709,6 +784,7 @@ export default function App() {
   // Start Pass and Play
   const startPassAndPlayMatch = (playerCount: number, heroList: CharacterType[]) => {
     triggerMatchIntro();
+    beginMatchRecording('PASS_AND_PLAY', { playerCount, heroList });
     let currentDeck = createShuffledDeck();
     let currentDiscard: GameCard[] = [];
 
@@ -741,6 +817,7 @@ export default function App() {
       });
     }
 
+    captureMatchInitialState(GameMode.PASS_AND_PLAY, newPlayers, currentDeck, { matchType: 'PASS_AND_PLAY' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -777,6 +854,7 @@ export default function App() {
     rivalName: string = 'Rival Online'
   ) => {
     triggerMatchIntro();
+    beginMatchRecording('ONLINE_PVP', { playerTeam, rivalTeam, rivalName });
     let currentDeck = createShuffledDeck();
     let currentDiscard: GameCard[] = [];
 
@@ -854,6 +932,7 @@ export default function App() {
       });
     }
 
+    captureMatchInitialState(GameMode.ONLINE_PVP, newPlayers, currentDeck, { matchType: 'ONLINE_PVP' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -1083,7 +1162,7 @@ export default function App() {
         break;
       }
       case CardCategory.CEREBRAL: {
-        const getsAp = Math.random() < 0.5;
+        const getsAp = gameplayRandomInt(0, 1, 'card.tactics.extra-cubit') === 1;
         if (getsAp) {
           setPlayers(prev => prev.map(p => {
             if (p.id !== actorId) return p;
@@ -1138,6 +1217,7 @@ export default function App() {
     if (!attacker || attacker.actionPoints <= 0 || attacker.isFrozen) return;
     const intendedTarget = players.find(p => p.id === targetId);
     if (!intendedTarget || intendedTarget.isEliminated || intendedTarget.hp <= 0 || intendedTarget.id === attacker.id) return;
+    if (!isCubiculaAbility && !isCubogroAbility && secondaryTargetId === undefined && !diceOverride) recordPlayerAction('ATTACK', { targetId });
     if (attacker.cubinarcaOrder?.kind === 'ATTACK_TARGET' && attacker.cubinarcaOrder.attackTargetId !== intendedTarget.id) {
       addLog(`Discordia obliga a ${attacker.name} a atacar a ${players.find(player => player.id === attacker.cubinarcaOrder?.attackTargetId)?.name ?? 'su objetivo señalado'}.`);
       return;
@@ -1199,21 +1279,21 @@ export default function App() {
         ? Math.max(...attackerRolls)
         : (attackerRolls[0] || 1);
     } else if (attackerHero === CharacterType.TRAMCUBOSO) {
-      const r1 = Math.floor(Math.random() * 6) + 1;
-      const r2 = Math.floor(Math.random() * 6) + 1;
+      const r1 = gameplayRandomInt(1, 6, 'combat.attack.tramcuboso.first');
+      const r2 = gameplayRandomInt(1, 6, 'combat.attack.tramcuboso.second');
       attackerRolls.push(r1, r2);
       attackerFinalVal = Math.max(r1, r2);
     } else if (attackerHero === CharacterType.CUBINJA) {
-      const r1 = Math.floor(Math.random() * 6) + 1;
-      const r2 = Math.floor(Math.random() * 6) + 1;
+      const r1 = gameplayRandomInt(1, 6, 'combat.attack.cubinja.first');
+      const r2 = gameplayRandomInt(1, 6, 'combat.attack.cubinja.second');
       attackerRolls.push(r1, r2);
       attackerFinalVal = r1 + r2;
     } else if (attackerHero === CharacterType.CUBOGRO) {
-      const r = Math.floor(Math.random() * 6) + 1;
+      const r = gameplayRandomInt(1, 6, 'combat.attack.cubogro');
       attackerRolls.push(r);
       attackerFinalVal = r;
     } else {
-      const r = Math.floor(Math.random() * 6) + 1;
+      const r = gameplayRandomInt(1, 6, 'combat.attack.standard');
       attackerRolls.push(r);
       attackerFinalVal = r;
     }
@@ -1275,7 +1355,7 @@ export default function App() {
         defenderRolls.push(...diceOverride.defenderRolls);
         defenderFinalVal = defenderRolls[0] ?? 0;
       } else {
-        const r = Math.floor(Math.random() * 6) + 1;
+        const r = gameplayRandomInt(1, 6, 'combat.defense.frozen');
         defenderRolls.push(r);
         defenderFinalVal = r;
       }
@@ -1295,7 +1375,7 @@ export default function App() {
         if (isCubinjaCardBlock) addLog(`¡Arsenal Ilimitado! ${target.name} coincide en defensa: obtiene una carta, pero el daño no se bloquea ni se reduce.`, true, target.name);
       }
     } else if (defenderHero === CharacterType.CUBINJA) {
-      const r = Math.floor(Math.random() * 6) + 1;
+      const r = gameplayRandomInt(1, 6, 'combat.defense.cubinja');
       defenderRolls.push(r);
       defenderFinalVal = r;
       isCubinjaCardBlock = attackerRolls.includes(r);
@@ -1303,8 +1383,8 @@ export default function App() {
         addLog(`¡Avaricia! ${target.name} iguala el ataque con ${r}; la coincidencia no bloquea el daño y solo concede el robo de una carta.`, true, target.name);
       }
     } else if (defenderHero === CharacterType.TRAMCUBOSO) {
-      const r1 = Math.floor(Math.random() * 6) + 1;
-      const r2 = Math.floor(Math.random() * 6) + 1;
+      const r1 = gameplayRandomInt(1, 6, 'combat.defense.tramcuboso.first');
+      const r2 = gameplayRandomInt(1, 6, 'combat.defense.tramcuboso.second');
       defenderRolls.push(r1, r2);
       isPerfectBlock =
         attackerRolls.includes(r1) ||
@@ -1313,7 +1393,7 @@ export default function App() {
         ? Math.max(...[r1, r2].filter(value => attackerRolls.includes(value)))
         : Math.max(r1, r2);
     } else {
-      const r = Math.floor(Math.random() * 6) + 1;
+      const r = gameplayRandomInt(1, 6, 'combat.defense.standard');
       defenderRolls.push(r);
       defenderFinalVal = r;
       const matchedAttack = attackerRolls.includes(r);
@@ -1346,7 +1426,7 @@ export default function App() {
         const attackPeak = Math.max(...attackerRolls);
         const botWantsReroll = botIsAttacker ? (isPerfectBlock || attackPeak < 6) : !isPerfectBlock;
         if (botWantsReroll) {
-          const rollMany = (count: number) => Array.from({ length: count }, () => Math.floor(Math.random() * 6) + 1);
+          const rollMany = (count: number) => Array.from({ length: count }, () => gameplayRandomInt(1, 6, 'combat.tramcuboso.automatic-reroll'));
           addLog("Revolución de la Mesa: " + tramcubosoCandidate.name + " decide relanzar automáticamente los dados del enfrentamiento.", true, tramcubosoCandidate.name);
           handleAttack(intendedTarget.id, isCubiculaAbility, secondaryTargetId, {
             attackerRolls: rollMany(attackerRolls.length),
@@ -1675,7 +1755,7 @@ export default function App() {
             const defenderFreeSlots = Math.max(0, getMaxHandSize(target) - target.hand.length);
             const cardsToPocket = Math.min(2, defenderFreeSlots, attackerHandAfterRacubitero.length);
             for (let i = 0; i < cardsToPocket; i++) {
-              const randomIndex = Math.floor(Math.random() * attackerHandAfterRacubitero.length);
+              const randomIndex = gameplayRandomInt(0, attackerHandAfterRacubitero.length - 1, 'racubitero.pocket.random-card-index');
               const [card] = attackerHandAfterRacubitero.splice(randomIndex, 1);
               if (card) racubiteroStolenCards.push(card);
             }
@@ -1770,7 +1850,7 @@ export default function App() {
           }
 
           // Resolve card rewards outside the React state updater to keep deck mutations deterministic.
-          let currentDeckState = [...deck, ...racubiteroDiscardedCards].sort(() => Math.random() - 0.5);
+          let currentDeckState = gameplayShuffle([...deck, ...racubiteroDiscardedCards], 'deck.racubitero.reorganize');
           let currentDiscardState: GameCard[] = [];
           const prepareCombatDraws = (player: PlayerState, count: number, source: string) => {
             const cards: GameCard[] = [];
@@ -1794,7 +1874,7 @@ export default function App() {
           const stolenCards: GameCard[] = [];
 
           for (let i = 0; i < stealCount; i++) {
-            const randomIndex = Math.floor(Math.random() * targetHandAfterTheft.length);
+            const randomIndex = gameplayRandomInt(0, targetHandAfterTheft.length - 1, 'weapon.theft.random-card-index');
             const [stolenCard] = targetHandAfterTheft.splice(randomIndex, 1);
             if (stolenCard) stolenCards.push(stolenCard);
           }
@@ -1941,7 +2021,10 @@ export default function App() {
             dailyMissionsManager.recordPerfectBlock();
           }
 
-          setDeck([...currentDeckState, ...currentDiscardState].sort(() => Math.random() - 0.5));
+          const shuffledCombatDeck = gameplayShuffle([...currentDeckState, ...currentDiscardState], 'deck.combat-resolution.shuffle');
+          setDeck(shuffledCombatDeck);
+          deckRef.current = shuffledCombatDeck;
+          recordReplayEvent('DECK_SHUFFLED', { purpose: 'deck.combat-resolution.shuffle', cardOrder: shuffledCombatDeck.map(card => ({ id: card.id, uid: card.uid })) });
           setDiscardPile([]);
           if (consumedPreparedActivables.length > 0) returnCardsToGlobalPile(consumedPreparedActivables);
           const combatChoices = [...attackerDrawResult.choices, ...defenderDrawResult.choices];
@@ -2051,11 +2134,12 @@ export default function App() {
 
   const resolveTramcubosoReroll = (shouldReroll: boolean) => {
     const pending = pendingDiceReroll;
+    recordPlayerAction('TRAMCUBOSO_REROLL_CHOICE', { shouldReroll, targetId: pending?.targetId ?? null });
     if (!pending) return;
     const tramcuboso = players.find(player => player.id === pending.tramcubosoId);
     if (!tramcuboso) { setPendingDiceReroll(null); return; }
     if (shouldReroll && (tramcuboso.actionPoints <= 0 || tramcuboso.abilityCooldownRemaining > 0 || tramcuboso.isFrozen)) return;
-    const rollMany = (count: number) => Array.from({ length: count }, () => Math.floor(Math.random() * 6) + 1);
+    const rollMany = (count: number) => Array.from({ length: count }, () => gameplayRandomInt(1, 6, 'combat.tramcuboso.player-reroll'));
     const attackerRolls = shouldReroll ? rollMany(pending.attackerRolls.length) : pending.attackerRolls;
     const defenderRolls = shouldReroll ? rollMany(pending.defenderRolls.length) : pending.defenderRolls;
     setPendingDiceReroll(null);
@@ -2160,6 +2244,7 @@ export default function App() {
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
     const card = attacker.hand.find(c => c.id === cardId && c.type === CardType.WEAPON);
     if (!card) return;
+    recordPlayerAction('EQUIP_WEAPON', { cardId, cardUid: card.uid });
 
     sound.playCardDraw();
     const isFreeAction = card.id === 25; // Navaja Suiza
@@ -2205,6 +2290,7 @@ export default function App() {
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
     );
     if (!card) return;
+    recordPlayerAction('PREPARE_STANCE', { cardId, cardUid: card.uid });
 
     sound.playStanceActivate();
     const newHand = attacker.hand.filter(c => c.id !== cardId);
@@ -2235,6 +2321,7 @@ export default function App() {
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION
     );
     if (!card) return;
+    recordPlayerAction('PLAY_ACTION_TRICK', { cardId, cardUid: card.uid, targetId: targetId ?? null });
 
     sound.playCardDraw();
     if (!attacker.isBot) dailyMissionsManager.recordCardPlayed();
@@ -2309,6 +2396,7 @@ export default function App() {
     const actor = currentTurnPlayer;
     if (!actor || actor.abilityCooldownRemaining > 0) return;
     const hero = actor.activeMorphCharacter || actor.characterType;
+    recordPlayerAction('HERO_ABILITY', { targetId: targetId ?? null, extraOption: extraOption ?? null, cubiculaMode: cubiculaMode ?? null, hero });
 
     if (hero === CharacterType.HADA_AL_CUBO) {
       const availableAllies = actor.teamId !== undefined
@@ -2347,8 +2435,8 @@ export default function App() {
       sound.playCardDraw();
 
       if (actor.isBot) {
-        const ally = availableAllies[Math.floor(Math.random() * availableAllies.length)];
-        const giftIndex = Math.floor(Math.random() * drawnCards.length);
+        const ally = gameplayRandomPick(availableAllies, 'hada.supply.random-ally');
+        const giftIndex = gameplayRandomInt(0, drawnCards.length - 1, 'hada.supply.random-gift-index');
         const giftedCard = drawnCards[giftIndex];
         const retainedCard = drawnCards[1 - giftIndex];
         setPlayers(prev => prev.map(p => {
@@ -2455,7 +2543,7 @@ export default function App() {
       handleAttack(target.id, false, undefined, undefined, true);
     } else if (hero === CharacterType.RACUBITERO) {
       if (actor.actionPoints <= 0) return;
-      const roll = Math.floor(Math.random() * 6) + 1;
+      const roll = gameplayRandomInt(1, 6, 'racubitero.collective.d6');
       const rivals = players.filter(p => p.id !== actor.id && !p.isEliminated && p.hp > 0 &&
         (actor.teamId === undefined || p.teamId !== actor.teamId));
       setPlayers(prev => prev.map(p => {
@@ -2527,8 +2615,8 @@ export default function App() {
       // La apuesta del Flaucubista es una excepción explícita: usa D5, no el D6 general.
       const chosenNum = extraOption && extraOption >= 1 && extraOption <= 5
         ? extraOption
-        : Math.floor(Math.random() * 5) + 1;
-      const roll = Math.floor(Math.random() * 5) + 1;
+        : gameplayRandomInt(1, 5, 'flaucubista.d5');
+      const roll = gameplayRandomInt(1, 5, 'flaucubista.d5');
       sound.playDiceRoll();
 
       if (roll === chosenNum) {
@@ -2663,6 +2751,7 @@ export default function App() {
 
   // End Turn
   const handleEndTurn = () => {
+    recordPlayerAction('END_TURN', { playerId: players[turnIndex]?.id ?? null });
     const turnPlayers = playersRef.current.length > 0 ? playersRef.current : players;
     if (turnPlayers.length === 0) return;
     const endingPlayer = turnPlayers[turnIndex];
@@ -2712,6 +2801,9 @@ export default function App() {
   const checkVictory = (playersList: PlayerState[] = players) => {
     const outcome = getMatchOutcome(playersList);
     if (!outcome) return;
+    if (replayRecorderRef.current && !replayRecorderRef.current.finalResult) {
+      setReplayFinalResult(replayRecorderRef.current, { kind: outcome.kind, winningTeamId: outcome.winningTeamId ?? null, winnerId: outcome.winner?.id ?? null, finalPlayers: playersList });
+    }
 
     if (outcome.kind === 'TEAM' && outcome.winningTeamId === 2) {
       const winnerPlayer = outcome.winner;
@@ -2902,7 +2994,7 @@ export default function App() {
         : morph.hand.length === 0
         ? available.find(form => form.type === CharacterType.HADA_AL_CUBO)
         : null;
-      const chosen = priority || available[Math.floor(Math.random() * available.length)];
+      const chosen = priority || gameplayRandomPick(available, 'cambiaformas.random-form');
       applyMorphForm(morph.id, chosen.type);
     } else setMorphSelectionPlayerId(morph.id);
   }, [currentScreen, winner, isMatchIntroPlaying, players, round, morphSelectionPlayerId, morphInventoryOffer]);
@@ -3222,6 +3314,7 @@ export default function App() {
           onActivateReaction={handleActivateReaction}
           onPrepareReaction={handlePrepareReaction}
           onSkipReaction={handleSkipReaction}
+          onExportReplay={exportMatchReplay}
         />
       )}
 
