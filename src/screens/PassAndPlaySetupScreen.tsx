@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CharacterType } from '../types/game';
 import { CHARACTER_LIST, CHARACTERS } from '../data/characters';
-import { ArrowLeft, Play, Users } from 'lucide-react';
-
 interface PassAndPlaySetupScreenProps {
   onStartBattle: (playerCount: number, heroes: CharacterType[]) => void;
   onBack: () => void;
@@ -34,7 +33,7 @@ export const PassAndPlaySetupScreen: React.FC<PassAndPlaySetupScreenProps> = ({
           onClick={onBack}
           className="p-2 rounded-xl bg-[#171c26] hover:bg-[#202736] border border-[#2c374d] text-neutral-300 transition-all flex items-center gap-1.5 text-xs font-bold"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <GcSpriteIcon name="icon-back" className="w-4 h-4"  />
           <span>Volver</span>
         </button>
 
@@ -48,7 +47,7 @@ export const PassAndPlaySetupScreen: React.FC<PassAndPlaySetupScreenProps> = ({
       <div className="space-y-4 my-4 pr-1">
         <div>
           <label className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1 mb-2">
-            <Users className="w-4 h-4" />
+            <GcSpriteIcon name="icon-players" className="w-4 h-4"  />
             <span>Número de Jugadores Humanos (2 a 4)</span>
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -116,7 +115,7 @@ export const PassAndPlaySetupScreen: React.FC<PassAndPlaySetupScreenProps> = ({
         onClick={() => onStartBattle(playerCount, chosenHeroes.slice(0, playerCount))}
         className="w-full py-4 bg-[#00695c] hover:bg-[#004d40] active:scale-[0.98] text-white font-black text-base rounded-2xl shadow-xl border border-emerald-400 flex items-center justify-center gap-2 tracking-wider transition-all"
       >
-        <Play className="w-5 h-5 fill-white" />
+        <GcSpriteIcon name="icon-play" className="w-5 h-5 text-white"  />
         <span>INICIAR DUELO LOCAL</span>
       </button>
     </div>

@@ -1,20 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CharacterType } from '../types/game';
 import { CHARACTER_LIST, CHARACTERS } from '../data/characters';
 import { DiceCupShaker } from '../components/DiceCupShaker';
 import { HeroDiceCard } from '../components/HeroDiceCard';
 import { Dice3DVisual } from '../components/Dice3DVisual';
-import { 
-  ArrowLeft, 
-  Play, 
-  Dices, 
-  Shield, 
-  Swords, 
-  Sparkles, 
-  Check, 
-  Users, 
-  Info 
-} from 'lucide-react';
 import { sound } from '../audio/soundManager';
 
 interface SetupScreenProps {
@@ -95,7 +85,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
           onClick={onBack}
           className="p-2 rounded-xl bg-[#171c26] hover:bg-[#202736] border border-[#2c374d] text-neutral-300 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <GcSpriteIcon name="icon-back" className="w-4 h-4"  />
           <span>Volver al Menú</span>
         </button>
 
@@ -117,7 +107,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
                 : 'bg-neutral-800 text-neutral-500 border border-neutral-700 cursor-not-allowed opacity-50'
             }`}
           >
-            <Swords className="w-3.5 h-3.5" />
+            <GcSpriteIcon name="icon-swords" className="w-3.5 h-3.5"  />
             <span>INICIAR ({playerTeam.length}/3)</span>
           </button>
         </div>
@@ -142,7 +132,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
 
           <div className="md:col-span-4 bg-[#141824] border-2 border-[#263148] rounded-3xl p-4 space-y-3">
             <h4 className="text-xs font-black text-amber-300 uppercase tracking-wider font-bungee flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-amber-400" />
+              <GcSpriteIcon name="icon-spark" className="w-4 h-4 text-amber-400"  />
               <span>Modo Selección Libre</span>
             </h4>
             <p className="text-xs text-neutral-300 leading-relaxed">
@@ -153,7 +143,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
               onClick={onGoToDraft}
               className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:brightness-110 active:scale-[0.98] text-black font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 border border-amber-300 transition-all cursor-pointer"
             >
-              <Dices className="w-4 h-4 text-black" />
+              <GcSpriteIcon name="icon-dice" className="w-4 h-4 text-black"  />
               <span>Ir al Modo Aleatorio (Iniciativa D6 & Reparto)</span>
             </button>
           </div>
@@ -191,7 +181,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
               disabled={playerTeam.includes(inspectedHero.type)}
               className="w-full md:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-black font-black text-xs md:text-sm shadow-xl flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-50"
             >
-              <Dices className="w-4 h-4 text-black" />
+              <GcSpriteIcon name="icon-dice" className="w-4 h-4 text-black"  />
               <span>{playerTeam.includes(inspectedHero.type) ? 'YA EN EL VASO' : 'LLEVAR AL VASO (2º CLIC)'}</span>
             </button>
           </div>
@@ -201,7 +191,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
         <div className="bg-[#121622] border-2 border-[#263148] rounded-3xl p-3 md:p-4 shadow-xl">
           <div className="flex items-center justify-between mb-2 px-1">
             <label className="text-xs font-bold text-yellow-400 uppercase tracking-wider flex items-center gap-1.5 font-bungee">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <GcSpriteIcon name="icon-spark" className="w-4 h-4 text-yellow-400"  />
               <span>Pool de Dados Héroe (13 Disponibles)</span>
             </label>
             <span className="text-[10px] text-neutral-400">
@@ -241,7 +231,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
         <div className="p-3.5 rounded-2xl bg-[#141926] border-2 border-yellow-400/80 shadow-[0_0_30px_rgba(0,0,0,0.8)] flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-yellow-400 text-black">
-              <Dices className="w-5 h-5" />
+              <GcSpriteIcon name="icon-dice" className="w-5 h-5"  />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -276,7 +266,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
                 : 'bg-neutral-800 text-neutral-500 border border-neutral-700 cursor-not-allowed opacity-60'
             }`}
           >
-            <Swords className="w-5 h-5" />
+            <GcSpriteIcon name="icon-swords" className="w-5 h-5"  />
             <span>
               {playerTeam.length === 3
                 ? '⚔️ ¡INICIAR PARTIDA EN LA ARENA!'

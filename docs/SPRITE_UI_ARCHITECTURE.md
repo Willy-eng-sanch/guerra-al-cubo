@@ -4,7 +4,7 @@
 
 Preparar toda la interfaz para que su apariencia final pueda construirse y sustituirse mediante piezas gráficas independientes, sin reescribir el comportamiento React ni las reglas del juego.
 
-La idea visual toma como referencia general la jerarquía de videojuego de cartas de *Plants vs. Zombies Heroes*: pantallas expresivas, lectura clara, marcos de carta, paneles con personalidad, botones grandes y navegación con iconografía consistente. No se reutilizan ilustraciones, logotipos ni recursos propietarios de ese juego. Guerra Cúbita conserva una identidad propia de dados, combate callejero, cómic y rotoscopia.
+La arquitectura organiza la interfaz con una jerarquía clara de pantallas, paneles, cartas, botones e iconografía reutilizable. Las referencias anteriores se consideran únicamente estructurales y no fijan el estilo artístico. La dirección visual final será original y estará inspirada en manualidades callejeras; sus materiales, texturas, paleta y tratamiento gráfico se definirán en una fase de arte posterior.
 
 ## Adaptación técnica al proyecto
 
@@ -141,11 +141,13 @@ Implementado en esta rama:
 - Skin base aplicada a botones de pantallas y diálogos.
 - Skin de tarjetas en la biblioteca de repeticiones.
 - Banner de título en el menú principal.
+- Iconografía migrada al atlas en Setup, Draft, Campaña, Pase y juega, Roster y Enciclopedia.
+- Componentes compartidos `DiceCupShaker` y `HeroDiceCard` consumen símbolos del atlas en lugar de Lucide.
 - Fondo seamless animado aplicado a las pantallas principales.
 - Importación externa de replay fuera de la navegación pública.
 
 Trabajo pendiente:
-- Reemplazar progresivamente los iconos Lucide restantes de Arena, tienda, misiones y diálogos por IDs del atlas.
+- Migrar iconos Lucide restantes de Arena, lobby online, tienda, misiones, componentes de combate y diálogos por IDs del atlas.
 - Migrar tarjetas de personaje/carta y paneles de Arena a `GcSpriteCard`, `GcSpritePanel` y `GcSpritePortrait` con sus datos actuales.
 - Añadir arte final original de los personajes, fondos y estados.
 - Crear pantallas de carga usando los sprites de progreso.
