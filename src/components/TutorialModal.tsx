@@ -7,7 +7,7 @@ interface TutorialModalProps {
 
 export const TutorialModal: React.FC<TutorialModalProps> = ({ onDismiss }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+    <div className="gc-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
       <div className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto bg-[#141823] border border-[#2d374d] rounded-2xl p-6 shadow-2xl text-left">
         <button
           onClick={onDismiss}

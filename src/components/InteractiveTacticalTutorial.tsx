@@ -142,7 +142,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
+    <div className="gc-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
       <div className="relative w-full max-w-4xl max-h-[92vh] bg-[#10141e] border-2 border-[#2b374e] rounded-3xl shadow-2xl flex flex-col overflow-hidden text-left">
         
         {/* Top Header Bar */}

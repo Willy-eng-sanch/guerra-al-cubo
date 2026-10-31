@@ -28,7 +28,7 @@ export const CinematicCutsceneModal: React.FC<CinematicCutsceneModalProps> = ({
   }, [autoCloseMs, onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fadeIn select-none">
+    <div className="gc-modal-overlay fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fadeIn select-none">
       <div className="relative w-full max-w-lg bg-[#0e121a] border-2 border-yellow-400 rounded-3xl p-6 shadow-[0_0_40px_rgba(250,204,21,0.3)] text-center space-y-4">
         <button
           onClick={onClose}

@@ -38,6 +38,7 @@ interface PostMatchStatsModalProps {
   replaySaveStatus?: 'IDLE' | 'SAVING' | 'SAVED' | 'ERROR';
   replaySaveError?: string | null;
   onRetrySaveReplay?: () => void;
+  showDiagnostics?: boolean;
 }
 
 export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
@@ -50,7 +51,8 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
   onExportReplayLog,
   replaySaveStatus = 'IDLE',
   replaySaveError,
-  onRetrySaveReplay
+  onRetrySaveReplay,
+  showDiagnostics = false
 }) => {
   const isTeamMatch = players.some(p => p.teamId === 1) && players.some(p => p.teamId === 2);
   const [selectedTab, setSelectedTab] = useState<'ALL' | 'TEAM_BLUE' | 'TEAM_RED'>('ALL');
@@ -96,8 +98,8 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
   });
 
   return createPortal((
-    <div className="fixed inset-0 z-[80] flex items-start justify-center p-2 sm:p-4 bg-black/90 backdrop-blur-md overflow-y-auto overscroll-contain animate-fadeIn select-none">
-      <div className="w-full max-w-3xl my-2 sm:my-4 bg-[#121620] border-2 border-yellow-400/80 rounded-3xl p-3 sm:p-6 shadow-2xl text-white relative flex flex-col max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain">
+    <div className="gc-modal-overlay fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-md overflow-hidden animate-fadeIn select-none">
+      <div className="gc-modal-shell w-full max-w-3xl bg-[#121620] border-2 border-yellow-400/80 rounded-3xl p-3 sm:p-6 shadow-2xl text-white relative flex flex-col">
         {/* Street Comic Background Texture & Glow */}
         <div className="absolute -top-24 -right-24 w-60 h-60 bg-yellow-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -140,6 +142,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
           )}
         </div>
 
+        <div className="gc-modal-scroll min-h-0 flex-1 space-y-4 pr-1">
         {/* Aura & Beta Box Gain Banner */}
         <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-cyan-500/20 border border-yellow-400/50 flex flex-wrap items-center justify-between gap-3 shadow-lg">
           <div className="flex items-center gap-2.5">
@@ -296,7 +299,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
         )}
 
         {/* Players Detailed Performance Table */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-2.5 pr-1">
+        <div className="space-y-2.5 pr-1">
           {displayedPlayers.map((player) => {
             const charDef = CHARACTERS[player.characterType] || CHARACTERS[CharacterType.TRAMCUBOSO];
             const isWinnerDie = winner && (
@@ -430,8 +433,10 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
           })}
         </div>
 
-        {/* Bottom Actions — always reachable by scrolling the result panel */}
-        <div className="sticky bottom-0 z-10 -mx-3 sm:-mx-6 mt-3 shrink-0 border-t border-[#242d40] bg-[#121620]/98 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 sm:px-6">
+        </div>
+
+        {/* Actions stay outside the single scroll area. */}
+        <div className="gc-modal-actions mt-3 shrink-0 border-t border-[#242d40] bg-[#121620] px-0 pt-3">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="text-[11px] text-neutral-400 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-yellow-400" />
@@ -450,15 +455,15 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
           {replaySaveError && replaySaveStatus === 'ERROR' && (
             <p className="mb-2 break-words text-[10px] text-rose-300">{replaySaveError}</p>
           )}
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <button
+          <div className={`grid grid-cols-1 gap-2 ${showDiagnostics ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+            {showDiagnostics && <button
               onClick={onExportReplayLog}
               disabled={!onExportReplayLog}
               className="min-h-11 rounded-xl border border-emerald-500/50 bg-emerald-950/50 px-3 py-3 text-xs font-black text-emerald-200 hover:bg-emerald-900/70 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-40"
             >
               <FileText className="h-4 w-4" />
               EXPORTAR LOG PARA ANÁLISIS
-            </button>
+            </button>}
             <button
               onClick={onRestartMatch}
               className="min-h-11 rounded-xl bg-[#ff1744] px-3 py-3 text-white font-black text-xs tracking-wider shadow-lg flex items-center justify-center gap-2 hover:bg-[#d50000] active:scale-[0.98] font-bungee"

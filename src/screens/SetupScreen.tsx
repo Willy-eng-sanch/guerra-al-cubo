@@ -82,7 +82,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
 
   return (
     <div
-      className="relative w-full min-h-screen bg-[#0d0f14] p-3 sm:p-5 text-white flex flex-col justify-between max-w-6xl mx-auto select-none overflow-y-auto"
+      className="gc-screen relative w-full min-h-screen bg-[#0d0f14] p-3 sm:p-5 text-white flex flex-col justify-between max-w-6xl mx-auto select-none overflow-y-auto"
       style={{
         backgroundImage: `radial-gradient(ellipse at 50% 50%, rgba(13, 15, 20, 0.85) 0%, rgba(10, 12, 16, 0.96) 85%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`,
         backgroundSize: 'cover',
@@ -123,7 +123,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartBattle, onGoToD
         </div>
       </div>
 
-      <div className="space-y-4 my-3 overflow-y-auto pr-1">
+      <div className="space-y-4 my-3 pr-1">
 
         {/* Central Shaker Cup for Setup */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">

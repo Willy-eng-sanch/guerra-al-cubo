@@ -237,7 +237,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
 
   return (
     <div
-      className="relative w-full min-h-screen bg-[#0a0c12] text-white flex flex-col justify-between p-3 sm:p-5 select-none overflow-x-hidden bg-cover bg-center"
+      className="gc-screen relative w-full min-h-screen bg-[#0a0c12] text-white flex flex-col justify-between p-3 sm:p-5 select-none overflow-x-hidden bg-cover bg-center"
       style={{
         backgroundImage: `radial-gradient(ellipse at 50% 50%, rgba(10, 12, 18, 0.82) 0%, rgba(5, 7, 10, 0.96) 85%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`
       }}

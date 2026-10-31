@@ -19,7 +19,7 @@ export const RosterScreen: React.FC<RosterScreenProps> = ({ onBack }) => {
   const neuInfo = CATEGORY_INFO[adn.neutra];
 
   return (
-    <div className="relative w-full min-h-screen bg-[#0f1116] p-3 md:p-6 text-white flex flex-col justify-between max-w-5xl mx-auto select-none">
+    <div className="gc-screen relative w-full min-h-screen bg-[#0f1116] p-3 md:p-6 text-white flex flex-col justify-between max-w-5xl mx-auto select-none">
       {/* Top Bar */}
       <div className="flex items-center justify-between border-b border-[#232b3d] pb-3">
         <button
@@ -44,7 +44,7 @@ export const RosterScreen: React.FC<RosterScreenProps> = ({ onBack }) => {
         </span>
       </div>
 
-      <div className="space-y-4 my-3 overflow-y-auto pr-1">
+      <div className="space-y-4 my-3 pr-1">
 
         {/* Selected Hero Showcase Dossier */}
         <div className="bg-[#151a25] border-2 border-[#2b354c] rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col md:flex-row items-start gap-5">

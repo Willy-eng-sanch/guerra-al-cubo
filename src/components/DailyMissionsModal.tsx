@@ -80,7 +80,7 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
+    <div className="gc-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
       <div className="w-full max-w-xl bg-[#11141c] border-2 border-yellow-400/80 rounded-3xl p-4 sm:p-6 shadow-2xl text-white relative overflow-hidden flex flex-col max-h-[92vh]">
         {/* Subtle street background glows */}
         <div className="absolute -top-16 -right-16 w-48 h-48 bg-yellow-400/10 rounded-full blur-3xl pointer-events-none" />

@@ -52,7 +52,7 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
     : `${issuer.name} exige que ${victim.name} cumpla la orden`;
 
   return (
-    <div className="fixed inset-0 z-[90] bg-black/85 backdrop-blur-md flex items-center justify-center p-3">
+    <div className="gc-modal-overlay fixed inset-0 z-[90] bg-black/85 backdrop-blur-md flex items-center justify-center p-3">
       <div className="w-full max-w-lg max-h-[88vh] overflow-y-auto bg-[#101521] border-2 border-violet-500/70 rounded-2xl shadow-2xl text-white">
         <div className="p-4 border-b border-violet-500/30 bg-violet-950/40">
           <div className="flex items-center gap-2">

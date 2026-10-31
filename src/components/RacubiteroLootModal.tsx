@@ -25,7 +25,7 @@ export const RacubiteroLootModal: React.FC<RacubiteroLootModalProps> = ({ cards,
     setAssignments(previous => previous.map((item, i) => i === index ? value : item));
   };
   return (
-    <div className="fixed inset-0 z-[115] flex items-center justify-center bg-black/85 p-3 backdrop-blur-md">
+    <div className="gc-modal-overlay fixed inset-0 z-[115] flex items-center justify-center bg-black/85 p-3 backdrop-blur-md">
       <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border-2 border-amber-400/70 bg-[#15120e] p-5 text-white shadow-2xl">
         <div className="text-center">
           <span className="inline-flex items-center gap-2 rounded-full bg-amber-500/15 px-3 py-1 text-[10px] font-black tracking-widest text-amber-300"><Coins className="h-4 w-4"/> SAQUEO COLECTIVO · ÉXITO</span>

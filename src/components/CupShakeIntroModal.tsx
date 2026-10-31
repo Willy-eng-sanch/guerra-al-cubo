@@ -60,7 +60,7 @@ export const CupShakeIntroModal: React.FC<CupShakeIntroModalProps> = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md select-none overflow-hidden animate-fade-in">
+    <div className="gc-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md select-none overflow-hidden animate-fade-in">
       {/* Background Wood Clay Table Arena Surface */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#2b201a_0%,_#17120f_60%,_#090706_100%)] opacity-95 pointer-events-none" />
 

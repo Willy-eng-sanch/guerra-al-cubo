@@ -46,6 +46,7 @@ import {
 import confetti from 'canvas-confetti';
 
 interface ArenaScreenProps {
+  showDiagnostics?: boolean;
   round: number;
   players: PlayerState[];
   currentTurnPlayer: PlayerState | null;
@@ -94,6 +95,7 @@ interface ArenaScreenProps {
 }
 
 export const ArenaScreen: React.FC<ArenaScreenProps> = ({
+  showDiagnostics = false,
   round,
   players,
   currentTurnPlayer,
@@ -239,7 +241,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
 
   return (
     <div
-      className={`relative w-full min-h-screen bg-[#0a0c10] text-white flex flex-col justify-between p-2 sm:p-4 select-none overflow-x-hidden bg-cover bg-center bg-no-repeat ${isMatchOver ? 'pointer-events-none' : ''}`}
+      className={`gc-screen gc-screen--arena relative w-full min-h-screen bg-[#0a0c10] text-white flex flex-col justify-between p-2 sm:p-4 select-none overflow-x-hidden bg-cover bg-center bg-no-repeat ${isMatchOver ? 'pointer-events-none' : ''}`}
       style={{
         backgroundImage: `linear-gradient(to bottom, rgba(10, 12, 16, 0.88) 0%, rgba(10, 12, 16, 0.70) 40%, rgba(10, 12, 16, 0.94) 85%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`,
       }}
@@ -747,6 +749,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           replaySaveStatus={replaySaveStatus}
           replaySaveError={replaySaveError}
           onRetrySaveReplay={onRetrySaveReplay}
+          showDiagnostics={showDiagnostics}
         />
       )}
 

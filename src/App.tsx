@@ -3892,13 +3892,14 @@ export default function App() {
           onRosterClick={() => setCurrentScreen(CurrentScreen.ROSTER)}
           onCardsClick={() => setCurrentScreen(CurrentScreen.ENCYCLOPEDIA)}
           onOnlineClick={() => setCurrentScreen(CurrentScreen.ONLINE_LOBBY)}
-          onReplayFile={handleReplayFile}
           onReplayArchiveClick={() => setCurrentScreen(CurrentScreen.REPLAY_ARCHIVE)}
         />
       )}
 
       {currentScreen === CurrentScreen.REPLAY_ARCHIVE && (
         <ReplayArchiveScreen
+          showDiagnostics={import.meta.env.DEV}
+          onImportReplay={handleReplayFile}
           onBack={() => setCurrentScreen(CurrentScreen.TITLE)}
           onReplay={replay => { void startReplayPlayback(replay); }}
         />
@@ -3951,6 +3952,7 @@ export default function App() {
 
       {currentScreen === CurrentScreen.ARENA && (
         <ArenaScreen
+          showDiagnostics={import.meta.env.DEV}
           round={round}
           players={players}
           currentTurnPlayer={currentTurnPlayer}

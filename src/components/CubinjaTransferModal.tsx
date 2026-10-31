@@ -17,7 +17,7 @@ export const CubinjaTransferModal: React.FC<CubinjaTransferModalProps> = ({ acto
     (player.activeMorphCharacter || player.characterType) !== CharacterType.CUBOGRO
   );
   return (
-    <div className="fixed inset-0 z-[116] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
+    <div className="gc-modal-overlay fixed inset-0 z-[116] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
       <div className="w-full max-w-md rounded-2xl border-2 border-cyan-400/60 bg-[#101923] p-5 text-white shadow-2xl">
         <span className="text-[10px] font-black tracking-widest text-cyan-300">ARSENAL ILIMITADO</span>
         <h2 className="mt-2 text-lg font-black">Transferir Truco</h2>

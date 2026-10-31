@@ -241,7 +241,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
 
     return (
     <div
-      className="relative w-full min-h-screen bg-[#0d0f14] p-3 sm:p-5 text-white flex flex-col justify-between max-w-6xl mx-auto select-none overflow-y-auto"
+      className="gc-screen relative w-full min-h-screen bg-[#0d0f14] p-3 sm:p-5 text-white flex flex-col justify-between max-w-6xl mx-auto select-none overflow-y-auto"
       style={{
         backgroundImage: `radial-gradient(ellipse at 50% 50%, rgba(13, 15, 20, 0.84) 0%, rgba(10, 12, 16, 0.96) 85%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`,
         backgroundSize: 'cover',
@@ -278,7 +278,7 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({ onStartBattle, onBack 
       </div>
 
       {/* Main Mode Area */}
-      <div className="space-y-4 my-3 overflow-y-auto pr-1 flex-1">
+      <div className="space-y-4 my-3 pr-1 flex-1">
 
         {/* Phase 1: Initiative Roll */}
         {draftState.stage === 'ROLL_INITIATIVE' && (

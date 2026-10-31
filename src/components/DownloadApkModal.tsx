@@ -36,7 +36,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/80 backdrop-blur-md animate-fade-in select-none">
+    <div className="gc-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/80 backdrop-blur-md animate-fade-in select-none">
       <div className="relative w-full max-w-2xl bg-[#131722] border-2 border-[#2c3852] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="relative bg-gradient-to-r from-[#1e2538] via-[#202940] to-[#171b28] px-5 py-4 border-b border-[#2d3a54] flex items-center justify-between">

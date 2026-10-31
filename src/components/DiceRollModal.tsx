@@ -15,7 +15,7 @@ export const DiceRollModal: React.FC<DiceRollModalProps> = ({
   onDismiss
 }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
+    <div className="gc-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
       <div className="relative w-full max-w-md bg-[#121622] border-2 border-[#ff1744] rounded-3xl p-5 md:p-6 shadow-2xl text-center overflow-hidden">
         {/* Subtle 3D dice background texture */}
         <div

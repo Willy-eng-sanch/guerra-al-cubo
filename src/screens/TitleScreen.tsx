@@ -18,7 +18,6 @@ interface TitleScreenProps {
   onRosterClick: () => void;
   onCardsClick: () => void;
   onOnlineClick: () => void;
-  onReplayFile: (file: File) => void;
   onReplayArchiveClick: () => void;
 }
 
@@ -30,7 +29,6 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   onRosterClick,
   onCardsClick,
   onOnlineClick,
-  onReplayFile,
   onReplayArchiveClick
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
@@ -60,7 +58,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   }, []);
 
   return (
-    <div className="relative w-full min-h-screen overflow-y-auto flex flex-col justify-between p-3 sm:p-5 select-none bg-[#0f1116]">
+    <div className="gc-screen gc-screen--menu relative w-full min-h-screen overflow-y-auto flex flex-col p-3 sm:p-5 bg-[#0f1116]">
       {/* Background Banner with Dark Vignette */}
       <div className="absolute inset-0 z-0">
         <img
@@ -166,7 +164,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       </div>
 
       {/* Navigation Buttons Dock */}
-      <div className="relative z-10 flex flex-col gap-2.5 max-w-md mx-auto w-full pb-4">
+      <div className="gc-menu-actions relative z-10 flex flex-col gap-2.5 max-w-md mx-auto w-full pb-4">
+        <div className="gc-menu-section-label">JUGAR</div>
         {/* MODO ALEATORIO (LA DEMO GRATUITA) */}
         <button
           onClick={onDraftClick}
@@ -193,76 +192,16 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <span>🌐 MULTIJUGADOR BETA (SALAS PRIVADAS & DEMO ONLINE)</span>
         </button>
 
-        {/* Aura & Tienda "Paga lo que Quieras" */}
-        <button
-          onClick={() => setShowAuraShop(true)}
-          className="w-full py-3 bg-gradient-to-r from-purple-950/60 via-pink-950/50 to-amber-950/60 hover:brightness-125 active:scale-[0.98] text-pink-300 font-extrabold text-xs md:text-sm rounded-xl border-2 border-pink-400/70 shadow-[0_0_15px_rgba(236,72,153,0.3)] flex items-center justify-between px-4 tracking-wide transition-all cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <Heart className="w-4 h-4 text-pink-400 fill-current" />
-            <span>AURA & TIENDA "PAGA LO QUE QUIERAS"</span>
-          </div>
-          <span className="text-[10px] font-mono text-yellow-300 bg-black/60 px-2 py-0.5 rounded-md border border-yellow-400/40">
-            {unopenedBoxes > 0 ? `¡${unopenedBoxes} Caja(s) Listas!` : 'Cajas de 3 Dados'}
-          </span>
-        </button>
-
-        {/* Daily Bounties & Streak */}
-        <button
-          onClick={() => setShowMissions(true)}
-          className="w-full py-2.5 bg-gradient-to-r from-amber-950/60 via-yellow-950/50 to-orange-950/60 hover:brightness-125 active:scale-[0.98] text-amber-200 font-bold text-xs md:text-sm rounded-xl border border-yellow-500/60 flex items-center justify-between px-4 transition-all shadow-md cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-yellow-400" />
-            <span>MISIONES & RACHA DIARIA (DÍA {streakDay})</span>
-          </div>
-          <span className="text-[10px] font-mono text-yellow-300 bg-black/60 px-2 py-0.5 rounded-md border border-yellow-400/30">
-            {canClaimStreak ? '¡Reclamar Racha Hoy!' : `${unclaimedMissions > 0 ? `${unclaimedMissions} Misiones Listas` : '3 Misiones Activas'}`}
-          </span>
-        </button>
-
         {/* Direct Squad Selection */}
         <button
           onClick={onStartClick}
           className="w-full py-3 bg-[#171c28] hover:bg-[#222a3d] active:scale-[0.98] text-yellow-300 font-extrabold text-xs md:text-sm rounded-xl border border-yellow-500/40 flex items-center justify-center gap-2 tracking-wide transition-all shadow-md"
         >
           <Shield className="w-4 h-4 text-cyan-400" />
-          <span>SELECCIONAR TUS 3 PERSONAJES (DIRECTO)</span>
+          <span>ELEGIR MIS 3 PERSONAJES</span>
         </button>
 
-        {/* Importar una partida grabada para comprobar la reconstrucción determinista */}
-        <label className="w-full py-2.5 bg-cyan-950/50 hover:bg-cyan-900/60 active:scale-[0.98] text-cyan-200 font-bold text-xs md:text-sm rounded-xl border border-cyan-500/40 flex items-center justify-center gap-2 transition-all cursor-pointer">
-          <History className="w-4 h-4 text-cyan-300" />
-          <span>REPRODUCIR PARTIDA GUARDADA (.GCREPLAY)</span>
-          <input
-            type="file"
-            accept=".gcreplay,application/json"
-            className="hidden"
-            onChange={event => {
-              const file = event.currentTarget.files?.[0];
-              if (file) onReplayFile(file);
-              event.currentTarget.value = '';
-            }}
-          />
-        </label>
-
-        <button
-          onClick={onReplayArchiveClick}
-          className="w-full py-2.5 bg-[#151b2a] hover:bg-[#202b40] active:scale-[0.98] text-cyan-200 font-black text-xs md:text-sm rounded-xl border border-cyan-500/50 flex items-center justify-center gap-2 transition-all cursor-pointer"
-        >
-          <History className="w-4 h-4 text-cyan-300" />
-          <span>ARCHIVO DE PARTIDAS JUGADAS</span>
-        </button>
-
-        {/* Tutorial & Manual Táctico */}
-        <button
-          onClick={() => setShowTutorial(true)}
-          className="w-full py-2.5 bg-[#141824] hover:bg-[#1d2538] active:scale-[0.98] text-neutral-300 font-bold text-xs rounded-xl border border-[#263148] flex items-center justify-center gap-2 transition-all cursor-pointer"
-        >
-          <BookOpen className="w-4 h-4 text-yellow-400" />
-          <span>Manual Táctico (50 Cartas & Clases)</span>
-        </button>
-
+        <div className="gc-menu-section-label">OTROS MODOS</div>
         {/* Campaign & Pass and Play */}
         <div className="grid grid-cols-2 gap-2.5">
           <button
@@ -281,6 +220,26 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             <span>PASE Y JUEGA</span>
           </button>
         </div>
+
+        <div className="gc-menu-section-label">TUS PARTIDAS</div>
+        <button
+          onClick={onReplayArchiveClick}
+          aria-label="Abrir mis partidas guardadas"
+          className="gc-menu-primary w-full py-3 bg-gradient-to-r from-cyan-950/90 to-blue-950/80 hover:brightness-125 active:scale-[0.98] text-cyan-100 font-black text-xs md:text-sm rounded-xl border border-cyan-400/60 flex items-center justify-center gap-2 transition-all shadow-lg"
+        >
+          <History className="w-4 h-4 text-cyan-300" />
+          <span>MIS PARTIDAS · VER REPETICIONES</span>
+        </button>
+
+        <div className="gc-menu-section-label">GUÍA Y COLECCIÓN</div>
+        {/* Tutorial & Manual Táctico */}
+        <button
+          onClick={() => setShowTutorial(true)}
+          className="w-full py-2.5 bg-[#141824] hover:bg-[#1d2538] active:scale-[0.98] text-neutral-300 font-bold text-xs rounded-xl border border-[#263148] flex items-center justify-center gap-2 transition-all cursor-pointer"
+        >
+          <BookOpen className="w-4 h-4 text-yellow-400" />
+          <span>Manual Táctico (50 Cartas & Clases)</span>
+        </button>
 
         {/* Roster & Encyclopedia */}
         <div className="grid grid-cols-2 gap-2.5">

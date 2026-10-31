@@ -101,7 +101,7 @@ export const MorphInventoryChoiceModal: React.FC<MorphInventoryChoiceModalProps>
   );
 
   return (
-    <div className="fixed inset-0 z-[121] flex items-center justify-center bg-black/90 p-3 backdrop-blur-md">
+    <div className="gc-modal-overlay fixed inset-0 z-[121] flex items-center justify-center bg-black/90 p-3 backdrop-blur-md">
       <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border-2 border-violet-400/70 bg-gradient-to-b from-[#1b1628] to-[#10121c] p-5 text-white shadow-2xl">
         <div className="text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-500/10 px-3 py-1 text-[10px] font-black tracking-widest text-violet-200"><Sparkles className="h-4 w-4" /> MIMETISMO · INVENTARIO</span>
