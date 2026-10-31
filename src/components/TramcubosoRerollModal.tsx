@@ -1,6 +1,5 @@
 import React from 'react';
-import { Dices, RefreshCw, ShieldCheck } from 'lucide-react';
-
+import { GcSpriteIcon } from '../ui/SpriteUI';
 interface TramcubosoRerollModalProps {
   actorName: string;
   attackerName: string;
@@ -31,7 +30,7 @@ export const TramcubosoRerollModal: React.FC<TramcubosoRerollModalProps> = ({
     <div className="w-full max-w-lg rounded-3xl border-2 border-emerald-400/70 bg-gradient-to-b from-[#17251f] to-[#0d1311] p-5 text-white shadow-2xl">
       <div className="text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/50 bg-emerald-400/10 px-3 py-1 text-[10px] font-black tracking-widest text-emerald-300">
-          <Dices className="h-4 w-4" /> REVOLUCIÓN DE LA MESA
+          <GcSpriteIcon name="icon-dice" className="h-4 w-4"  /> REVOLUCIÓN DE LA MESA
         </span>
         <h2 className="mt-3 text-xl font-black">¡Los dados ya están sobre la mesa!</h2>
         <p className="mt-1 text-xs text-neutral-300">{actorName} puede pagar 1 Cúbit para cambiar todos los resultados de este enfrentamiento.</p>
@@ -48,11 +47,11 @@ export const TramcubosoRerollModal: React.FC<TramcubosoRerollModalProps> = ({
           CONSERVAR TIRADA
         </button>
         <button onClick={onReroll} className="flex items-center justify-center gap-2 rounded-xl border-2 border-emerald-300 bg-emerald-400 px-4 py-3 text-xs font-black text-emerald-950 hover:bg-emerald-300">
-          <RefreshCw className="h-4 w-4" /> RELANZAR · 1 CÚBIT
+          <GcSpriteIcon name="icon-refresh" className="h-4 w-4"  /> RELANZAR · 1 CÚBIT
         </button>
       </div>
       <p className="mt-3 flex items-center justify-center gap-1 text-[10px] text-neutral-500">
-        <ShieldCheck className="h-3 w-3" /> Solo se resuelve la tirada definitiva.
+        <GcSpriteIcon name="icon-shield" className="h-3 w-3"  /> Solo se resuelve la tirada definitiva.
       </p>
     </div>
   </div>
