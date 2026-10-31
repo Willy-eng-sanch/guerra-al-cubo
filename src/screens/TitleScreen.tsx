@@ -165,6 +165,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
 
       {/* Navigation Buttons Dock */}
       <div className="gc-menu-actions relative z-10 flex flex-col gap-2.5 max-w-md mx-auto w-full pb-4">
+        <div className="gc-menu-section-label">JUGAR</div>
         {/* MODO ALEATORIO (LA DEMO GRATUITA) */}
         <button
           onClick={onDraftClick}
@@ -191,43 +192,16 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <span>🌐 MULTIJUGADOR BETA (SALAS PRIVADAS & DEMO ONLINE)</span>
         </button>
 
-        {/* Aura & Tienda "Paga lo que Quieras" */}
-        <button
-          onClick={() => setShowAuraShop(true)}
-          className="w-full py-3 bg-gradient-to-r from-purple-950/60 via-pink-950/50 to-amber-950/60 hover:brightness-125 active:scale-[0.98] text-pink-300 font-extrabold text-xs md:text-sm rounded-xl border-2 border-pink-400/70 shadow-[0_0_15px_rgba(236,72,153,0.3)] flex items-center justify-between px-4 tracking-wide transition-all cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <Heart className="w-4 h-4 text-pink-400 fill-current" />
-            <span>AURA & TIENDA "PAGA LO QUE QUIERAS"</span>
-          </div>
-          <span className="text-[10px] font-mono text-yellow-300 bg-black/60 px-2 py-0.5 rounded-md border border-yellow-400/40">
-            {unopenedBoxes > 0 ? `¡${unopenedBoxes} Caja(s) Listas!` : 'Cajas de 3 Dados'}
-          </span>
-        </button>
-
-        {/* Daily Bounties & Streak */}
-        <button
-          onClick={() => setShowMissions(true)}
-          className="w-full py-2.5 bg-gradient-to-r from-amber-950/60 via-yellow-950/50 to-orange-950/60 hover:brightness-125 active:scale-[0.98] text-amber-200 font-bold text-xs md:text-sm rounded-xl border border-yellow-500/60 flex items-center justify-between px-4 transition-all shadow-md cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-yellow-400" />
-            <span>MISIONES & RACHA DIARIA (DÍA {streakDay})</span>
-          </div>
-          <span className="text-[10px] font-mono text-yellow-300 bg-black/60 px-2 py-0.5 rounded-md border border-yellow-400/30">
-            {canClaimStreak ? '¡Reclamar Racha Hoy!' : `${unclaimedMissions > 0 ? `${unclaimedMissions} Misiones Listas` : '3 Misiones Activas'}`}
-          </span>
-        </button>
-
         {/* Direct Squad Selection */}
         <button
           onClick={onStartClick}
           className="w-full py-3 bg-[#171c28] hover:bg-[#222a3d] active:scale-[0.98] text-yellow-300 font-extrabold text-xs md:text-sm rounded-xl border border-yellow-500/40 flex items-center justify-center gap-2 tracking-wide transition-all shadow-md"
         >
           <Shield className="w-4 h-4 text-cyan-400" />
-          <span>SELECCIONAR TUS 3 PERSONAJES (DIRECTO)</span>
+          <span>ELEGIR MIS 3 PERSONAJES</span>
         </button>
 
+        <div className="gc-menu-section-label">TUS PARTIDAS</div>
         <button
           onClick={onReplayArchiveClick}
           aria-label="Abrir mis partidas guardadas"
@@ -237,6 +211,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <span>MIS PARTIDAS · VER REPETICIONES</span>
         </button>
 
+        <div className="gc-menu-section-label">GUÍA Y COLECCIÓN</div>
         {/* Tutorial & Manual Táctico */}
         <button
           onClick={() => setShowTutorial(true)}
