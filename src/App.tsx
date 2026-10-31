@@ -3190,24 +3190,29 @@ export default function App() {
   };
 
   const applyReplayBotDecision = async (payload: any) => {
-    const state = replayStateSnapshotRef.current;
     if (payload.kind === 'TRAMCUBOSO_CARD_CHOICE') {
+      const state = await waitForReplaySnapshot(snapshot =>
+        snapshot.players.some((candidate: PlayerState) =>
+          candidate.id === payload.playerId &&
+          candidate.hand.some((card: GameCard) => card.uid === payload.selectedCardUid)
+        ),
+        'la carta elegida automáticamente por Tramcuboso'
+      );
       const player = state.players.find((candidate: PlayerState) => candidate.id === payload.playerId);
-      if (!player || !player.hand.some((card: GameCard) => card.uid === payload.selectedCardUid)) {
-        throw new Error('La decisión automática de Tramcuboso no coincide: la carta elegida no llegó a la mano.');
-      }
+      if (!player) throw new Error('La decisión automática de Tramcuboso no tiene jugador asociado.');
       return;
     }
     if (payload.kind === 'CUBINARCA_ORDER') {
-      const victim = state.players.find((candidate: PlayerState) => candidate.id === payload.victimId);
-      if (!victim?.cubinarcaOrder ||
-          victim.cubinarcaOrder.issuerId !== payload.order?.issuerId ||
-          victim.cubinarcaOrder.kind !== payload.order?.kind ||
-          (victim.cubinarcaOrder.attackTargetId ?? null) !== (payload.order?.attackTargetId ?? null)) {
-        throw new Error('La orden automática de Cubinarca diverge de la decisión registrada.');
-      }
+      await waitForReplaySnapshot(snapshot => {
+        const victim = snapshot.players.find((candidate: PlayerState) => candidate.id === payload.victimId);
+        return Boolean(victim?.cubinarcaOrder &&
+          victim.cubinarcaOrder.issuerId === payload.order?.issuerId &&
+          victim.cubinarcaOrder.kind === payload.order?.kind &&
+          (victim.cubinarcaOrder.attackTargetId ?? null) === (payload.order?.attackTargetId ?? null));
+      }, 'la orden automática de Cubinarca');
       return;
     }
+    const state = replayStateSnapshotRef.current;
     if (payload.kind === 'CUBINARCA_FULFILL_TRANSFER') {
       const victim = state.players.find((player: PlayerState) => player.id === payload.victimId);
       const issuer = state.players.find((player: PlayerState) => player.id === payload.issuerId);
@@ -3320,11 +3325,6 @@ export default function App() {
               [CharacterType.DRACUBON, CharacterType.CUBOGRO].includes(event.payload?.hero))
           );
           if (isCombatAction) {
-            const activeController = replayExecutionRef.current;
-            const eventIndex = replay.events.findIndex((candidate: any) => candidate.sequence === event.sequence);
-            const nextAction = replay.events.slice(eventIndex + 1).find((candidate: any) =>
-              candidate.type === 'PLAYER_ACTION' || candidate.type === 'BOT_DECISION'
-            );
             setActiveDiceRoll(null);
             if (event.payload?.kind === 'ATTACK' || event.payload?.kind === 'TRAMCUBOSO_REROLL_CHOICE' ||
                 [CharacterType.DRACUBON, CharacterType.CUBOGRO].includes(event.payload?.hero)) {
