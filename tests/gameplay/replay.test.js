@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { GameplayRandomController, ReplayRandomMismatchError } from '../../src/gameplay/random.js';
 import {
   appendReplayCheckpoint, appendReplayEvent, createMatchReplay, getReplayRandomResults,
-  hashReplayState, parseMatchReplay, serializeMatchReplay, setReplayFinalResult, setReplayInitialState, validateMatchReplay
+  getReplayCommands, hashReplayState, parseMatchReplay, serializeMatchReplay, setReplayFinalResult, setReplayInitialState, validateMatchReplay
 } from '../../src/gameplay/replay.js';
 
 test('una semilla reproduce exactamente la secuencia y el barajado', () => {
@@ -72,4 +72,14 @@ test('las huellas de estado son estables aunque cambie el orden de las claves', 
   const third = { ...second, round: 4 };
   assert.equal(hashReplayState(first), hashReplayState(second));
   assert.notEqual(hashReplayState(first), hashReplayState(third));
+});
+
+test('el archivo expone comandos en el orden exacto para reproducir ambos bandos', () => {
+  const replay = createMatchReplay({ seed: 101, mode: 'TEAM_BATTLE' });
+  setReplayInitialState(replay, { players: [], deck: [] });
+  appendReplayEvent(replay, 'PLAYER_ACTION', { kind: 'ATTACK', actorId: 1, targetId: 2 });
+  appendReplayEvent(replay, 'RANDOM_RESULT', { sequence: 1, kind: 'INT', purpose: 'attack.d6', min: 1, max: 6, raw: 0.5, value: 4 });
+  appendReplayEvent(replay, 'BOT_DECISION', { kind: 'END_TURN', actorId: 2 });
+  assert.deepEqual(getReplayCommands(replay).map(item => item.type), ['PLAYER_ACTION', 'BOT_DECISION']);
+  assert.deepEqual(getReplayCommands(replay).map(item => item.sequence), [1, 3]);
 });
