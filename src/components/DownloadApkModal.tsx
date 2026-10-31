@@ -1,19 +1,6 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { usePWAInstall } from '../hooks/usePWAInstall';
-import {
-  Download,
-  Smartphone,
-  CheckCircle,
-  Copy,
-  ExternalLink,
-  X,
-  Sparkles,
-  Layers,
-  Terminal,
-  ShieldCheck,
-  Share2
-} from 'lucide-react';
-
 interface DownloadApkModalProps {
   onDismiss: () => void;
 }
@@ -42,7 +29,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
         <div className="relative bg-gradient-to-r from-[#1e2538] via-[#202940] to-[#171b28] px-5 py-4 border-b border-[#2d3a54] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-cyan-400 p-0.5 shadow-lg flex items-center justify-center">
-              <Smartphone className="w-6 h-6 text-black" />
+              <GcSpriteIcon name="icon-phone" className="w-6 h-6 text-black"  />
             </div>
             <div>
               <h2 className="text-base md:text-lg font-black text-white tracking-wide flex items-center gap-2">
@@ -61,7 +48,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
             onClick={onDismiss}
             className="p-1.5 rounded-xl bg-[#10141d] hover:bg-[#20283a] text-neutral-400 hover:text-white transition-all border border-[#2b374e]"
           >
-            <X className="w-5 h-5" />
+            <GcSpriteIcon name="icon-close" className="w-5 h-5"  />
           </button>
         </div>
 
@@ -75,7 +62,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
                 : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
-            <Smartphone className="w-4 h-4" />
+            <GcSpriteIcon name="icon-phone" className="w-4 h-4"  />
             <span>1. Instalar Directo (WebAPK)</span>
           </button>
 
@@ -87,7 +74,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
                 : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
-            <Download className="w-4 h-4" />
+            <GcSpriteIcon name="icon-download" className="w-4 h-4"  />
             <span>2. Descargar archivo .APK puro</span>
           </button>
 
@@ -99,7 +86,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
                 : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
-            <Terminal className="w-4 h-4" />
+            <GcSpriteIcon name="icon-terminal" className="w-4 h-4"  />
             <span>3. Generar con Bubblewrap</span>
           </button>
         </div>
@@ -112,7 +99,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
               <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/40 via-[#162529] to-[#121c25] border border-emerald-500/30">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                    <Sparkles className="w-5 h-5" />
+                    <GcSpriteIcon name="icon-spark" className="w-5 h-5"  />
                   </div>
                   <div>
                     <h3 className="font-black text-white text-sm">
@@ -126,7 +113,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
 
                 {isInstalled ? (
                   <div className="mt-3.5 flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-3 py-2 rounded-xl border border-emerald-500/40 font-bold text-xs">
-                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                    <GcSpriteIcon name="icon-check" className="w-4 h-4 text-emerald-400"  />
                     <span>¡Guerra Cubita ya está instalada en tu dispositivo! Puedes jugarla desde tu pantalla de inicio.</span>
                   </div>
                 ) : isInstallable ? (
@@ -134,7 +121,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
                     onClick={handleInstallClick}
                     className="mt-3.5 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-400 hover:brightness-110 active:scale-[0.98] text-neutral-950 font-black text-sm rounded-xl shadow-lg border-2 border-emerald-300 flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
-                    <Download className="w-4 h-4" />
+                    <GcSpriteIcon name="icon-download" className="w-4 h-4"  />
                     <span>INSTALAR GUERRA CUBITA EN ESTE DISPOSITIVO AHORA</span>
                   </button>
                 ) : (
@@ -155,14 +142,14 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
               <div className="p-4 rounded-2xl bg-[#161c28] border border-[#27334a] space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-neutral-200 flex items-center gap-2 text-xs">
-                    <Share2 className="w-4 h-4 text-cyan-400" />
+                    <GcSpriteIcon name="icon-share" className="w-4 h-4 text-cyan-400"  />
                     <span>Enlace para abrir desde tu celular:</span>
                   </span>
                   <button
                     onClick={handleCopyUrl}
                     className="px-2.5 py-1 rounded-lg bg-[#222c40] hover:bg-[#2e3b55] border border-[#3b4b6f] text-cyan-300 flex items-center gap-1 font-bold text-xs transition-all"
                   >
-                    {copied ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? <GcSpriteIcon name="icon-check" className="w-3.5 h-3.5 text-emerald-400"  /> : <GcSpriteIcon name="icon-copy" className="w-3.5 h-3.5"  />}
                     <span>{copied ? '¡Copiado!' : 'Copiar URL'}</span>
                   </button>
                 </div>
@@ -179,7 +166,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
               <div className="p-4 rounded-2xl bg-[#161c29] border border-[#28364e] space-y-3">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">
-                    <Layers className="w-5 h-5" />
+                    <GcSpriteIcon name="icon-cards" className="w-5 h-5"  />
                   </div>
                   <div>
                     <h3 className="font-black text-white text-sm">
@@ -200,7 +187,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
                         onClick={handleCopyUrl}
                         className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-600/40 font-bold hover:bg-cyan-900"
                       >
-                        {copied ? <CheckCircle className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        {copied ? <GcSpriteIcon name="icon-check" className="w-3 h-3 text-emerald-400"  /> : <GcSpriteIcon name="icon-copy" className="w-3 h-3"  />}
                         <span>{copied ? '¡Copiado!' : 'Copiar Enlace'}</span>
                       </button>
                     </p>
@@ -219,7 +206,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
                         className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all shadow"
                       >
                         <span>Abrir pwabuilder.com</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <GcSpriteIcon name="icon-external-link" className="w-3.5 h-3.5"  />
                       </a>
                     </div>
                   </div>
@@ -248,7 +235,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
               </div>
 
               <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold">
-                <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
+                <GcSpriteIcon name="icon-shield" className="w-4 h-4 shrink-0 text-emerald-400"  />
                 <span>El archivo <code>manifest.json</code> y el <code>sw.js</code> ya están 100% configurados con iconos HD y soporte offline para compilar el APK sin errores.</span>
               </div>
             </div>
@@ -259,7 +246,7 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ onDismiss })
             <div className="space-y-3">
               <div className="p-4 rounded-2xl bg-[#141822] border border-[#232c3f] space-y-3">
                 <div className="flex items-center gap-2.5">
-                  <Terminal className="w-5 h-5 text-amber-400" />
+                  <GcSpriteIcon name="icon-terminal" className="w-5 h-5 text-amber-400"  />
                   <h3 className="font-black text-white text-sm">
                     Para Desarrolladores: Bubblewrap (Línea de Comandos)
                   </h3>
