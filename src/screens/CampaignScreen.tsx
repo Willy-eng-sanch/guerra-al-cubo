@@ -20,7 +20,7 @@ export const CampaignScreen: React.FC<CampaignScreenProps> = ({
   const bossDef = CHARACTERS[selectedChapter.bossCharacter];
 
   return (
-    <div className="relative w-full min-h-screen bg-[#0f1116] p-4 md:p-6 text-white flex flex-col justify-between max-w-2xl mx-auto">
+    <div className="gc-screen relative w-full min-h-screen bg-[#0f1116] p-4 md:p-6 text-white flex flex-col justify-between max-w-2xl mx-auto">
       {/* Top Bar */}
       <div className="flex items-center justify-between border-b border-[#232b3d] pb-3">
         <button
@@ -38,7 +38,7 @@ export const CampaignScreen: React.FC<CampaignScreenProps> = ({
         <div className="w-16" />
       </div>
 
-      <div className="space-y-4 my-4 overflow-y-auto pr-1">
+      <div className="space-y-4 my-4 pr-1">
         {/* Chapter Selection Tabs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {chapters.map(ch => {
