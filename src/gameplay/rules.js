@@ -130,6 +130,7 @@ export function advanceTurnState(players, currentTurnIndex, round) {
       if (candidate.isFrozen) {
         nextPlayers[nextIndex] = {
           ...candidate,
+          actionPoints: 0,
           isFrozen: false,
           abilityCooldownRemaining: cooldown,
           cubinarcaOrderDefiedThisTurn: false
