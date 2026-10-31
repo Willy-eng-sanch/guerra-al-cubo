@@ -3660,6 +3660,39 @@ export default function App() {
 
   return (
     <div className="w-full min-h-screen bg-[#0f1116] text-white">
+      {(isReplayPlayback || replayFailure || replayProgress?.status === 'FINISHED') && (
+        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] w-[min(92vw,560px)] rounded-xl border border-cyan-500/50 bg-slate-950/95 px-4 py-3 shadow-2xl">
+          {isReplayPlayback ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-xs font-extrabold tracking-wider text-cyan-300">RECONSTRUYENDO PARTIDA</div>
+                <div className="text-[11px] text-slate-300">
+                  {replayProgress?.consumedEvents ?? 0} / {replayProgress?.totalEvents ?? 0} eventos · {replayProgress?.consumedCheckpoints ?? 0} / {replayProgress?.totalCheckpoints ?? 0} checkpoints
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  replayExecutionRef.current?.stop();
+                  setIsReplayPlayback(false);
+                  stopGameplayRandomSession();
+                }}
+                className="shrink-0 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-800"
+              >
+                Detener
+              </button>
+            </div>
+          ) : replayFailure ? (
+            <div>
+              <div className="text-xs font-extrabold tracking-wider text-rose-300">REPLAY DETENIDO · DIVERGENCIA</div>
+              <div className="mt-1 break-words text-xs text-slate-200">{replayFailure}</div>
+            </div>
+          ) : (
+            <div className="text-xs font-bold text-emerald-300">
+              Reconstrucción completada · Todos los checkpoints y resultados aleatorios fueron verificados.
+            </div>
+          )}
+        </div>
+      )}
       {currentScreen === CurrentScreen.TITLE && (
         <TitleScreen
           onStartClick={() => setCurrentScreen(CurrentScreen.SETUP)}
