@@ -1,0 +1,34 @@
+export const GC_SPRITE_CATALOG = {
+  atlas: {
+    file: '/assets/ui/gc-ui-atlas.svg',
+    format: 'svg-symbol-atlas',
+    purpose: 'one cached vector file for reusable interface icons'
+  },
+  frames: {
+    buttonPrimary: { file: '/assets/ui/sprites/button-primary.svg', viewBox: '0 0 96 96', slice: 28, role: 'primary action' },
+    buttonSecondary: { file: '/assets/ui/sprites/button-secondary.svg', viewBox: '0 0 96 96', slice: 28, role: 'secondary action' },
+    buttonDanger: { file: '/assets/ui/sprites/button-danger.svg', viewBox: '0 0 96 96', slice: 28, role: 'destructive action' },
+    panel: { file: '/assets/ui/sprites/panel-frame.svg', viewBox: '0 0 180 180', slice: 34, role: 'dialog and content panel' },
+    card: { file: '/assets/ui/sprites/card-frame.svg', viewBox: '0 0 160 200', slice: 32, role: 'character, card and archive tile' },
+    tab: { file: '/assets/ui/sprites/tab-frame.svg', viewBox: '0 0 128 72', slice: 24, role: 'tab and filter' },
+    badge: { file: '/assets/ui/sprites/badge-frame.svg', viewBox: '0 0 128 72', slice: 20, role: 'status, rarity and counters' }
+  },
+  backgrounds: {
+    seamlessDiceTile: {
+      file: '/assets/ui/gc-bg-tile.svg',
+      size: '192x192',
+      repeat: true,
+      animation: 'gc-sprite-drift',
+      role: 'seamless slow-moving menu and screen texture'
+    }
+  },
+  iconSymbols: [
+    'icon-dice', 'icon-swords', 'icon-shield', 'icon-history', 'icon-trophy',
+    'icon-players', 'icon-cards', 'icon-book', 'icon-home', 'icon-play',
+    'icon-back', 'icon-close', 'icon-check', 'icon-store', 'icon-calendar',
+    'icon-spark', 'icon-volume', 'icon-settings', 'icon-delete', 'icon-download',
+    'icon-info', 'icon-warning', 'icon-chevron', 'icon-folder', 'icon-lock', 'icon-map'
+  ]
+} as const;
+
+export type GcSpriteCatalogKey = keyof typeof GC_SPRITE_CATALOG;
