@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CardType, GameCard, PlayerState, getMaxHandSize } from '../types/game';
-import { Gift, Check, Users, Package } from 'lucide-react';
-
 interface SupplyMagicModalProps {
   actor: PlayerState;
   cards: GameCard[];
@@ -25,7 +24,7 @@ export const SupplyMagicModal: React.FC<SupplyMagicModalProps> = ({
       <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto bg-[#101722] border-2 border-emerald-400/70 rounded-2xl shadow-2xl text-white">
         <div className="p-4 sm:p-5 border-b border-emerald-500/30 bg-emerald-950/40">
           <div className="flex items-center gap-2 text-emerald-300">
-            <Gift className="w-5 h-5" />
+            <GcSpriteIcon name="icon-gift" className="w-5 h-5"  />
             <h3 className="text-lg font-black">SUMINISTRO MÁGICO</h3>
           </div>
           <p className="text-sm text-neutral-200 mt-1">
@@ -39,7 +38,7 @@ export const SupplyMagicModal: React.FC<SupplyMagicModalProps> = ({
         <div className="p-4 sm:p-5 space-y-4">
           <section>
             <h4 className="text-xs font-black uppercase tracking-wide text-amber-300 mb-2 flex items-center gap-2">
-              <Package className="w-4 h-4" /> Cartas robadas
+              <GcSpriteIcon name="icon-package" className="w-4 h-4"  /> Cartas robadas
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {cards.map((card, index) => {
@@ -57,7 +56,7 @@ export const SupplyMagicModal: React.FC<SupplyMagicModalProps> = ({
                       <span className="text-[10px] font-black uppercase text-emerald-300">
                         {card.type === CardType.WEAPON ? 'Arma / Fierro' : 'Truco'}
                       </span>
-                      {selected && <Check className="w-4 h-4 text-emerald-300" />}
+                      {selected && <GcSpriteIcon name="icon-check" className="w-4 h-4 text-emerald-300"  />}
                     </div>
                     <p className="font-black text-sm mt-1">{card.name}</p>
                     <p className="text-[11px] leading-relaxed text-neutral-300 mt-1">{card.description}</p>
@@ -73,7 +72,7 @@ export const SupplyMagicModal: React.FC<SupplyMagicModalProps> = ({
 
           <section>
             <h4 className="text-xs font-black uppercase tracking-wide text-cyan-300 mb-2 flex items-center gap-2">
-              <Users className="w-4 h-4" /> Compañero que recibirá la carta
+              <GcSpriteIcon name="icon-players" className="w-4 h-4"  /> Compañero que recibirá la carta
             </h4>
             <div className="space-y-2">
               {allies.map(ally => (
@@ -91,7 +90,7 @@ export const SupplyMagicModal: React.FC<SupplyMagicModalProps> = ({
                       {ally.hp}/{ally.maxHp} HP · Mano {ally.hand.length}/{getMaxHandSize(ally)}
                     </span>
                   </span>
-                  {selectedAllyId === ally.id && <Check className="w-4 h-4 text-cyan-300" />}
+                  {selectedAllyId === ally.id && <GcSpriteIcon name="icon-check" className="w-4 h-4 text-cyan-300"  />}
                 </button>
               ))}
             </div>
