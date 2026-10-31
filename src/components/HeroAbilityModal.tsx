@@ -29,11 +29,21 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   canUseInterception,
   interceptionUnavailableReason
 }) => {
-  const [currentTargetId, setCurrentTargetId] = useState<number | null>(() =>
-    character.type === CharacterType.GLADIACUBON
-      ? (validAllies[0]?.id ?? null)
-      : (selectedTargetId || (validTargets.length > 0 ? validTargets[0].id : null))
-  );
+  // Start with a target from the same collection this ability is allowed to use.
+  // Cubicula and Cubinja target allies too; initializing them from validTargets
+  // (the rival list) could leave the confirm action disabled until another target
+  // was manually selected.
+  const initialAbilityTargets = character.type === CharacterType.CUBINJA
+    ? validAllies.filter(target => !target.borrowedEquipmentEffects?.length)
+    : character.type === CharacterType.GLADIACUBON || character.type === CharacterType.CUBICULA
+      ? validAllies
+      : validTargets;
+  const initialSelectedTargetId =
+    initialAbilityTargets.find(target => target.id === selectedTargetId)?.id ??
+    initialAbilityTargets[0]?.id ??
+    null;
+
+  const [currentTargetId, setCurrentTargetId] = useState<number | null>(() => initialSelectedTargetId);
   const [fluteBet, setFluteBet] = useState<number>(3);
   const [cubiculaMode, setCubiculaMode] = useState<CubiculaMode>('DRAIN');
   const [transferAmount, setTransferAmount] = useState<number>(3);
@@ -86,7 +96,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
       return;
     }
     onActivate(
-      needsTarget ? (currentTargetId || undefined) : undefined,
+      needsTarget ? (currentTargetId ?? undefined) : undefined,
       isCubicula ? transferAmount : isFlute ? fluteBet : undefined,
       isCubicula ? cubiculaMode : undefined
     );
