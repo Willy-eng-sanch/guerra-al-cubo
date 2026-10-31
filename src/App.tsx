@@ -21,7 +21,7 @@ import {
   getMaxPreparedStanceSlots,
   getMaxWeaponSlots
 } from './types/game';
-import { ALL_CARDS, createShuffledDeck, generateUniqueCardUid, getCardUidCounter } from './data/cards';
+import { ALL_CARDS, createShuffledDeck, generateUniqueCardUid, getCardUidCounter, resetCardUidCounter } from './data/cards';
 import { CHARACTER_LIST, CHARACTERS } from './data/characters';
 import { DEFAULT_CHAPTERS } from './data/campaign';
 import { sound } from './audio/soundManager';
@@ -30,8 +30,9 @@ import { narrator } from './audio/narratorManager';
 import { collectionManager } from './data/collectionManager';
 import { dailyMissionsManager } from './data/dailyMissionsManager';
 import { advanceTurnState, getMatchOutcome, resolveCubiculaTransfer, shouldAwardDefenderSixReward, takeFirstWeaponFromDeck } from './gameplay/rules.js';
-import { createMatchSeed, gameplayRandomInt, gameplayRandomPick, gameplayShuffle, startGameplayRandomRecording } from './gameplay/random.js';
-import { appendReplayCheckpoint, appendReplayEvent, createMatchReplay, downloadMatchReplay, hashReplayState, setReplayFinalResult, setReplayInitialState } from './gameplay/replay.js';
+import { createMatchSeed, gameplayRandomInt, gameplayRandomPick, gameplayShuffle, getGameplayRandomSession, startGameplayRandomRecording, startGameplayRandomReplay, stopGameplayRandomSession } from './gameplay/random.js';
+import { appendReplayCheckpoint, appendReplayEvent, createMatchReplay, downloadMatchReplay, getReplayRandomResults, hashReplayState, parseMatchReplay, setReplayFinalResult, setReplayInitialState } from './gameplay/replay.js';
+import { ReplayExecutionController } from './gameplay/replay-engine.js';
 
 import { TitleScreen } from './screens/TitleScreen';
 import { SetupScreen } from './screens/SetupScreen';
@@ -158,6 +159,12 @@ export default function App() {
   };
   const replayRecorderRef = useRef<any>(null);
   const replayUiEventCounterRef = useRef(0);
+  const replayExecutionRef = useRef<ReplayExecutionController | null>(null);
+  const replayCommandDispatcherRef = useRef<((payload: any, event: any) => Promise<void>) | null>(null);
+  const replayStateSnapshotRef = useRef<any>(null);
+  const [isReplayPlayback, setIsReplayPlayback] = useState(false);
+  const [replayProgress, setReplayProgress] = useState<any>(null);
+  const [replayFailure, setReplayFailure] = useState<string | null>(null);
   useEffect(() => { playersRef.current = players; }, [players]);
 
   const recordReplayEvent = (type: string, payload: Record<string, unknown> = {}) => {
@@ -979,6 +986,13 @@ export default function App() {
   };
 
   const currentTurnPlayer = players[turnIndex] || null;
+  replayStateSnapshotRef.current = {
+    isReplayPlayback, currentScreen, players, deck, discardPile, round, turnIndex, gameMode,
+    phase, activeClash, activeDiceRoll, isRollingAnimation, winner,
+    specialSixChoice, tramcubosoCardChoices, pendingDiceReroll, reactionPlayer,
+    supplyMagicOffer, cubinarcaOrderOffer, racubiteroLootOffer, cubinjaTransferOffer,
+    morphSelectionPlayerId, morphInventoryOffer
+  };
 
   const issueCubinarcaOrder = (kind: CubinarcaOrderKind, attackTargetId?: number) => {
     if (!cubinarcaOrderOffer) return;
