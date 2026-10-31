@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GcSpriteIcon } from '../ui/SpriteUI';
+import { GcSpriteCard, GcSpriteIcon, GcSpritePanel } from '../ui/SpriteUI';
 import { CharacterType, CATEGORY_INFO } from '../types/game';
 import { CHARACTER_LIST, CHARACTERS } from '../data/characters';
 import { Cube3DCanvas } from '../components/Cube3DCanvas';
@@ -544,7 +544,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                   const isInSquad = squadSlot !== -1;
 
                   return (
-                    <div
+                    <GcSpriteCard
                       key={char.type}
                       onClick={() => {
                         if (isUnlocked) {
@@ -628,7 +628,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                           </span>
                         </div>
                       )}
-                    </div>
+                    </GcSpriteCard>
                   );
                 })}
               </div>
@@ -640,7 +640,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
             STATE B: SEARCHING MATCHMAKING
            ========================================================================= */}
         {networkState.status === 'SEARCHING_MATCHMAKING' && (
-          <div className="w-full max-w-md bg-[#121622]/95 border-2 border-yellow-400/60 rounded-3xl p-6 text-center shadow-2xl space-y-5 animate-pulse">
+          <GcSpritePanel tone="default" className="w-full max-w-md p-6 text-center space-y-5 animate-pulse">
             <div className="w-16 h-16 rounded-full border-4 border-dashed border-yellow-400 animate-spin mx-auto flex items-center justify-center">
               <GcSpriteIcon name="icon-zap" className="w-7 h-7 text-yellow-300"  />
             </div>
@@ -670,7 +670,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
             >
               Cancelar Búsqueda
             </button>
-          </div>
+          </GcSpritePanel>
         )}
 
         {/* =========================================================================
