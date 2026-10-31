@@ -296,7 +296,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
         )}
 
         {/* Players Detailed Performance Table */}
-        <div className="flex-1 min-h-[160px] min-h-0 overflow-y-auto overscroll-contain space-y-2.5 pr-1">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-2.5 pr-1">
           {displayedPlayers.map((player) => {
             const charDef = CHARACTERS[player.characterType] || CHARACTERS[CharacterType.TRAMCUBOSO];
             const isWinnerDie = winner && (
