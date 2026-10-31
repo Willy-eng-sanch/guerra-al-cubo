@@ -145,7 +145,7 @@ Implementado en esta rama:
 - Importación externa de replay fuera de la navegación pública.
 
 Trabajo pendiente:
-- Reemplazar progresivamente los iconos Lucide restantes por IDs del atlas.
+- Reemplazar progresivamente los iconos Lucide restantes de Arena, tienda, misiones y diálogos por IDs del atlas.
 - Migrar tarjetas de personaje/carta y paneles de Arena a `GcSpriteCard`, `GcSpritePanel` y `GcSpritePortrait` con sus datos actuales.
 - Añadir arte final original de los personajes, fondos y estados.
 - Crear pantallas de carga usando los sprites de progreso.
