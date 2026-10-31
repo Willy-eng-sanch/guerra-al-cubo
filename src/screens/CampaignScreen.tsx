@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CampaignChapter, CharacterType } from '../types/game';
 import { CHARACTERS } from '../data/characters';
-import { ArrowLeft, Trophy, Swords, Lock, CheckCircle2 } from 'lucide-react';
-
 interface CampaignScreenProps {
   chapters: CampaignChapter[];
   onStartChapter: (chapter: CampaignChapter, hero: CharacterType) => void;
@@ -27,7 +26,7 @@ export const CampaignScreen: React.FC<CampaignScreenProps> = ({
           onClick={onBack}
           className="p-2 rounded-xl bg-[#171c26] hover:bg-[#202736] border border-[#2c374d] text-neutral-300 transition-all flex items-center gap-1.5 text-xs font-bold"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <GcSpriteIcon name="icon-back" className="w-4 h-4"  />
           <span>Volver</span>
         </button>
 
@@ -54,7 +53,7 @@ export const CampaignScreen: React.FC<CampaignScreenProps> = ({
                 }`}
               >
                 {ch.isCompleted && (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 absolute top-2 right-2" />
+                  <GcSpriteIcon name="icon-check" className="w-4 h-4 text-emerald-400 absolute top-2 right-2"  />
                 )}
                 <span className="text-[10px] font-extrabold text-cyan-400 block">
                   CAPÍTULO {ch.id}
@@ -158,7 +157,7 @@ export const CampaignScreen: React.FC<CampaignScreenProps> = ({
         onClick={() => onStartChapter(selectedChapter, chosenHero)}
         className="w-full py-4 bg-[#1e2746] hover:bg-[#283561] active:scale-[0.98] text-cyan-300 font-black text-base rounded-2xl shadow-xl border border-cyan-400 flex items-center justify-center gap-2 tracking-wider transition-all"
       >
-        <Swords className="w-5 h-5 text-cyan-300" />
+        <GcSpriteIcon name="icon-swords" className="w-5 h-5 text-cyan-300"  />
         <span>DESAFIAR JEFE DEL CAPÍTULO</span>
       </button>
     </div>
