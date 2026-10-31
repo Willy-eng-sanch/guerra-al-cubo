@@ -8,8 +8,7 @@ import { AudioControlBar } from '../components/AudioControlBar';
 import { collectionManager } from '../data/collectionManager';
 import { dailyMissionsManager } from '../data/dailyMissionsManager';
 import { CharacterType } from '../types/game';
-import { GcSpriteButton, GcSpriteTitleBanner } from '../ui/SpriteUI';
-import { Swords, Trophy, Users, Shield, BookOpen, HelpCircle, Download, Zap, Package, Heart, Crown, Flame, Calendar, History } from 'lucide-react';
+import { GcSpriteButton, GcSpriteIcon, GcSpriteTitleBanner } from '../ui/SpriteUI';
 
 interface TitleScreenProps {
   onStartClick: () => void;
@@ -88,7 +87,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             className="p-1 px-2.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-yellow-400/60 text-yellow-300 transition-all flex items-center gap-1.5 text-xs font-mono font-bold shadow cursor-pointer"
             title="Misiones Diarias y Racha de 7 Días"
           >
-            <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400 animate-bounce" />
+            <GcSpriteIcon name="icon-flame" size={14} className="text-orange-400 animate-bounce" />
             <span>Día {streakDay}</span>
             {(canClaimStreak || unclaimedMissions > 0) && (
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
@@ -100,7 +99,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             className="p-1 px-2.5 rounded-full bg-[#161d2b] hover:bg-[#222c40] border border-cyan-400/50 text-cyan-300 transition-all flex items-center gap-1.5 text-xs font-mono font-bold shadow cursor-pointer"
             title="Ver tu Nivel de Aura y Cajas de Dados"
           >
-            <Zap className="w-3.5 h-3.5 text-cyan-400" />
+            <GcSpriteIcon name="icon-zap" size={14} className="text-cyan-400" />
             <span>{auraRank.currentAura} Aura</span>
             {unopenedBoxes > 0 && (
               <span className="bg-yellow-400 text-black text-[9px] font-black px-1.5 py-0.2 rounded-full">
@@ -114,7 +113,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             className="p-1.5 px-3 rounded-full bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 transition-all flex items-center gap-1.5 text-xs font-bold shadow"
             title="Descargar APK o Instalar en Android"
           >
-            <Download className="w-3.5 h-3.5" />
+            <GcSpriteIcon name="icon-download" size={14} />
             <span className="hidden sm:inline">APK</span>
           </button>
 
@@ -122,7 +121,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             onClick={() => setShowTutorial(true)}
             className="p-1.5 px-3 rounded-full bg-[#1b2130]/80 hover:bg-[#283248] border border-[#3b4765] text-yellow-400 transition-all flex items-center gap-1.5 text-xs font-bold shadow"
           >
-            <HelpCircle className="w-4 h-4" />
+            <GcSpriteIcon name="icon-help" size={16} />
             <span>Reglas</span>
           </button>
         </div>
@@ -178,7 +177,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             <span className="bg-yellow-400 text-black text-[9px] font-black px-2 py-0.5 rounded-md font-mono tracking-widest">
               DEMO GRATIS
             </span>
-            <Swords className="w-5 h-5 text-yellow-300" />
+            <GcSpriteIcon name="icon-swords" size={20} className="text-yellow-300" />
             <span>MODO ALEATORIO (INICIATIVA D6)</span>
           </div>
           <span className="text-[10px] text-yellow-200/90 font-mono font-medium tracking-normal">
@@ -191,7 +190,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           onClick={onOnlineClick}
           className="w-full py-3 bg-gradient-to-r from-blue-600/40 via-cyan-600/30 to-blue-700/40 hover:brightness-125 active:scale-[0.98] text-cyan-300 font-black text-xs md:text-sm rounded-xl border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.35)] flex items-center justify-center gap-2 tracking-wide transition-all cursor-pointer"
         >
-          <Users className="w-4 h-4 text-cyan-300" />
+          <GcSpriteIcon name="icon-players" size={16} className="text-cyan-300" />
           <span>🌐 MULTIJUGADOR BETA (SALAS PRIVADAS & DEMO ONLINE)</span>
         </button>
 
@@ -200,7 +199,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           onClick={onStartClick}
           className="w-full py-3 bg-[#171c28] hover:bg-[#222a3d] active:scale-[0.98] text-yellow-300 font-extrabold text-xs md:text-sm rounded-xl border border-yellow-500/40 flex items-center justify-center gap-2 tracking-wide transition-all shadow-md"
         >
-          <Shield className="w-4 h-4 text-cyan-400" />
+          <GcSpriteIcon name="icon-shield" size={16} className="text-cyan-400" />
           <span>ELEGIR MIS 3 PERSONAJES</span>
         </button>
 
@@ -211,7 +210,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             onClick={onCampaignClick}
             className="py-3 bg-[#1e2746] hover:bg-[#283561] active:scale-[0.98] text-cyan-300 border border-cyan-500/40 font-bold text-xs md:text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
           >
-            <Trophy className="w-4 h-4 text-yellow-400" />
+            <GcSpriteIcon name="icon-trophy" size={16} className="text-yellow-400" />
             <span>CAMPAÑA</span>
           </button>
 
@@ -219,7 +218,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             onClick={onPassAndPlayClick}
             className="py-3 bg-[#004d40] hover:bg-[#00695c] active:scale-[0.98] text-emerald-300 border border-emerald-500/40 font-bold text-xs md:text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
           >
-            <Users className="w-4 h-4 text-emerald-300" />
+            <GcSpriteIcon name="icon-players" size={16} className="text-emerald-300" />
             <span>PASE Y JUEGA</span>
           </button>
         </div>
@@ -241,7 +240,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           onClick={() => setShowTutorial(true)}
           className="w-full py-2.5 bg-[#141824] hover:bg-[#1d2538] active:scale-[0.98] text-neutral-300 font-bold text-xs rounded-xl border border-[#263148] flex items-center justify-center gap-2 transition-all cursor-pointer"
         >
-          <BookOpen className="w-4 h-4 text-yellow-400" />
+          <GcSpriteIcon name="icon-book" size={16} className="text-yellow-400" />
           <span>Manual Táctico (50 Cartas & Clases)</span>
         </button>
 
@@ -251,7 +250,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             onClick={onRosterClick}
             className="py-2.5 bg-[#151922] hover:bg-[#1d2331] text-cyan-400 border border-[#2b354c] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all"
           >
-            <Shield className="w-4 h-4 text-cyan-400" />
+            <GcSpriteIcon name="icon-shield" size={16} className="text-cyan-400" />
             <span>13 CUBOS (ADN)</span>
           </button>
 
@@ -259,7 +258,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             onClick={onCardsClick}
             className="py-2.5 bg-[#151922] hover:bg-[#1d2331] text-yellow-400 border border-[#2b354c] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all"
           >
-            <BookOpen className="w-4 h-4 text-yellow-400" />
+            <GcSpriteIcon name="icon-book" size={16} className="text-yellow-400" />
             <span>50 CARTAS (GDD)</span>
           </button>
         </div>
