@@ -1,11 +1,10 @@
 import React, { useRef, useEffect } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { FloatingCombatText, PlayerState, CATEGORY_INFO } from '../types/game';
 import { CHARACTERS } from '../data/characters';
 import { Cube3DCanvas } from './Cube3DCanvas';
 import { MatchIntroAnimation } from './MatchIntroAnimation';
 import { CartoonCombatClash, CombatClashData } from './CartoonCombatClash';
-import { Shield, Sword, Snowflake, Zap, Skull } from 'lucide-react';
-
 interface ArenaRingProps {
   players: PlayerState[];
   activePlayerId: number | null;
@@ -229,7 +228,7 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
             {/* Target Reticle Indicator */}
             {isTarget && !player.isEliminated && (
               <div className="absolute -top-6 animate-bounce bg-[#ff1744] text-white text-[10px] font-black px-2 py-0.5 rounded-full border border-yellow-300 shadow-lg flex items-center gap-1 z-20">
-                <Sword className="w-3 h-3" />
+                <GcSpriteIcon name="icon-swords" className="w-3 h-3"  />
                 <span>OBJETIVO</span>
               </div>
             )}
@@ -254,12 +253,12 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
               {/* Status Icons Overlay */}
               {player.isFrozen && (
                 <div className="absolute top-0 right-0 bg-cyan-600/90 text-white p-1 rounded-full border border-cyan-300">
-                  <Snowflake className="w-3 h-3 animate-spin" />
+                  <GcSpriteIcon name="icon-frost" className="w-3 h-3 animate-spin"  />
                 </div>
               )}
               {player.isEliminated && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
-                  <Skull className="w-7 h-7 text-red-500 animate-pulse" />
+                  <GcSpriteIcon name="icon-skull" className="w-7 h-7 text-red-500 animate-pulse"  />
                 </div>
               )}
             </div>
@@ -305,7 +304,7 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
               {player.shieldBarrier !== undefined && player.shieldBarrier > 0 && (
                 <div className="flex items-center justify-center text-[8px] mt-0.5 px-0.5">
                   <span className="text-blue-300 font-extrabold text-[8px] flex items-center gap-0.5 bg-blue-950/80 px-1.5 py-0.2 rounded border border-blue-600/50">
-                    <Shield className="w-2.5 h-2.5 text-blue-400" />
+                    <GcSpriteIcon name="icon-shield" className="w-2.5 h-2.5 text-blue-400"  />
                     <span>+{player.shieldBarrier} Barrera</span>
                   </span>
                 </div>
@@ -327,7 +326,7 @@ export const ArenaRing: React.FC<ArenaRingProps> = ({
                     title={`Postura: ${player.preparedStance.name}`}
                     className="text-[8px] bg-cyan-500/20 text-cyan-300 px-1 py-0.2 rounded border border-cyan-500/40 flex items-center gap-0.5"
                   >
-                    <Shield className="w-2 h-2" />
+                    <GcSpriteIcon name="icon-shield" className="w-2 h-2"  />
                   </span>
                 )}
               </div>
