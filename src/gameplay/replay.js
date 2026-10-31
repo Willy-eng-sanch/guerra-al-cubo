@@ -84,6 +84,14 @@ export function getReplayRandomResults(replay) {
   assertReplay(replay);
   return replay.events.filter(event => event.type === 'RANDOM_RESULT').map(event => event.payload);
 }
+
+/** Comandos que el futuro reproductor ejecutará, sin pedir nuevas decisiones a los bots. */
+export function getReplayCommands(replay) {
+  assertReplay(replay);
+  return replay.events
+    .filter(event => event.type === 'PLAYER_ACTION' || event.type === 'BOT_DECISION')
+    .map(event => ({ sequence: event.sequence, type: event.type, payload: cloneJson(event.payload) }));
+}
 export function downloadMatchReplay(replay, filename) {
   const serialized = serializeMatchReplay(replay);
   if (typeof document === 'undefined' || typeof URL === 'undefined' || typeof Blob === 'undefined') throw new Error('La descarga solo está disponible en un navegador.');
