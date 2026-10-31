@@ -31,7 +31,7 @@ import { collectionManager } from './data/collectionManager';
 import { dailyMissionsManager } from './data/dailyMissionsManager';
 import { advanceTurnState, getMatchOutcome, resolveCubiculaTransfer } from './gameplay/rules.js';
 import { createMatchSeed, gameplayRandomInt, gameplayRandomPick, gameplayShuffle, startGameplayRandomRecording } from './gameplay/random.js';
-import { appendReplayEvent, createMatchReplay, downloadMatchReplay, setReplayFinalResult, setReplayInitialState } from './gameplay/replay.js';
+import { appendReplayCheckpoint, appendReplayEvent, createMatchReplay, downloadMatchReplay, hashReplayState, setReplayFinalResult, setReplayInitialState } from './gameplay/replay.js';
 
 import { TitleScreen } from './screens/TitleScreen';
 import { SetupScreen } from './screens/SetupScreen';
@@ -190,6 +190,7 @@ export default function App() {
       ...additional
     });
     recordReplayEvent('MATCH_STARTED', { gameMode: gameModeAtStart, deckOrder });
+    recordReplayCheckpoint('match-start', { gameMode: gameModeAtStart, players: initialPlayers, deckOrder, cardUidCounter: getCardUidCounter() });
   };
 
   const recordPlayerAction = (kind: string, payload: Record<string, unknown> = {}) => {
@@ -198,6 +199,14 @@ export default function App() {
       actorId: players[turnIndex]?.id ?? null,
       round,
       ...payload
+    });
+  };
+
+  const recordReplayCheckpoint = (label: string, state: Record<string, unknown>) => {
+    if (!replayRecorderRef.current) return;
+    appendReplayCheckpoint(replayRecorderRef.current, label, {
+      state,
+      stateHash: hashReplayState(state)
     });
   };
 
@@ -2794,6 +2803,13 @@ export default function App() {
       return;
     }
     const { players: updated, turnIndex: nextIdx, round: nextRound } = transition;
+    recordReplayEvent('TURN_ADVANCED', { endingPlayerId: turnPlayers[turnIndex]?.id ?? null, nextPlayerId: updated[nextIdx]?.id ?? null, turnIndex: nextIdx, round: nextRound });
+    recordReplayCheckpoint('round-' + nextRound + '-turn-' + (updated[nextIdx]?.id ?? 'unknown'), {
+      players: updated,
+      turnIndex: nextIdx,
+      round: nextRound,
+      deck: deckRef.current
+    });
     setPlayers(updated);
     setTurnIndex(nextIdx);
     setRound(nextRound);
@@ -2823,6 +2839,7 @@ export default function App() {
     const outcome = getMatchOutcome(playersList);
     if (!outcome) return;
     if (replayRecorderRef.current && !replayRecorderRef.current.finalResult) {
+      recordReplayCheckpoint('match-finished', { players: playersList, winnerId: outcome.winner?.id ?? null, kind: outcome.kind });
       setReplayFinalResult(replayRecorderRef.current, { kind: outcome.kind, winningTeamId: outcome.winningTeamId ?? null, winnerId: outcome.winner?.id ?? null, finalPlayers: playersList });
     }
 
