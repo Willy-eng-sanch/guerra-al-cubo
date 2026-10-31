@@ -985,6 +985,7 @@ export default function App() {
     if (kind === 'UNEQUIP_WEAPON' && victim.equippedWeapons.length === 0) return;
 
     const order: CubinarcaOrder = { issuerId: issuer.id, kind, attackTargetId };
+    recordPlayerAction('CUBINARCA_ORDER', { issuerId: issuer.id, victimId: victim.id, kind, attackTargetId: attackTargetId ?? null });
     setPlayers(prev => prev.map(player => player.id === victim.id
       ? { ...player, cubinarcaOrder: order, blocksDisabledByOrder: false, cubinarcaOrderDefiedThisTurn: false }
       : player
@@ -1028,6 +1029,7 @@ export default function App() {
     }
     if (kind === 'ATTACK_TARGET' && attackTargetId === undefined) return;
     const order: CubinarcaOrder = { issuerId: issuer.id, kind, attackTargetId };
+    recordReplayEvent('BOT_DECISION', { kind: 'CUBINARCA_ORDER', issuerId: issuer.id, victimId: victim.id, order });
     setPlayers(prev => prev.map(player => player.id === victim.id
       ? { ...player, cubinarcaOrder: order, blocksDisabledByOrder: false, cubinarcaOrderDefiedThisTurn: false }
       : player
@@ -1042,6 +1044,7 @@ export default function App() {
     const issuer = players.find(player => player.id === order.issuerId);
     const card = victim.hand[cardIndex];
     if (!issuer || issuer.isEliminated || !card || issuer.hand.length >= getMaxHandSize(issuer)) return;
+    recordPlayerAction('CUBINARCA_TRANSFER_CARD', { victimId: victim.id, issuerId: issuer.id, cardUid: card.uid, cardIndex });
     setPlayers(prev => prev.map(player => {
       if (player.id === victim.id) return {
         ...player,
@@ -1063,6 +1066,7 @@ export default function App() {
     if (!victim || order?.kind !== 'UNEQUIP_WEAPON') return;
     const weapon = victim.equippedWeapons[weaponIndex];
     if (!weapon) return;
+    recordPlayerAction('CUBINARCA_UNEQUIP_WEAPON', { victimId: victim.id, weaponUid: weapon.uid, weaponIndex });
     const hasHandSpace = victim.hand.length < getMaxHandSize(victim);
     setPlayers(prev => prev.map(player => player.id === victim.id ? {
       ...player,
@@ -1080,6 +1084,7 @@ export default function App() {
   const defyCubinarcaOrder = () => {
     const victim = currentTurnPlayer;
     if (!victim?.cubinarcaOrder) return;
+    recordPlayerAction('CUBINARCA_DEFY_ORDER', { victimId: victim.id, order: victim.cubinarcaOrder });
     setPlayers(prev => prev.map(player => player.id === victim.id
       ? { ...player, blocksDisabledByOrder: true, cubinarcaOrderDefiedThisTurn: true }
       : player
@@ -2142,8 +2147,8 @@ export default function App() {
 
   const resolveTramcubosoReroll = (shouldReroll: boolean) => {
     const pending = pendingDiceReroll;
-    recordPlayerAction('TRAMCUBOSO_REROLL_CHOICE', { shouldReroll, targetId: pending?.targetId ?? null });
     if (!pending) return;
+    recordPlayerAction('TRAMCUBOSO_REROLL_CHOICE', { shouldReroll, targetId: pending.targetId });
     const tramcuboso = players.find(player => player.id === pending.tramcubosoId);
     if (!tramcuboso) { setPendingDiceReroll(null); return; }
     if (shouldReroll && (tramcuboso.actionPoints <= 0 || tramcuboso.abilityCooldownRemaining > 0 || tramcuboso.isFrozen)) return;
@@ -2167,6 +2172,7 @@ export default function App() {
     if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0) return;
     const card = reactionPlayer.hand.find(c => c.id === cardId && c.type === CardType.WEAPON);
     if (!card) return;
+    recordPlayerAction('PERFECT_BLOCK_EQUIP_WEAPON', { playerId: reactionPlayer.id, cardUid: card.uid, cardId });
     sound.playCardDraw();
     const newHand = reactionPlayer.hand.filter(c => c.id !== cardId);
     const newWeapons = [...reactionPlayer.equippedWeapons];
@@ -2198,6 +2204,7 @@ export default function App() {
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION
     );
     if (!card) return;
+    recordPlayerAction('PERFECT_BLOCK_PLAY_TRICK', { playerId: reactionPlayer.id, cardUid: card.uid, cardId });
     sound.playCardDraw();
     const newHand = reactionPlayer.hand.filter(c => c.id !== cardId);
     returnCardsToGlobalPile([card]);
@@ -2225,6 +2232,7 @@ export default function App() {
       c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
     );
     if (!card) return;
+    recordPlayerAction('PERFECT_BLOCK_PREPARE_STANCE', { playerId: reactionPlayer.id, cardUid: card.uid, cardId });
     sound.playStanceActivate();
     const newHand = reactionPlayer.hand.filter(c => c.id !== cardId);
     const occupied = [reactionPlayer.preparedStance, reactionPlayer.preparedStanceSecondary].filter(Boolean);
@@ -2243,6 +2251,7 @@ export default function App() {
   };
 
   const handleSkipReaction = () => {
+    if (reactionPlayer) recordPlayerAction('SKIP_PERFECT_BLOCK_REACTION', { playerId: reactionPlayer.id });
     setReactionPlayer(null);
   };
 
@@ -2387,6 +2396,7 @@ export default function App() {
 
     const giftedCard = offer.cards[cardIndex];
     const retainedCard = offer.cards[1 - cardIndex];
+    recordPlayerAction('HADA_SUPPLY_TRANSFER', { actorId: actor.id, allyId: ally.id, giftedCardUid: giftedCard.uid, retainedCardUid: retainedCard.uid, cardIndex });
     setPlayers(prev => prev.map(p => {
       if (p.id === actor.id) return { ...p, hand: [...p.hand, retainedCard] };
       if (p.id === ally.id) return { ...p, hand: [...p.hand, giftedCard] };
@@ -2437,6 +2447,7 @@ export default function App() {
       }
 
       const drawnCards = [firstDraw.card, secondDraw.card];
+      recordReplayEvent('CARD_OFFERED', { recipientId: actor.id, source: 'HADA_SUPPLY_MAGIC', cardUids: drawnCards.map(card => card.uid) });
       setDeck(secondDraw.newDeck);
       setDiscardPile([]);
       triggerDeckAnimation();
@@ -2708,6 +2719,7 @@ export default function App() {
         else pileCards.push(card);
       } else pileCards.push(card);
     });
+    recordPlayerAction('RACUBITERO_LOOT_DISTRIBUTION', { actorId: actor.id, assignments: [...assignments], cardUids: offer.cards.map(card => card.uid) });
     const selfCapacity = Math.max(0, getMaxHandSize(actor) - actor.hand.length);
     const acceptedSelf = selfCards.slice(0, selfCapacity);
     pileCards.push(...selfCards.slice(selfCapacity));
@@ -2744,6 +2756,7 @@ export default function App() {
         !actor.hand.some(card => card.uid === offer.card.uid) ||
         target.isEliminated || target.hp <= 0 || target.hand.length >= getMaxHandSize(target) ||
         (target.activeMorphCharacter || target.characterType) === CharacterType.CUBOGRO) return;
+    recordPlayerAction('CUBINJA_TRANSFER_TRICK', { actorId: actor.id, targetId: target.id, cardUid: offer.card.uid });
     setPlayers(prev => prev.map(player => {
       if (player.id === actor.id) return {
         ...player,
@@ -2918,6 +2931,7 @@ export default function App() {
   const applyMorphForm = (playerId: number, nextForm: CharacterType) => {
     const player = playersRef.current.find(item => item.id === playerId) || players.find(item => item.id === playerId);
     if (!player || (player.morphFormsUsed || []).includes(nextForm) || nextForm === CharacterType.CAMBIAFORMAS) return;
+    recordPlayerAction('MORPH_FORM_SELECTED', { playerId, nextForm });
     const projected = { ...player, activeMorphCharacter: nextForm };
     const weaponLimit = getMaxWeaponSlots(projected);
     const stanceLimit = getMaxPreparedStanceSlots(projected);
@@ -2956,6 +2970,7 @@ export default function App() {
   const confirmMorphInventory = (selection: { hand: number[]; weapons: number[]; stances: number[] }) => {
     const offer = morphInventoryOffer;
     if (!offer) return;
+    recordPlayerAction('MORPH_INVENTORY_SELECTION', { playerId: offer.playerId, form: offer.form, selection });
     const player = playersRef.current.find(item => item.id === offer.playerId);
     if (!player) return;
     const keptWeapons = selection.weapons.slice(0, offer.weaponLimit).map(index => offer.weapons[index]).filter(Boolean);
