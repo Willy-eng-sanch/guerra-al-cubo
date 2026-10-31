@@ -104,7 +104,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
+    <div className="gc-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
       <div className="relative w-full max-w-2xl bg-[#11151f] border-2 border-[#2c3850] rounded-3xl p-5 shadow-2xl text-left overflow-hidden max-h-[92vh] flex flex-col justify-between">
         
         {/* Header with Tab Switcher */}
