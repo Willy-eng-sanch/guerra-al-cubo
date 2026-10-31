@@ -20,7 +20,7 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
   const isCubinja = (player.activeMorphCharacter || player.characterType) === CharacterType.CUBINJA;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+    <div className="gc-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
       <div className="relative w-full max-w-lg bg-[#141824] border-2 border-cyan-400 rounded-3xl p-5 shadow-2xl text-left space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#252f44] pb-3">
