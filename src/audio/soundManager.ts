@@ -1,7 +1,32 @@
-// Web Audio API implementation replicating SoundManager.kt synthesized tones and noise bursts
+// Web Audio API implementation replicating SoundManager synthesized tones, noise bursts and tactile impacts
+// Includes master volume control, mute toggles and persistence for Guerra Cubita.
 
 class SoundManager {
   private ctx: AudioContext | null = null;
+  private masterGain: GainNode | null = null;
+  private volume: number = 0.85;
+  private isMuted: boolean = false;
+  private listeners: Array<() => void> = [];
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedMute = localStorage.getItem('guerra_cubita_sfx_muted');
+        if (savedMute !== null) {
+          this.isMuted = savedMute === 'true';
+        }
+        const savedVol = localStorage.getItem('guerra_cubita_sfx_volume');
+        if (savedVol !== null) {
+          const parsed = parseFloat(savedVol);
+          if (!isNaN(parsed)) {
+            this.volume = Math.max(0, Math.min(1, parsed));
+          }
+        }
+      } catch {
+        // ignore localStorage access issues
+      }
+    }
+  }
 
   private getContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -9,6 +34,9 @@ class SoundManager {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
+        this.masterGain.connect(this.ctx.destination);
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
@@ -17,7 +45,87 @@ class SoundManager {
     return this.ctx;
   }
 
+  private getDestinationNode(): AudioNode | null {
+    const ctx = this.getContext();
+    if (!ctx) return null;
+    if (!this.masterGain) {
+      this.masterGain = ctx.createGain();
+      this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, ctx.currentTime);
+      this.masterGain.connect(ctx.destination);
+    }
+    return this.masterGain;
+  }
+
+  setVolume(vol: number) {
+    this.volume = Math.max(0, Math.min(1, vol));
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('guerra_cubita_sfx_volume', String(this.volume));
+      } catch {
+        // ignore
+      }
+    }
+    if (this.ctx && this.masterGain && !this.isMuted) {
+      const now = this.ctx.currentTime;
+      this.masterGain.gain.cancelScheduledValues(now);
+      this.masterGain.gain.setTargetAtTime(this.volume, now, 0.03);
+    }
+    this.notify();
+  }
+
+  setMuted(muted: boolean) {
+    this.isMuted = muted;
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('guerra_cubita_sfx_muted', String(muted));
+      } catch {
+        // ignore
+      }
+    }
+    if (this.ctx && this.masterGain) {
+      const now = this.ctx.currentTime;
+      this.masterGain.gain.cancelScheduledValues(now);
+      this.masterGain.gain.setTargetAtTime(muted ? 0 : this.volume, now, 0.03);
+    }
+    this.notify();
+  }
+
+  toggleMute(): boolean {
+    this.setMuted(!this.isMuted);
+    return this.isMuted;
+  }
+
+  getIsMuted(): boolean {
+    return this.isMuted;
+  }
+
+  getVolume(): number {
+    return this.volume;
+  }
+
+  subscribe(fn: () => void): () => void {
+    this.listeners.push(fn);
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== fn);
+    };
+  }
+
+  private notify() {
+    this.listeners.forEach(fn => {
+      try {
+        fn();
+      } catch (e) {
+        console.warn('sound subscriber error:', e);
+      }
+    });
+  }
+
+  playTestSound() {
+    this.playDiceRoll();
+  }
+
   private vibrate(ms: number) {
+    if (this.isMuted) return;
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       try {
         navigator.vibrate(ms);
@@ -28,8 +136,10 @@ class SoundManager {
   }
 
   private playImpact(frequency: number, duration: number, volume: number, noiseVolume: number) {
+    if (this.isMuted || this.volume <= 0.001) return;
     const ctx = this.getContext();
-    if (!ctx) return;
+    const dest = this.getDestinationNode();
+    if (!ctx || !dest) return;
 
     const now = ctx.currentTime;
     const oscillator = ctx.createOscillator();
@@ -40,7 +150,7 @@ class SoundManager {
     toneGain.gain.setValueAtTime(volume, now);
     toneGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
     oscillator.connect(toneGain);
-    toneGain.connect(ctx.destination);
+    toneGain.connect(dest);
     oscillator.start(now);
     oscillator.stop(now + duration);
 
@@ -57,7 +167,7 @@ class SoundManager {
     noiseGain.gain.setValueAtTime(noiseVolume, now);
     noiseGain.gain.exponentialRampToValueAtTime(0.001, now + noiseDuration);
     noise.connect(noiseGain);
-    noiseGain.connect(ctx.destination);
+    noiseGain.connect(dest);
     noise.start(now);
   }
 
@@ -79,8 +189,10 @@ class SoundManager {
 
   playDiceRoll() {
     this.vibrate(30);
+    if (this.isMuted || this.volume <= 0.001) return;
     const ctx = this.getContext();
-    if (!ctx) return;
+    const dest = this.getDestinationNode();
+    if (!ctx || !dest) return;
     const now = ctx.currentTime;
     const tones = [
       { freq: 440, dur: 0.04 },
@@ -98,7 +210,7 @@ class SoundManager {
       gain.gain.setValueAtTime(0.2, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(dest);
       osc.start(t);
       osc.stop(t + dur);
       t += dur;
@@ -107,8 +219,10 @@ class SoundManager {
 
   playPunchHit() {
     this.vibrate(70);
+    if (this.isMuted || this.volume <= 0.001) return;
     const ctx = this.getContext();
-    if (!ctx) return;
+    const dest = this.getDestinationNode();
+    if (!ctx || !dest) return;
     const now = ctx.currentTime;
     // Punch noise burst
     const bufferSize = ctx.sampleRate * 0.12;
@@ -126,13 +240,14 @@ class SoundManager {
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0.5, now);
     node.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(dest);
     node.start(now);
   }
 
   // Cartoon Fight Brawl Sound Sequence (Whack, Boing, Pow, Slap)
   playCartoonFightBrawl() {
     this.vibrate(150);
+    if (this.isMuted || this.volume <= 0.001) return;
     const ctx = this.getContext();
     if (!ctx) return;
 
@@ -148,7 +263,7 @@ class SoundManager {
 
     impacts.forEach(({ delay, type, freq }) => {
       setTimeout(() => {
-        if (!this.ctx) return;
+        if (!this.ctx || this.isMuted) return;
         if (type === 'boing') {
           this.playCartoonBoing(freq);
         } else if (type === 'whack' || type === 'slap') {
@@ -161,8 +276,10 @@ class SoundManager {
   }
 
   playCartoonBoing(startFreq = 220) {
+    if (this.isMuted || this.volume <= 0.001) return;
     const ctx = this.getContext();
-    if (!ctx) return;
+    const dest = this.getDestinationNode();
+    if (!ctx || !dest) return;
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -173,14 +290,16 @@ class SoundManager {
     gain.gain.setValueAtTime(0.28, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(dest);
     osc.start(now);
     osc.stop(now + 0.22);
   }
 
   playCartoonWhack(freq = 520) {
+    if (this.isMuted || this.volume <= 0.001) return;
     const ctx = this.getContext();
-    if (!ctx) return;
+    const dest = this.getDestinationNode();
+    if (!ctx || !dest) return;
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -190,7 +309,7 @@ class SoundManager {
     gain.gain.setValueAtTime(0.35, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(dest);
     osc.start(now);
     osc.stop(now + 0.12);
   }
@@ -198,8 +317,10 @@ class SoundManager {
   // Cartoon Leap Whoosh sound when jumping to table center
   playLeapWhoosh() {
     this.vibrate(35);
+    if (this.isMuted || this.volume <= 0.001) return;
     const ctx = this.getContext();
-    if (!ctx) return;
+    const dest = this.getDestinationNode();
+    if (!ctx || !dest) return;
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -209,7 +330,7 @@ class SoundManager {
     gain.gain.setValueAtTime(0.22, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(dest);
     osc.start(now);
     osc.stop(now + 0.22);
   }
@@ -217,8 +338,10 @@ class SoundManager {
   // Papercraft collage tape slap sound when character sticker & tape adhere to die face
   playPaperTapeSlap() {
     this.vibrate(40);
+    if (this.isMuted || this.volume <= 0.001) return;
     const ctx = this.getContext();
-    if (!ctx) return;
+    const dest = this.getDestinationNode();
+    if (!ctx || !dest) return;
     const now = ctx.currentTime;
     // Crisp paper slap: high frequency click + subtle wood/die thump
     const osc = ctx.createOscillator();
@@ -229,7 +352,7 @@ class SoundManager {
     gain.gain.setValueAtTime(0.25, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(dest);
     osc.start(now);
     osc.stop(now + 0.08);
 
@@ -246,7 +369,7 @@ class SoundManager {
     noiseGain.gain.setValueAtTime(0.18, now);
     noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
     noise.connect(noiseGain);
-    noiseGain.connect(ctx.destination);
+    noiseGain.connect(dest);
     noise.start(now);
   }
 
@@ -257,8 +380,10 @@ class SoundManager {
 
   playPerfectBlock() {
     this.vibrate(120);
+    if (this.isMuted || this.volume <= 0.001) return;
     const ctx = this.getContext();
-    if (!ctx) return;
+    const dest = this.getDestinationNode();
+    if (!ctx || !dest) return;
     const now = ctx.currentTime;
     const tones = [
       { freq: 1200, dur: 0.08 },
@@ -273,7 +398,7 @@ class SoundManager {
       gain.gain.setValueAtTime(0.25, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(dest);
       osc.start(t);
       osc.stop(t + dur);
       t += dur;
@@ -282,8 +407,10 @@ class SoundManager {
 
   playCardDraw() {
     this.vibrate(25);
+    if (this.isMuted || this.volume <= 0.001) return;
     const ctx = this.getContext();
-    if (!ctx) return;
+    const dest = this.getDestinationNode();
+    if (!ctx || !dest) return;
     const now = ctx.currentTime;
     const tones = [
       { freq: 600, dur: 0.03 },
@@ -298,7 +425,7 @@ class SoundManager {
       gain.gain.setValueAtTime(0.18, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(dest);
       osc.start(t);
       osc.stop(t + dur);
       t += dur;
@@ -307,8 +434,10 @@ class SoundManager {
 
   playStanceActivate() {
     this.vibrate(50);
+    if (this.isMuted || this.volume <= 0.001) return;
     const ctx = this.getContext();
-    if (!ctx) return;
+    const dest = this.getDestinationNode();
+    if (!ctx || !dest) return;
     const now = ctx.currentTime;
     const tones = [
       { freq: 350, dur: 0.05 },
@@ -324,7 +453,7 @@ class SoundManager {
       gain.gain.setValueAtTime(0.22, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(dest);
       osc.start(t);
       osc.stop(t + dur);
       t += dur;
@@ -333,8 +462,10 @@ class SoundManager {
 
   playElimination() {
     this.vibrate(250);
+    if (this.isMuted || this.volume <= 0.001) return;
     const ctx = this.getContext();
-    if (!ctx) return;
+    const dest = this.getDestinationNode();
+    if (!ctx || !dest) return;
     const now = ctx.currentTime;
     const bufferSize = ctx.sampleRate * 0.35;
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -351,7 +482,7 @@ class SoundManager {
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0.6, now);
     node.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(dest);
     node.start(now);
   }
 }

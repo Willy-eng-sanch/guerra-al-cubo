@@ -168,6 +168,11 @@ class UrbanMusicManager {
     this.notify();
   }
 
+  toggleMute(): boolean {
+    this.setMuted(!this.isMuted);
+    return this.isMuted;
+  }
+
   setVolume(vol: number) {
     this.volume = Math.max(0, Math.min(1, vol));
     if (typeof window !== 'undefined') {
