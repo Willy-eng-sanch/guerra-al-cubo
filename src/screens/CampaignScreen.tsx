@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GcSpriteIcon } from '../ui/SpriteUI';
+import { GcSpriteIcon, GcSpritePanel, GcSpritePortrait } from '../ui/SpriteUI';
 import { CampaignChapter, CharacterType } from '../types/game';
 import { CHARACTERS } from '../data/characters';
 interface CampaignScreenProps {
@@ -67,7 +67,7 @@ export const CampaignScreen: React.FC<CampaignScreenProps> = ({
         </div>
 
         {/* Selected Chapter Showcase */}
-        <div className="bg-[#151a25] border border-[#2b354c] rounded-2xl p-5 shadow-xl">
+        <GcSpritePanel className="p-5 shadow-xl">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-extrabold text-yellow-400 tracking-wider">
               {selectedChapter.title}
@@ -85,11 +85,13 @@ export const CampaignScreen: React.FC<CampaignScreenProps> = ({
               Jefe de Arena:
             </span>
             <div className="flex items-center gap-3">
-              <img
-                src={bossDef.avatar}
-                alt={bossDef.displayName}
-                className="w-14 h-14 rounded-xl object-cover border-2 border-red-500 shadow-lg"
-              />
+              <GcSpritePortrait className="w-14 h-14 shrink-0">
+                <img
+                  src={bossDef.avatar}
+                  alt={bossDef.displayName}
+                  className="w-full h-full object-cover"
+                />
+              </GcSpritePortrait>
               <div>
                 <h4 className="text-sm font-black text-white">{bossDef.displayName}</h4>
                 <p className="text-[11px] text-yellow-400">{bossDef.title}</p>
@@ -150,7 +152,7 @@ export const CampaignScreen: React.FC<CampaignScreenProps> = ({
               })}
             </div>
           </div>
-        </div>
+        </GcSpritePanel>
       </div>
 
       <button
