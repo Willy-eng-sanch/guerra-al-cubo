@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GcSpriteIcon } from '../ui/SpriteUI';
+import { GcSpriteCard, GcSpriteIcon } from '../ui/SpriteUI';
 import { createPortal } from 'react-dom';
 import { PlayerState, CharacterType } from '../types/game';
 import { CHARACTERS } from '../data/characters';
@@ -294,9 +294,9 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
             const isRed = player.teamId === 2;
 
             return (
-              <div
+              <GcSpriteCard
                 key={`post-match-player-${player.id}`}
-                className={`p-3 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                className={`gc-sprite-card--post-match-player p-3 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
                   isMvp
                     ? 'bg-gradient-to-r from-yellow-950/40 via-[#1a2233] to-[#181d29] border-yellow-400/70 shadow-md ring-1 ring-yellow-400/30'
                     : isBlue
@@ -407,7 +407,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
                     )}
                   </div>
                 </div>
-              </div>
+              </GcSpriteCard>
             );
           })}
         </div>
