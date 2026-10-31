@@ -164,9 +164,18 @@ export class ReplayExecutionController {
           });
         }
         await this.adapter.verifyBotDecision(event.payload, event);
+      } else if (event.type === 'RULE_EFFECT') {
+        if (typeof this.adapter.applyRuleEffect !== 'function') {
+          throw new ReplayExecutionError('No hay adaptador para aplicar el efecto de regla registrado.', {
+            kind: 'RULE_EFFECT_ADAPTER_MISSING',
+            sequence: event.sequence,
+            payload: event.payload
+          });
+        }
+        await this.adapter.applyRuleEffect(event.payload, event);
       }
 
-      if (event.type === 'PLAYER_ACTION' || event.type === 'BOT_DECISION') {
+      if (event.type === 'PLAYER_ACTION' || event.type === 'BOT_DECISION' || event.type === 'RULE_EFFECT') {
         await this.adapter.waitForIdle?.(event);
       }
 
