@@ -2064,10 +2064,10 @@ export default function App() {
           }
 
           const alientoDamageTotal = primaryDamageTotal + secondaryDamageTotal;
-          if (!attacker.isBot && alientoDamageTotal > 0) {
+          if (!replayPlaybackActiveRef.current && !attacker.isBot && alientoDamageTotal > 0) {
             dailyMissionsManager.recordDamage(alientoDamageTotal);
           }
-          if (isPerfectBlock || isCubinjaCardBlock) {
+          if (!replayPlaybackActiveRef.current && (isPerfectBlock || isCubinjaCardBlock)) {
             dailyMissionsManager.recordPerfectBlock();
           }
 
@@ -2332,7 +2332,7 @@ export default function App() {
     );
 
     addLog(`${attacker.name} equipó el arma: [${card.name}]`);
-    if (!attacker.isBot) dailyMissionsManager.recordCardPlayed();
+    if (!replayPlaybackActiveRef.current && !attacker.isBot) dailyMissionsManager.recordCardPlayed();
     applyCardClassSynergy(attacker.id, card, selectedTargetId);
   };
 
@@ -2363,7 +2363,7 @@ export default function App() {
     } : p));
 
     addLog(`${attacker.name} preparó la postura: [${card.name}]`, true);
-    if (!attacker.isBot) dailyMissionsManager.recordCardPlayed();
+    if (!replayPlaybackActiveRef.current && !attacker.isBot) dailyMissionsManager.recordCardPlayed();
     applyCardClassSynergy(attacker.id, card, selectedTargetId);
   };
 
@@ -2378,7 +2378,7 @@ export default function App() {
     recordPlayerAction('PLAY_ACTION_TRICK', { cardId, cardUid: card.uid, targetId: targetId ?? null });
 
     sound.playCardDraw();
-    if (!attacker.isBot) dailyMissionsManager.recordCardPlayed();
+    if (!replayPlaybackActiveRef.current && !attacker.isBot) dailyMissionsManager.recordCardPlayed();
     const newHand = attacker.hand.filter(c => c.id !== cardId);
     returnCardsToGlobalPile([card]);
 
@@ -2896,11 +2896,13 @@ export default function App() {
       setPhase(MatchPhase.MATCH_OVER);
       addLog(`¡¡EL BANDO RIVAL (ROJO) HA DERROTADO A TODA TU ESCUADRA!!`, true, "Árbitro");
       narrator.narrateVictory("El Bando Rojo");
-      collectionManager.recordMatchResult(false);
-      dailyMissionsManager.recordMatch(false);
+      if (!replayPlaybackActiveRef.current) {
+        collectionManager.recordMatchResult(false);
+        dailyMissionsManager.recordMatch(false);
+      }
       addLog(`+15 Aura de Calle obtenida por aguantar la refriega.`, true, "Aura");
       if (gameMode === GameMode.ONLINE_PVP) {
-        collectionManager.addCoins(25);
+        if (!replayPlaybackActiveRef.current) collectionManager.addCoins(25);
         addFloatingText(playersList[0]?.id || 1, "+25 Cubi-Monedas de Consuelo", "#fbbf24");
       }
       return;
@@ -2912,12 +2914,14 @@ export default function App() {
       setPhase(MatchPhase.MATCH_OVER);
       addLog(`¡¡VICTORIA TOTAL! TU BANDO (AZUL) HA DERROTADO A TODOS LOS RIVALES!!`, true, "Árbitro");
       narrator.narrateVictory("Tu Escuadra Azul");
-      collectionManager.recordMatchResult(true);
-      dailyMissionsManager.recordMatch(true);
+      if (!replayPlaybackActiveRef.current) {
+        collectionManager.recordMatchResult(true);
+        dailyMissionsManager.recordMatch(true);
+      }
       addLog(`¡¡+35 AURA DE CALLE Y +1 CAJA DE 3 DADOS DESBLOQUEADA!!`, true, "Aura");
       addFloatingText(playersList[0]?.id || 1, "¡+1 CAJA DE 3 DADOS!", "#ffd600");
       if (gameMode === GameMode.ONLINE_PVP) {
-        collectionManager.addCoins(60);
+        if (!replayPlaybackActiveRef.current) collectionManager.addCoins(60);
         addFloatingText(playersList[0]?.id || 1, "¡+60 Cubi-Monedas de Victoria!", "#ffd600");
       }
       return;
@@ -2937,18 +2941,20 @@ export default function App() {
         addLog(`¡¡${champ.name} ES EL CAMPEÓN SUPREMO DE GUERRA CUBITA!!`, true, "Árbitro");
         narrator.narrateVictory(champ.name);
         const isHumanChamp = !champ.isBot;
-        collectionManager.recordMatchResult(isHumanChamp);
-        dailyMissionsManager.recordMatch(isHumanChamp);
+        if (!replayPlaybackActiveRef.current) {
+          collectionManager.recordMatchResult(isHumanChamp);
+          dailyMissionsManager.recordMatch(isHumanChamp);
+        }
         if (isHumanChamp) {
           addLog(`¡¡+35 AURA DE COMBATE Y +1 CAJA DE 3 DADOS GANADA!!`, true, "Aura");
           addFloatingText(champ.id, "¡+1 CAJA DE 3 DADOS!", "#ffd600");
           if (gameMode === GameMode.ONLINE_PVP) {
-            collectionManager.addCoins(60);
+            if (!replayPlaybackActiveRef.current) collectionManager.addCoins(60);
           }
         } else {
           addLog(`+15 Aura de combate disputado.`, true, "Aura");
           if (gameMode === GameMode.ONLINE_PVP) {
-            collectionManager.addCoins(25);
+            if (!replayPlaybackActiveRef.current) collectionManager.addCoins(25);
           }
         }
       }
@@ -3285,6 +3291,7 @@ export default function App() {
       }
 
       setReplayFailure(null);
+      replayExecutionRef.current = null;
       setReplayProgress({ status: 'RESTORING', consumedEvents: 0, totalEvents: replay.events.length });
       replayRecorderRef.current = null;
       replayObservedEventsRef.current = [];
@@ -3313,7 +3320,10 @@ export default function App() {
       setActiveClash(null);
       setActiveDiceRoll(null);
       setIsRollingAnimation(false);
+      setIsFastSpeed(false);
       setLog([]);
+      setSpecialSixChoice(null);
+      setSpecialSixQueue([]);
       setSupplyMagicOffer(null);
       setTramcubosoCardChoices([]);
       setCubinarcaOrderOffer(null);
@@ -3476,14 +3486,12 @@ export default function App() {
       replayExecutionRef.current = controller;
       await controller.run();
       setReplayProgress(controller.getProgress());
-      replayPlaybackActiveRef.current = false;
-      setIsReplayPlayback(false);
+      // Mantener el modo de reproducción protegido hasta que el usuario salga.
       stopGameplayRandomSession();
     } catch (error: any) {
       setReplayFailure(error?.message || String(error));
       setReplayProgress(replayExecutionRef.current?.getProgress?.() ?? { status: 'FAILED' });
-      replayPlaybackActiveRef.current = false;
-      setIsReplayPlayback(false);
+      // No reactivar bots ni acciones autónomas sobre una reconstrucción fallida.
       stopGameplayRandomSession();
     }
   };
@@ -3758,37 +3766,67 @@ export default function App() {
   return (
     <div className="w-full min-h-screen bg-[#0f1116] text-white">
       {(isReplayPlayback || replayFailure || replayProgress?.status === 'FINISHED') && (
-        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] w-[min(92vw,560px)] rounded-xl border border-cyan-500/50 bg-slate-950/95 px-4 py-3 shadow-2xl">
-          {isReplayPlayback ? (
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-xs font-extrabold tracking-wider text-cyan-300">RECONSTRUYENDO PARTIDA</div>
-                <div className="text-[11px] text-slate-300">
-                  {replayProgress?.consumedEvents ?? 0} / {replayProgress?.totalEvents ?? 0} eventos · {replayProgress?.consumedCheckpoints ?? 0} / {replayProgress?.totalCheckpoints ?? 0} checkpoints
+        <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/55 px-3 pt-4">
+          <div className="w-full max-w-[560px] rounded-xl border border-cyan-500/50 bg-slate-950 px-4 py-4 shadow-2xl">
+            {!replayFailure && replayProgress?.status !== 'FINISHED' && replayProgress?.status !== 'STOPPED' ? (
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs font-extrabold tracking-wider text-cyan-300">RECONSTRUYENDO PARTIDA</div>
+                  <div className="mt-1 text-[11px] text-slate-300">
+                    {replayProgress?.consumedEvents ?? 0} / {replayProgress?.totalEvents ?? 0} eventos · {replayProgress?.consumedCheckpoints ?? 0} / {replayProgress?.totalCheckpoints ?? 0} checkpoints
+                  </div>
                 </div>
+                <button
+                  onClick={() => {
+                    const progress = replayExecutionRef.current?.stop();
+                    if (progress) setReplayProgress(progress);
+                    stopGameplayRandomSession();
+                  }}
+                  className="shrink-0 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-800"
+                >
+                  Detener
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  replayExecutionRef.current?.stop();
-                  replayPlaybackActiveRef.current = false;
-                  setIsReplayPlayback(false);
-                  stopGameplayRandomSession();
-                }}
-                className="shrink-0 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-800"
-              >
-                Detener
-              </button>
-            </div>
-          ) : replayFailure ? (
-            <div>
-              <div className="text-xs font-extrabold tracking-wider text-rose-300">REPLAY DETENIDO · DIVERGENCIA</div>
-              <div className="mt-1 break-words text-xs text-slate-200">{replayFailure}</div>
-            </div>
-          ) : (
-            <div className="text-xs font-bold text-emerald-300">
-              Reconstrucción completada · Todos los checkpoints y resultados aleatorios fueron verificados.
-            </div>
-          )}
+            ) : (
+              <>
+                {replayFailure ? (
+                  <>
+                    <div className="text-xs font-extrabold tracking-wider text-rose-300">REPLAY DETENIDO · DIVERGENCIA</div>
+                    <div className="mt-2 break-words text-xs text-slate-200">{replayFailure}</div>
+                    {replayProgress?.error?.details?.firstDifference && (
+                      <div className="mt-2 break-words rounded bg-slate-900 px-2 py-1 text-[11px] text-amber-200">
+                        Campo: {replayProgress.error.details.firstDifference.path}
+                      </div>
+                    )}
+                  </>
+                ) : replayProgress?.status === 'STOPPED' ? (
+                  <>
+                    <div className="text-xs font-extrabold tracking-wider text-amber-300">REPRODUCCIÓN DETENIDA</div>
+                    <div className="mt-1 text-xs text-slate-300">La partida quedó en el último estado ejecutado. No se reanudará automáticamente.</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-xs font-extrabold tracking-wider text-emerald-300">RECONSTRUCCIÓN COMPLETADA</div>
+                    <div className="mt-1 text-xs text-slate-300">Se verificaron los eventos, checkpoints y resultados aleatorios registrados.</div>
+                  </>
+                )}
+                <button
+                  onClick={() => {
+                    replayExecutionRef.current = null;
+                    replayPlaybackActiveRef.current = false;
+                    setIsReplayPlayback(false);
+                    setReplayFailure(null);
+                    setReplayProgress(null);
+                    stopGameplayRandomSession();
+                    setCurrentScreen(CurrentScreen.TITLE);
+                  }}
+                  className="mt-3 w-full rounded-lg bg-cyan-700 px-3 py-2 text-xs font-extrabold text-white hover:bg-cyan-600"
+                >
+                  Salir de la repetición
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
       {currentScreen === CurrentScreen.TITLE && (
