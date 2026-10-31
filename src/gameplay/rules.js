@@ -91,54 +91,97 @@ export function advanceTurnState(players, currentTurnIndex, round) {
   }
 
   const playerCount = players.length;
-  let nextIndex = (currentTurnIndex + 1) % playerCount;
+  const nextPlayers = players.map((player, index) => {
+    if (index !== currentTurnIndex) return player;
+
+    const endingPlayer = {
+      ...player,
+      abilityCooldownRemaining: player.cubiculaModesUsedThisTurn?.length
+        ? 3
+        : player.abilityCooldownRemaining,
+      cubiculaModesUsedThisTurn: [],
+      borrowedEquipmentEffects: player.borrowedEquipmentEffects ? [] : player.borrowedEquipmentEffects,
+      borrowedEquipmentSourceId: player.borrowedEquipmentEffects ? null : player.borrowedEquipmentSourceId
+    };
+
+    if (player.cubinarcaOrder) {
+      endingPlayer.blocksDisabledByOrder = true;
+      endingPlayer.cubinarcaOrderDefiedThisTurn = player.blocksDisabledByOrder
+        ? player.cubinarcaOrderDefiedThisTurn
+        : false;
+    }
+    return endingPlayer;
+  });
+
+  let cursor = currentTurnIndex;
+  let nextIndex = (cursor + 1) % playerCount;
+  let nextRound = round;
   let inspected = 0;
 
-  while (inspected < playerCount && !isPlayerAlive(players[nextIndex])) {
+  // Congelación consume el siguiente turno completo: limpia el estado y continúa
+  // buscando al siguiente jugador vivo que realmente pueda actuar.
+  while (inspected < playerCount) {
+    if (nextIndex <= cursor) nextRound += 1;
+
+    const candidate = nextPlayers[nextIndex];
+    if (isPlayerAlive(candidate)) {
+      const cooldown = Math.max(0, (candidate.abilityCooldownRemaining || 0) - 1);
+
+      if (candidate.isFrozen) {
+        nextPlayers[nextIndex] = {
+          ...candidate,
+          actionPoints: 0,
+          isFrozen: false,
+          abilityCooldownRemaining: cooldown,
+          cubinarcaOrderDefiedThisTurn: false
+        };
+      } else {
+        nextPlayers[nextIndex] = {
+          ...candidate,
+          actionPoints: 2,
+          cubiculaModesUsedThisTurn: [],
+          abilityCooldownRemaining: cooldown,
+          cubinarcaOrderDefiedThisTurn: false
+        };
+        return { finished: false, players: nextPlayers, turnIndex: nextIndex, round: nextRound };
+      }
+    }
+
+    cursor = nextIndex;
     nextIndex = (nextIndex + 1) % playerCount;
     inspected += 1;
   }
 
-  if (inspected >= playerCount || !isPlayerAlive(players[nextIndex])) {
-    return { finished: true, players, turnIndex: currentTurnIndex, round };
-  }
+  return { finished: true, players: nextPlayers, turnIndex: currentTurnIndex, round: nextRound };
+}
 
-  const nextRound = round + (nextIndex <= currentTurnIndex ? 1 : 0);
-  const nextPlayers = players.map((player, index) => {
-    if (index === currentTurnIndex) {
-      const nextPlayer = {
-        ...player,
-        abilityCooldownRemaining: player.cubiculaModesUsedThisTurn?.length
-          ? 3
-          : player.abilityCooldownRemaining,
-        cubiculaModesUsedThisTurn: [],
-        borrowedEquipmentEffects: player.borrowedEquipmentEffects ? [] : player.borrowedEquipmentEffects,
-        borrowedEquipmentSourceId: player.borrowedEquipmentEffects ? null : player.borrowedEquipmentSourceId
-      };
+/** Toma un arma inicial y devuelve un mazo sin esa carta. */
+export function takeFirstWeaponFromDeck(deck, createUid) {
+  if (!Array.isArray(deck)) throw new TypeError('El mazo debe ser un array.');
+  if (typeof createUid !== 'function') throw new TypeError('Se necesita una función para crear el UID.');
 
-      if (player.cubinarcaOrder) {
-        nextPlayer.blocksDisabledByOrder = true;
-        nextPlayer.cubinarcaOrderDefiedThisTurn = player.blocksDisabledByOrder
-          ? player.cubinarcaOrderDefiedThisTurn
-          : false;
-      }
-      return nextPlayer;
-    }
+  const index = deck.findIndex(card => card && card.type === 'WEAPON');
+  if (index < 0) return { card: null, remainingDeck: deck };
 
-    if (index === nextIndex) {
-      return {
-        ...player,
-        actionPoints: 2,
-        isFrozen: false,
-        cubiculaModesUsedThisTurn: [],
-        abilityCooldownRemaining: Math.max(0, player.abilityCooldownRemaining - 1),
-        cubinarcaOrderDefiedThisTurn: false
-      };
-    }
-    return player;
-  });
+  const selected = deck[index];
+  return {
+    card: { ...selected, uid: createUid(selected.id) },
+    remainingDeck: deck.filter((_, cardIndex) => cardIndex !== index)
+  };
+}
 
-  return { finished: false, players: nextPlayers, turnIndex: nextIndex, round: nextRound };
+/** Determina si un seis defensivo puede producir la recompensa de Cara Especial 6. */
+export function shouldAwardDefenderSixReward({
+  isFrozen = false,
+  hasAutomaticPerfectBlock = false,
+  blocksDisabledByOrder = false,
+  defenderRolls = []
+} = {}) {
+  return !isFrozen &&
+    !hasAutomaticPerfectBlock &&
+    !blocksDisabledByOrder &&
+    Array.isArray(defenderRolls) &&
+    defenderRolls.includes(6);
 }
 
 /** Determina el resultado final sin ejecutar efectos secundarios de interfaz. */

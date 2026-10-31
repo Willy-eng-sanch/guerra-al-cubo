@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advanceTurnState, getMatchOutcome, resolveCubiculaTransfer } from '../../src/gameplay/rules.js';
+import { advanceTurnState, getMatchOutcome, resolveCubiculaTransfer, shouldAwardDefenderSixReward, takeFirstWeaponFromDeck } from '../../src/gameplay/rules.js';
 
 const p = (id, teamId, overrides = {}) => ({
   id, name: 'Jugador ' + id, teamId,
@@ -76,9 +76,66 @@ test('el siguiente jugador inicia con exactamente 2 Cúbits; no acumula sobrante
   const r = advanceTurnState([p(1, 1, { actionPoints: 0 }), p(2, 2, { actionPoints: 7 })], 0, 1);
   assert.equal(r.turnIndex, 1); assert.equal(r.round, 1); assert.equal(r.players[1].actionPoints, 2);
 });
-test('al comenzar turno se quita congelación y disminuye el cooldown', () => {
-  const r = advanceTurnState([p(1, 1), p(2, 2, { isFrozen: true, abilityCooldownRemaining: 2 })], 0, 3);
-  assert.equal(r.players[1].isFrozen, false); assert.equal(r.players[1].abilityCooldownRemaining, 1);
+test('un jugador congelado pierde su turno y se entrega el turno al siguiente vivo', () => {
+  const players = [
+    p(1, 1),
+    p(2, 2, { isFrozen: true, actionPoints: 1, abilityCooldownRemaining: 2 }),
+    p(3, 1, { actionPoints: 0 })
+  ];
+  const r = advanceTurnState(players, 0, 3);
+  assert.equal(r.turnIndex, 2);
+  assert.equal(r.round, 3);
+  assert.equal(r.players[1].isFrozen, false);
+  assert.equal(r.players[1].actionPoints, 0);
+  assert.equal(r.players[1].abilityCooldownRemaining, 1);
+  assert.equal(r.players[2].actionPoints, 2);
+});
+
+test('salta varios congelados cruzando el inicio de ronda una sola vez', () => {
+  const players = [
+    p(1, 1, { isFrozen: true, abilityCooldownRemaining: 1 }),
+    p(2, 2),
+    p(3, 1),
+    p(4, 2, { isFrozen: true, abilityCooldownRemaining: 3 })
+  ];
+  const r = advanceTurnState(players, 2, 7);
+  assert.equal(r.turnIndex, 1);
+  assert.equal(r.round, 8);
+  assert.equal(r.players[3].isFrozen, false);
+  assert.equal(r.players[0].isFrozen, false);
+  assert.equal(r.players[3].abilityCooldownRemaining, 2);
+  assert.equal(r.players[0].abilityCooldownRemaining, 0);
+  assert.equal(r.players[1].actionPoints, 2);
+});
+
+test('el seis defensivo congelado no concede Cara Especial 6', () => {
+  assert.equal(shouldAwardDefenderSixReward({ isFrozen: true, defenderRolls: [6] }), false);
+});
+
+test('un seis defensivo normal puede conceder Cara Especial 6', () => {
+  assert.equal(shouldAwardDefenderSixReward({ defenderRolls: [6] }), true);
+});
+
+test('un seis defensivo no concede recompensa con bloqueo automático o Discordia', () => {
+  assert.equal(shouldAwardDefenderSixReward({ hasAutomaticPerfectBlock: true, defenderRolls: [6] }), false);
+  assert.equal(shouldAwardDefenderSixReward({ blocksDisabledByOrder: true, defenderRolls: [6] }), false);
+});
+
+test('el arma inicial de Gladiacubon sale del mazo y solo conserva una instancia', () => {
+  const weapon = { id: 4, type: 'WEAPON', uid: 'original-weapon' };
+  const trick = { id: 90, type: 'TRICK', uid: 'trick' };
+  const deck = [trick, weapon, { ...weapon, uid: 'second-weapon' }];
+  const result = takeFirstWeaponFromDeck(deck, id => 'equipped-' + id);
+  assert.equal(result.card.uid, 'equipped-4');
+  assert.deepEqual(result.remainingDeck.map(card => card.uid), ['trick', 'second-weapon']);
+  assert.equal(result.remainingDeck.filter(card => card.id === weapon.id).length, 1);
+  assert.equal(deck.length, 3, 'la función no muta el mazo recibido');
+});
+
+test('no se crea arma inicial si no hay armas en el mazo', () => {
+  const result = takeFirstWeaponFromDeck([{ id: 7, type: 'TRICK' }], id => 'uid-' + id);
+  assert.equal(result.card, null);
+  assert.equal(result.remainingDeck.length, 1);
 });
 test('al terminar turno se vacían los modos de Cubícula y se fija cooldown de 3 rondas', () => {
   const r = advanceTurnState([p(1, 1, { cubiculaModesUsedThisTurn: ['DRAIN', 'DONATE'] }), p(2, 2)], 0, 1);
