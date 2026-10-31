@@ -107,3 +107,50 @@ export function GcSpriteBadge({ className = '', children, ...props }: GcSpriteBa
 export function GcSpriteBackdrop({ className = '' }: { className?: string }) {
   return <div aria-hidden="true" className={`gc-sprite-backdrop ${className}`.trim()} />;
 }
+
+export interface GcSpriteProgressProps {
+  value: number;
+  label: string;
+  className?: string;
+}
+
+/** Accessible progress bar for loading, uploads and multi-step setup flows. */
+export function GcSpriteProgress({ value, label, className = '' }: GcSpriteProgressProps) {
+  const safeValue = Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+  return (
+    <div
+      className={`gc-sprite-progress ${className}`.trim()}
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(safeValue)}
+    >
+      <div className="gc-sprite-progress__fill" style={{ width: `${safeValue}%` }} />
+    </div>
+  );
+}
+
+export function GcSpritePortrait({
+  className = '',
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return <div {...props} className={`gc-sprite-portrait ${className}`.trim()}>{children}</div>;
+}
+
+export function GcSpriteSlot({
+  className = '',
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return <div {...props} className={`gc-sprite-slot ${className}`.trim()}>{children}</div>;
+}
+
+export function GcSpriteTitleBanner({
+  className = '',
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement> & { children: ReactNode }) {
+  return <div {...props} className={`gc-sprite-title-banner ${className}`.trim()}>{children}</div>;
+}
