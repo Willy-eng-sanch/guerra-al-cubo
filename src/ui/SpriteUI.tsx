@@ -1,4 +1,4 @@
-import React, { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 
 export type GcSpriteName =
   | 'icon-dice' | 'icon-swords' | 'icon-shield' | 'icon-history' | 'icon-trophy'
@@ -65,24 +65,20 @@ export function GcSpriteButton({
   );
 }
 
-export interface GcSpritePanelProps extends HTMLAttributes<HTMLElement> {
-  as?: 'section' | 'article' | 'div';
+export interface GcSpritePanelProps extends HTMLAttributes<HTMLDivElement> {
   tone?: 'default' | 'warm' | 'cool';
   children: ReactNode;
 }
 
 /** Nine-slice panel frame. Content and interaction remain ordinary semantic HTML. */
 export function GcSpritePanel({
-  as = 'section',
   tone = 'default',
   className = '',
   children,
   ...props
 }: GcSpritePanelProps) {
   const classes = `gc-sprite-panel gc-sprite-panel--${tone} ${className}`.trim();
-  if (as === 'article') return <article {...props} className={classes}>{children}</article>;
-  if (as === 'div') return <div {...props} className={classes}>{children}</div>;
-  return <section {...props} className={classes}>{children}</section>;
+  return <div {...props} className={classes}>{children}</div>;
 }
 
 export interface GcSpriteCardProps extends HTMLAttributes<HTMLElement> {
