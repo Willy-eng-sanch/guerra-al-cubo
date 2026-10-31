@@ -8,6 +8,7 @@ import { AudioControlBar } from '../components/AudioControlBar';
 import { collectionManager } from '../data/collectionManager';
 import { dailyMissionsManager } from '../data/dailyMissionsManager';
 import { CharacterType } from '../types/game';
+import { GcSpriteButton } from '../ui/SpriteUI';
 import { Swords, Trophy, Users, Shield, BookOpen, HelpCircle, Download, Zap, Package, Heart, Crown, Flame, Calendar, History } from 'lucide-react';
 
 interface TitleScreenProps {
@@ -222,14 +223,15 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         </div>
 
         <div className="gc-menu-section-label">TUS PARTIDAS</div>
-        <button
+        <GcSpriteButton
           onClick={onReplayArchiveClick}
+          variant="primary"
+          icon="icon-history"
           aria-label="Abrir mis partidas guardadas"
-          className="gc-menu-primary w-full py-3 bg-gradient-to-r from-cyan-950/90 to-blue-950/80 hover:brightness-125 active:scale-[0.98] text-cyan-100 font-black text-xs md:text-sm rounded-xl border border-cyan-400/60 flex items-center justify-center gap-2 transition-all shadow-lg"
+          className="gc-menu-primary w-full py-3 text-xs md:text-sm"
         >
-          <History className="w-4 h-4 text-cyan-300" />
-          <span>MIS PARTIDAS · VER REPETICIONES</span>
-        </button>
+          MIS PARTIDAS · VER REPETICIONES
+        </GcSpriteButton>/button>
 
         <div className="gc-menu-section-label">GUÍA Y COLECCIÓN</div>
         {/* Tutorial & Manual Táctico */}
