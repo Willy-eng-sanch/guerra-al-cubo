@@ -185,6 +185,8 @@ export default function App() {
   };
 
   const beginMatchRecording = (mode: string, metadata: Record<string, unknown> = {}) => {
+    setReplaySaveStatus('IDLE');
+    setReplaySaveError(null);
     const seed = createMatchSeed();
     const replay = createMatchReplay({ seed, mode, metadata, engineVersion: '1.0.0' });
     replayRecorderRef.current = replay;
