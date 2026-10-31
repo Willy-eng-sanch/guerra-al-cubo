@@ -1,6 +1,5 @@
 import React from 'react';
-import { X, BookOpen, ShieldAlert, Award, Sparkles } from 'lucide-react';
-
+import { GcSpriteIcon } from '../ui/SpriteUI';
 interface TutorialModalProps {
   onDismiss: () => void;
 }
@@ -13,11 +12,11 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ onDismiss }) => {
           onClick={onDismiss}
           className="absolute top-4 right-4 text-neutral-400 hover:text-white p-1 rounded-lg"
         >
-          <X className="w-5 h-5" />
+          <GcSpriteIcon name="icon-close" className="w-5 h-5"  />
         </button>
 
         <div className="flex items-center gap-2 text-yellow-400 font-black text-xl mb-3">
-          <BookOpen className="w-6 h-6" />
+          <GcSpriteIcon name="icon-book" className="w-6 h-6"  />
           <span>REGLAS OFICIALES: GUERRA CUBITA</span>
         </div>
 
