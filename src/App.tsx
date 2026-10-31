@@ -3276,6 +3276,7 @@ export default function App() {
       startGameplayRandomReplay(replay.metadata.seed, getReplayRandomResults(replay));
 
       setIsReplayPlayback(true);
+      setCurrentScreen(CurrentScreen.ARENA);
       setIsMatchIntroPlaying(false);
       matchIntroCompletedRef.current = true;
       setPlayers(restoredPlayers);
@@ -3401,7 +3402,7 @@ export default function App() {
       setMorphInventoryOffer(null);
       return;
     }
-    if (winner || isMatchIntroPlaying || players.length === 0 || morphSelectionPlayerId !== null || morphInventoryOffer) return;
+    if (isReplayPlayback || winner || isMatchIntroPlaying || players.length === 0 || morphSelectionPlayerId !== null || morphInventoryOffer) return;
     const morph = players.find(player =>
       player.characterType === CharacterType.CAMBIAFORMAS && !player.isEliminated && player.hp > 0 &&
       player.activeMorphRound !== round && !player.morphExhausted
@@ -3437,7 +3438,7 @@ export default function App() {
 
 // Auto-skip turn if current active player is eliminated or dead (CRITICAL FIX FOR STUCK 'PENSANDO')
   useEffect(() => {
-    if (currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
+    if (isReplayPlayback || currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
     const currentP = players[turnIndex];
     if (currentP && (currentP.isEliminated || currentP.hp <= 0)) {
       const skipTimer = setTimeout(() => {
@@ -3449,7 +3450,7 @@ export default function App() {
 
   // Bot AI Turn execution
   useEffect(() => {
-    if (currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
+    if (isReplayPlayback || currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
     const activePlayer = players[turnIndex];
     if (!activePlayer || !activePlayer.isBot || activePlayer.isEliminated || activePlayer.hp <= 0) return;
 
@@ -3492,6 +3493,12 @@ export default function App() {
             getMaxHandSize(activePlayer) > 0 &&
             issuer.hand.length < getMaxHandSize(issuer)
           ) {
+            recordReplayEvent('BOT_DECISION', {
+              kind: 'CUBINARCA_FULFILL_TRANSFER',
+              victimId: activePlayer.id,
+              issuerId: issuer.id,
+              cardUid: card.uid
+            });
             setPlayers(prev => prev.map(player => {
               if (player.id === activePlayer.id) return {
                 ...player,
@@ -3505,6 +3512,7 @@ export default function App() {
             }));
             addLog(`${activePlayer.name} obedece la orden y entrega [${card.name}] a ${issuer.name}.`, true, activePlayer.name);
           } else {
+            recordReplayEvent('BOT_DECISION', { kind: 'CUBINARCA_AUTO_DEFY', victimId: activePlayer.id, order: pendingOrder });
             setPlayers(prev => prev.map(player => player.id === activePlayer.id
               ? { ...player, blocksDisabledByOrder: true, cubinarcaOrderDefiedThisTurn: true }
               : player
@@ -3514,6 +3522,11 @@ export default function App() {
           const weapon = activePlayer.equippedWeapons[0];
           if (weapon) {
             const hasSpace = activePlayer.hand.length < getMaxHandSize(activePlayer);
+            recordReplayEvent('BOT_DECISION', {
+              kind: 'CUBINARCA_FULFILL_UNEQUIP',
+              victimId: activePlayer.id,
+              weaponUid: weapon.uid
+            });
             setPlayers(prev => prev.map(player => player.id === activePlayer.id ? {
               ...player,
               equippedWeapons: player.equippedWeapons.slice(1),
@@ -3525,6 +3538,7 @@ export default function App() {
             if (!hasSpace) returnCardsToGlobalPile([weapon]);
             addLog(`${activePlayer.name} obedece la orden y desequipa [${weapon.name}].`, true, activePlayer.name);
           } else {
+            recordReplayEvent('BOT_DECISION', { kind: 'CUBINARCA_AUTO_DEFY', victimId: activePlayer.id, order: pendingOrder });
             setPlayers(prev => prev.map(player => player.id === activePlayer.id
               ? { ...player, blocksDisabledByOrder: true, cubinarcaOrderDefiedThisTurn: true }
               : player
