@@ -4,7 +4,7 @@
 
 Preparar toda la interfaz para que su apariencia final pueda construirse y sustituirse mediante piezas gráficas independientes, sin reescribir el comportamiento React ni las reglas del juego.
 
-La idea visual toma como referencia general la jerarquía de videojuego de cartas de *Plants vs. Zombies Heroes*: pantallas expresivas, lectura clara, marcos de carta, paneles con personalidad, botones grandes y navegación con iconografía consistente. No se reutilizan ilustraciones, logotipos ni recursos propietarios de ese juego. Guerra Cúbita conserva una identidad propia de dados, combate callejero, cómic y rotoscopia.
+La arquitectura organiza la interfaz con una jerarquía clara de pantallas, paneles, cartas, botones e iconografía reutilizable. Las referencias anteriores se consideran únicamente estructurales y no fijan el estilo artístico. La dirección visual final será original y estará inspirada en manualidades callejeras; sus materiales, texturas, paleta y tratamiento gráfico se definirán en una fase de arte posterior.
 
 ## Adaptación técnica al proyecto
 
