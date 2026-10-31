@@ -695,3 +695,22 @@ button:disabled {
   }
 }
 
+
+
+/* Dialog shells use a shared sprite frame; their inner scroll region stays local. */
+.gc-modal-overlay > div[class*="max-w-"] {
+  border: 16px solid transparent !important;
+  border-image-source: url('/assets/ui/sprites/modal-frame.svg') !important;
+  border-image-slice: 34 fill !important;
+  border-image-width: 16px !important;
+  border-image-repeat: stretch !important;
+  border-radius: 0 !important;
+  background-color: #121b2b !important;
+}
+
+.gc-screen article:not(.gc-unstyled-card) {
+  border-image-source: url('/assets/ui/sprites/card-frame.svg');
+  border-image-slice: 32 fill;
+  border-image-width: 12px;
+  border-image-repeat: stretch;
+}
