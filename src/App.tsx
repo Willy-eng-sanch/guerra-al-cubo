@@ -3352,9 +3352,9 @@ export default function App() {
         },
         verifyBotDecision: async (payload: any, event: any) => {
           const matchStarted = replay.events.find((candidate: any) => candidate.type === 'MATCH_STARTED');
-          const isPreMatchDecision = matchStarted && event.sequence < matchStarted.sequence;
+          if (matchStarted && event.sequence < matchStarted.sequence) return;
           const observed = replayObservedEventsRef.current[0];
-          if (!isPreMatchDecision && observed?.type === event.type) {
+          if (observed?.type === event.type) {
             const difference = findFirstReplayDifference(event.payload, observed.payload);
             if (difference) {
               throw new Error(
