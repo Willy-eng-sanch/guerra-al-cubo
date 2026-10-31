@@ -10,7 +10,11 @@ export type GcSpriteName =
   | 'icon-search' | 'icon-star' | 'icon-chart' | 'icon-wifi' | 'icon-copy'
   | 'icon-message' | 'icon-radio' | 'icon-package' | 'icon-coins' | 'icon-gift'
   | 'icon-refresh' | 'icon-crown' | 'icon-exit' | 'icon-fast-forward'
-  | 'icon-eye' | 'icon-award' | 'icon-skull' | 'icon-heart' | 'icon-file';
+  | 'icon-eye' | 'icon-award' | 'icon-skull' | 'icon-heart' | 'icon-file'
+  | 'icon-frost' | 'icon-phone' | 'icon-external-link' | 'icon-terminal' | 'icon-share'
+  | 'icon-clock' | 'icon-trend' | 'icon-shield-off' | 'icon-cube' | 'icon-sliders'
+  | 'icon-music' | 'icon-volume-off' | 'icon-mic' | 'icon-mic-off' | 'icon-pause'
+  | 'icon-disc' | 'icon-target' | 'icon-hand';
 
 const SPRITE_ATLAS = '/assets/ui/gc-ui-atlas.svg';
 
