@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CubinarcaOrder, CubinarcaOrderKind, GameCard, PlayerState, getMaxHandSize } from '../types/game';
-import { AlertTriangle, ArrowRight, Hand, ShieldOff, Swords } from 'lucide-react';
-
 interface CubinarcaOrderModalProps {
   mode: 'ISSUE' | 'FULFILL';
   issuer: PlayerState;
@@ -56,7 +55,7 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
       <div className="w-full max-w-lg max-h-[88vh] overflow-y-auto bg-[#101521] border-2 border-violet-500/70 rounded-2xl shadow-2xl text-white">
         <div className="p-4 border-b border-violet-500/30 bg-violet-950/40">
           <div className="flex items-center gap-2">
-            <Swords className="w-5 h-5 text-violet-300" />
+            <GcSpriteIcon name="icon-swords" className="w-5 h-5 text-violet-300"  />
             <h3 className="font-black tracking-wide text-violet-200">{title}</h3>
           </div>
           <p className="text-xs text-neutral-300 mt-1">{subtitle}</p>
@@ -74,7 +73,7 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
               onClick={() => setSelectedKind('ATTACK_TARGET')}
               className={`w-full p-3 rounded-xl border text-left flex items-center gap-3 disabled:opacity-35 ${selectedKind === 'ATTACK_TARGET' ? 'border-violet-300 bg-violet-950/70' : 'border-[#30394d] bg-[#171e2c]'}`}
             >
-              <Swords className="w-5 h-5 text-red-300" />
+              <GcSpriteIcon name="icon-swords" className="w-5 h-5 text-red-300"  />
               <span className="flex-1">
                 <b className="block text-sm">Ordenar un ataque</b>
                 <span className="text-[11px] text-neutral-400">Puede designar a un rival o a un aliado: fuego amigo exclusivamente bajo este mandato.</span>
@@ -102,7 +101,7 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
               onClick={() => setSelectedKind('TRANSFER_CARD')}
               className={`w-full p-3 rounded-xl border text-left flex items-center gap-3 disabled:opacity-35 ${selectedKind === 'TRANSFER_CARD' ? 'border-violet-300 bg-violet-950/70' : 'border-[#30394d] bg-[#171e2c]'}`}
             >
-              <Hand className="w-5 h-5 text-cyan-300" />
+              <GcSpriteIcon name="icon-hand" className="w-5 h-5 text-cyan-300"  />
               <span className="flex-1">
                 <b className="block text-sm">Transferir una carta</b>
                 <span className="text-[11px] text-neutral-400">La víctima entrega una carta de su mano a Cubinarca.</span>
@@ -115,7 +114,7 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
               onClick={() => setSelectedKind('UNEQUIP_WEAPON')}
               className={`w-full p-3 rounded-xl border text-left flex items-center gap-3 disabled:opacity-35 ${selectedKind === 'UNEQUIP_WEAPON' ? 'border-violet-300 bg-violet-950/70' : 'border-[#30394d] bg-[#171e2c]'}`}
             >
-              <ShieldOff className="w-5 h-5 text-amber-300" />
+              <GcSpriteIcon name="icon-shield-off" className="w-5 h-5 text-amber-300"  />
               <span className="flex-1">
                 <b className="block text-sm">Desequipar un arma</b>
                 <span className="text-[11px] text-neutral-400">La víctima retira un arma de su mesa y la devuelve a su mano; si no cabe, vuelve a la Pila General.</span>
@@ -133,7 +132,7 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
         ) : (
           <div className="p-4 space-y-3">
             <div className="rounded-xl p-3 bg-amber-950/40 border border-amber-500/40 flex gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-300 shrink-0" />
+              <GcSpriteIcon name="icon-warning" className="w-5 h-5 text-amber-300 shrink-0"  />
               <p className="text-xs text-amber-100">
                 {order?.kind === 'ATTACK_TARGET'
                   ? (() => {
@@ -162,7 +161,7 @@ export const CubinarcaOrderModal: React.FC<CubinarcaOrderModalProps> = ({
                   const friendlyFire = target && victim.teamId !== undefined && target.teamId === victim.teamId;
                   return friendlyFire ? `Cumplir mandato: atacar aliado ${target.name}` : `Atacar a ${target?.name ?? 'objetivo'}`;
                 })()}
-                <ArrowRight className="w-4 h-4" />
+                <GcSpriteIcon name="icon-arrow-right" className="w-4 h-4"  />
               </button>
             )}
 
