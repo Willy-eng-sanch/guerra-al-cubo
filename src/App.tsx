@@ -29,7 +29,7 @@ import { music } from './audio/musicManager';
 import { narrator } from './audio/narratorManager';
 import { collectionManager } from './data/collectionManager';
 import { dailyMissionsManager } from './data/dailyMissionsManager';
-import { advanceTurnState, getMatchOutcome, resolveCubiculaTransfer } from './gameplay/rules.js';
+import { advanceTurnState, getMatchOutcome, resolveCubiculaTransfer, shouldAwardDefenderSixReward, takeFirstWeaponFromDeck } from './gameplay/rules.js';
 import { createMatchSeed, gameplayRandomInt, gameplayRandomPick, gameplayShuffle, startGameplayRandomRecording } from './gameplay/random.js';
 import { appendReplayCheckpoint, appendReplayEvent, createMatchReplay, downloadMatchReplay, hashReplayState, setReplayFinalResult, setReplayInitialState } from './gameplay/replay.js';
 
@@ -356,17 +356,11 @@ export default function App() {
 
   // Helper: Gladiacubon starts with 1 random weapon equipped from the global deck
   const getInitialWeapons = (hero: CharacterType, deckArr: GameCard[]): GameCard[] => {
-    if (hero === CharacterType.GLADIACUBON) {
-      const idx = deckArr.findIndex(c => c.type === CardType.WEAPON);
-      if (idx !== -1) {
-        const weapon = { ...deckArr[idx], uid: generateUniqueCardUid(deckArr[idx].id) };
-        return [{
-          ...weapon,
-          uid: generateUniqueCardUid(weapon.id)
-        }];
-      }
-    }
-    return [];
+    if (hero !== CharacterType.GLADIACUBON) return [];
+    const result = takeFirstWeaponFromDeck(deckArr, generateUniqueCardUid);
+    if (!result.card) return [];
+    deckArr.splice(0, deckArr.length, ...result.remainingDeck);
+    return [result.card as GameCard];
   };
 
   // Add floating combat text
@@ -1358,7 +1352,7 @@ export default function App() {
 
     // Avaricia suspende cualquier postura Truco que ya estuviera preparada.
     // Se conserva en el estado del jugador, pero no produce efectos mientras Cubinja esté activa.
-    const defenderStances = isCubinjaHero(target) ? [] :
+    const defenderStances = target.isFrozen || isCubinjaHero(target) ? [] :
       [target.preparedStance, target.preparedStanceSecondary].filter((stance): stance is GameCard => Boolean(stance));
     const activeDefenderStance = defenderStances.find(stance => stance.id === 19) ||
       defenderStances.find(stance => stance.id === 17) || defenderStances[0] || null;
@@ -1376,15 +1370,10 @@ export default function App() {
       isPerfectBlock = true;
       addLog(`¡${target.name} activa El Esquive de Callejón y consigue un Bloqueo Perfecto!`, true, target.name);
     } else if (target.isFrozen) {
-      if (diceOverride) {
-        defenderRolls.push(...diceOverride.defenderRolls);
-        defenderFinalVal = defenderRolls[0] ?? 0;
-      } else {
-        const r = gameplayRandomInt(1, 6, 'combat.defense.frozen');
-        defenderRolls.push(r);
-        defenderFinalVal = r;
-      }
-      isPerfectBlock = false; // Congelado no puede bloquear aunque se relancen los dados.
+      // Un defensor congelado no tira dado ni ejecuta reacciones defensivas.
+      // El turno de ese jugador se consumirá al llegar su posición en el orden.
+      defenderFinalVal = 0;
+      isPerfectBlock = false;
     } else if (diceOverride) {
       defenderRolls.push(...diceOverride.defenderRolls);
       if (defenderHero === CharacterType.TRAMCUBOSO) {
@@ -1478,7 +1467,12 @@ export default function App() {
       }
     }
 
-    const defenderShowsSix = !hasAutomaticPerfectBlock && !target.blocksDisabledByOrder && defenderRolls.includes(6);
+    const defenderShowsSix = shouldAwardDefenderSixReward({
+      isFrozen: target.isFrozen,
+      hasAutomaticPerfectBlock,
+      blocksDisabledByOrder: Boolean(target.blocksDisabledByOrder),
+      defenderRolls
+    });
 
     if (wasInterceptedByGladiacubon) {
       if (isPerfectBlock) {
