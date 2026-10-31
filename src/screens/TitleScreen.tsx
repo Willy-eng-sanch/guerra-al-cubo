@@ -8,7 +8,7 @@ import { AudioControlBar } from '../components/AudioControlBar';
 import { collectionManager } from '../data/collectionManager';
 import { dailyMissionsManager } from '../data/dailyMissionsManager';
 import { CharacterType } from '../types/game';
-import { GcSpriteButton } from '../ui/SpriteUI';
+import { GcSpriteButton, GcSpriteTitleBanner } from '../ui/SpriteUI';
 import { Swords, Trophy, Users, Shield, BookOpen, HelpCircle, Download, Zap, Package, Heart, Crown, Flame, Calendar, History } from 'lucide-react';
 
 interface TitleScreenProps {
@@ -130,9 +130,11 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
 
       {/* Main Title & 3D Centerpiece */}
       <div className="relative z-10 flex flex-col items-center justify-center my-2 text-center max-w-xl mx-auto w-full">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-wider font-bungee drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]">
-          GUERRA CUBITA
-        </h1>
+        <GcSpriteTitleBanner className="w-full max-w-md px-3 py-1">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-wider font-bungee drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]">
+            GUERRA CUBITA
+          </h1>
+        </GcSpriteTitleBanner>
         <p className="text-xs sm:text-sm font-semibold text-cyan-400 tracking-wide mt-0.5">
           Duelo Táctico de Dados D6 Callejeros · Rotoscopia
         </p>
