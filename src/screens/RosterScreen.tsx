@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CHARACTER_LIST } from '../data/characters';
 import { CharacterDef, CATEGORY_INFO } from '../types/game';
-import { ArrowLeft, Sparkles, Shield, Swords, Zap, AlertTriangle, BookOpen, UserCheck } from 'lucide-react';
 import { sound } from '../audio/soundManager';
 import { Model3DViewerModal } from '../components/Model3DViewerModal';
 
@@ -26,7 +26,7 @@ export const RosterScreen: React.FC<RosterScreenProps> = ({ onBack }) => {
           onClick={onBack}
           className="p-2 rounded-xl bg-[#171c26] hover:bg-[#202736] border border-[#2c374d] text-neutral-300 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <GcSpriteIcon name="icon-back" className="w-4 h-4"  />
           <span>Volver</span>
         </button>
 
@@ -98,7 +98,7 @@ export const RosterScreen: React.FC<RosterScreenProps> = ({ onBack }) => {
             {/* ADN del Barrio Box */}
             <div className="bg-[#10141f] p-3 rounded-2xl border border-[#263148] space-y-2">
               <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
-                <Zap className="w-3.5 h-3.5" />
+                <GcSpriteIcon name="icon-zap" className="w-3.5 h-3.5"  />
                 ADN DEL BARRIO (AFINIDADES A LAS 5 CLASES)
               </span>
 
@@ -139,7 +139,7 @@ export const RosterScreen: React.FC<RosterScreenProps> = ({ onBack }) => {
                 {/* Anti-Clases */}
                 <div className="p-2 rounded-xl border border-red-600/60 bg-red-950/30 flex flex-col justify-between">
                   <span className="text-[9px] font-bold text-red-400 uppercase flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3 text-red-400" />
+                    <GcSpriteIcon name="icon-warning" className="w-3 h-3 text-red-400"  />
                     Anti-Clases (2)
                   </span>
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -163,7 +163,7 @@ export const RosterScreen: React.FC<RosterScreenProps> = ({ onBack }) => {
               <div className="bg-[#10141f] p-3 rounded-2xl border border-yellow-500/40">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-yellow-400 flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <GcSpriteIcon name="icon-spark" className="w-3.5 h-3.5"  />
                     <span>Activa: {selectedChar.abilityName}</span>
                   </span>
                   {selectedChar.abilityCooldownMax > 0 && (
@@ -180,7 +180,7 @@ export const RosterScreen: React.FC<RosterScreenProps> = ({ onBack }) => {
               {/* Pasiva */}
               <div className="bg-[#10141f] p-3 rounded-2xl border border-cyan-500/40">
                 <span className="text-xs font-black text-cyan-400 flex items-center gap-1">
-                  <Shield className="w-3.5 h-3.5" />
+                  <GcSpriteIcon name="icon-shield" className="w-3.5 h-3.5"  />
                   <span>Pasiva: {selectedChar.passiveName}</span>
                 </span>
                 <p className="text-[11px] text-neutral-300 mt-1 leading-snug">
