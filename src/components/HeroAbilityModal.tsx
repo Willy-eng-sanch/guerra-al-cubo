@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CharacterDef, CharacterType, PlayerState, CubiculaMode } from '../types/game';
-import { Sparkles, Zap, Shield, X, Check, Dices, Target, Snowflake, Info, Swords } from 'lucide-react';
-
 interface HeroAbilityModalProps {
   character: CharacterDef;
   player: PlayerState;
@@ -166,7 +165,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
             onClick={onClose}
             className="p-1.5 rounded-lg bg-[#1a2130] hover:bg-[#253046] text-neutral-400 hover:text-white transition-all"
           >
-            <X className="w-5 h-5" />
+            <GcSpriteIcon name="icon-close" className="w-5 h-5"  />
           </button>
         </div>
 
@@ -176,7 +175,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
           <div className="bg-[#141a26] border border-[#232c40] p-3.5 rounded-xl space-y-1.5 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase text-yellow-400 flex items-center gap-1.5 tracking-wider">
-                <Sparkles className="w-4 h-4 text-yellow-400" />
+                <GcSpriteIcon name="icon-spark" className="w-4 h-4 text-yellow-400"  />
                 <span>{character.abilityName}</span>
               </span>
 
@@ -186,17 +185,17 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                 </span>
               ) : isFrozen ? (
                 <span className="bg-cyan-950 text-cyan-300 border border-cyan-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <Snowflake className="w-3 h-3" />
+                  <GcSpriteIcon name="icon-frost" className="w-3 h-3"  />
                   Congelado
                 </span>
               ) : isRacubitero ? (
                 <span className="bg-amber-950 text-amber-200 border border-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <Zap className="w-3 h-3" />
+                  <GcSpriteIcon name="icon-zap" className="w-3 h-3"  />
                   Lista para usar
                 </span>
               ) : (
                 <span className="bg-emerald-950 text-emerald-300 border border-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <Check className="w-3 h-3" />
+                  <GcSpriteIcon name="icon-check" className="w-3 h-3"  />
                   Lista para Usar
                 </span>
               )}
@@ -210,7 +209,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
           {/* Full Rule & Detailed Description */}
           <div className="bg-[#10141f] border border-[#1e2536] p-3.5 rounded-xl space-y-1.5">
             <span className="text-[10px] font-black uppercase text-neutral-400 flex items-center gap-1">
-              <Info className="w-3.5 h-3.5 text-cyan-400" />
+              <GcSpriteIcon name="icon-info" className="w-3.5 h-3.5 text-cyan-400"  />
               <span>Regla Detallada de Combate</span>
             </span>
             <p className="text-xs text-neutral-300 leading-relaxed">
@@ -275,7 +274,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
           {isFlute && !isCooldown && !isFrozen && (
             <div className="bg-[#151c2b] border-2 border-yellow-500/50 p-4 rounded-xl space-y-2.5">
               <span className="text-xs font-black text-yellow-300 flex items-center gap-1.5">
-                <Dices className="w-4 h-4 text-yellow-400" />
+                <GcSpriteIcon name="icon-dice" className="w-4 h-4 text-yellow-400"  />
                 <span>Elige tu número de la suerte para el D5 (1 a 5):</span>
               </span>
               <p className="text-[11px] text-neutral-300">
@@ -307,7 +306,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
             <div className="bg-[#151c2b] border-2 border-red-500/50 p-4 rounded-xl space-y-3">
               <div className="space-y-1">
                 <span className="text-xs font-black text-red-300 flex items-center gap-1.5">
-                  <Swords className="w-4 h-4 text-red-400" />
+                  <GcSpriteIcon name="icon-swords" className="w-4 h-4 text-red-400"  />
                   <span>Elige los dos rivales alcanzados por Aliento:</span>
                 </span>
                 <p className="text-[11px] text-neutral-300">Solo uno de ellos realizará la tirada de bloqueo; ese resultado se aplicará a ambos.</p>
@@ -357,7 +356,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                           <span className="text-xs font-black block text-white">{target.name}</span>
                           <span className="text-[10px] text-neutral-400">{target.hp} / {target.maxHp} HP</span>
                         </div>
-                        {selected && <Check className="w-4 h-4 text-cyan-300" />}
+                        {selected && <GcSpriteIcon name="icon-check" className="w-4 h-4 text-cyan-300"  />}
                       </button>
                     );
                   })}
@@ -373,7 +372,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
           {needsTarget && !isCooldown && !isFrozen && (
             <div className="bg-[#151c2b] border-2 border-cyan-500/50 p-4 rounded-xl space-y-2.5">
               <span className="text-xs font-black text-cyan-300 flex items-center gap-1.5">
-                <Target className="w-4 h-4 text-cyan-400" />
+                <GcSpriteIcon name="icon-target" className="w-4 h-4 text-cyan-400"  />
                 <span>{isGladiacubon ? "Selecciona al aliado que quieres escudar:" : isCubicula ? (cubiculaMode === 'DRAIN' ? "Selecciona al rival del que vas a drenar vida:" : "Selecciona al aliado que recibirá la donación:") : isCubinja ? "Selecciona al aliado que recibirá el préstamo:" : "Selecciona el objetivo para tu habilidad:"}</span>
               </span>
 
@@ -399,7 +398,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                       </div>
                       {isSelected && (
                         <span className="bg-cyan-400 text-black p-1 rounded-full">
-                          <Check className="w-3 h-3 font-black" />
+                          <GcSpriteIcon name="icon-check" className="w-3 h-3 font-black"  />
                         </span>
                       )}
                     </button>
@@ -446,7 +445,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
                 : 'bg-[#1b202c] text-neutral-500 border border-[#262c3d] cursor-not-allowed'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
+            <GcSpriteIcon name="icon-spark" className="w-4 h-4"  />
             <span>
               {isCooldown
                 ? `HABILIDAD EN RECARGA (${player.abilityCooldownRemaining})`
