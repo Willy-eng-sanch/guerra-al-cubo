@@ -37,3 +37,19 @@ terminar la partida. Cada checkpoint incluye una huella FNV-1a de una serializac
 estable de las claves del estado. La huella sirve para detectar divergencias durante
 la reconstrucción; no es una firma criptográfica ni sustituye una futura comparación
 detallada por campos.
+
+
+## Motor de reconstrucción (rama de trabajo PR #37)
+
+`src/gameplay/replay-engine.js` contiene `ReplayExecutionController`:
+- Recorre todos los eventos conservando su secuencia original.
+- Entrega `PLAYER_ACTION` al dispatcher de la aplicación y valida `BOT_DECISION`.
+- Comprueba los eventos derivados que vuelve a emitir la aplicación (logs, robos, ofertas, barajados, cambios de turno y decisiones automáticas).
+- Restaura el estado inicial guardado, y utiliza solo los resultados aleatorios posteriores a `MATCH_STARTED`; el mazo y roster iniciales ya restaurados no se vuelven a generar.
+- Compara checkpoints y reporta el primer campo diferente.
+- Falla si quedan resultados aleatorios sin consumir o eventos observados adicionales sin correspondencia.
+- Admite detener la reproducción desde la interfaz.
+
+La pantalla inicial incluye ahora un acceso de importación de archivos `.gcreplay` para probar el motor. Todavía no es una biblioteca persistente: IndexedDB, historial de partidas guardadas y administración del archivo local se implementarán después de validar el reproductor.
+
+**Límite de validación:** la CI valida pruebas unitarias del controlador, TypeScript y compilación; no demuestra por sí sola que una partida interactiva completa exportada desde la arena se reconstruya con todos sus checkpoints y ganador idénticos. Ese ensayo end-to-end sigue siendo el criterio obligatorio de aceptación antes de fusionar la PR #37.
