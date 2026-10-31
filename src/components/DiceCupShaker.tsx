@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CharacterType } from '../types/game';
 import { CHARACTERS } from '../data/characters';
 import { sound } from '../audio/soundManager';
 import { Dice3DVisual } from './Dice3DVisual';
-import { Sparkles, Swords, X, HelpCircle, Dices } from 'lucide-react';
-
 interface DiceCupShakerProps {
   team: CharacterType[];
   maxCapacity?: number;
@@ -85,7 +84,7 @@ export const DiceCupShaker: React.FC<DiceCupShakerProps> = ({
       <div className="w-full flex items-center justify-between mb-2 px-1">
         <div className="flex items-center gap-1.5">
           <span className="p-1 rounded-lg bg-yellow-950/80 border border-yellow-500/60 text-yellow-400">
-            <Dices className="w-4 h-4" />
+            <GcSpriteIcon name="icon-dice" className="w-4 h-4"  />
           </span>
           <div>
             <h3 className="text-xs md:text-sm font-black text-white uppercase tracking-wider font-bungee">
@@ -127,7 +126,7 @@ export const DiceCupShaker: React.FC<DiceCupShakerProps> = ({
             }`}
           >
             <div className="flex items-center justify-center gap-1.5 text-xs font-black">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
+              <GcSpriteIcon name="icon-spark" className="w-3.5 h-3.5 text-yellow-400"  />
               <span>
                 {isDragOver
                   ? '¡SUELTA AQUÍ TU DADO HÉROE!'
@@ -163,7 +162,7 @@ export const DiceCupShaker: React.FC<DiceCupShakerProps> = ({
                         className="absolute -top-1.5 -right-1.5 p-0.5 rounded-full bg-red-600 hover:bg-red-500 text-white shadow-md z-20 cursor-pointer"
                         title="Sacar del vaso"
                       >
-                        <X className="w-3 h-3" />
+                        <GcSpriteIcon name="icon-close" className="w-3 h-3"  />
                       </button>
                     )}
 
@@ -215,7 +214,7 @@ export const DiceCupShaker: React.FC<DiceCupShakerProps> = ({
             : 'bg-[#181d28] text-neutral-500 border-[#263044] cursor-not-allowed opacity-60'
         }`}
       >
-        <Swords className="w-4 h-4 text-black" />
+        <GcSpriteIcon name="icon-swords" className="w-4 h-4 text-black"  />
         <span>
           {isShaking
             ? '¡AGITANDO VASO Y LANZANDO A LA ARENA...!'
