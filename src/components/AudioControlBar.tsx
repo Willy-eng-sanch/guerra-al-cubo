@@ -1,24 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { music, MUSIC_TRACKS } from '../audio/musicManager';
 import { sound } from '../audio/soundManager';
 import { narrator, NarratorVoiceOption } from '../audio/narratorManager';
-import {
-  Music,
-  Volume2,
-  VolumeX,
-  Volume1,
-  Mic,
-  MicOff,
-  Settings2,
-  Play,
-  Pause,
-  X,
-  Disc3,
-  Dices,
-  Sliders,
-  Check
-} from 'lucide-react';
-
 interface AudioControlBarProps {
   className?: string;
 }
@@ -141,12 +125,12 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
         >
           {isPlaying && !isMusicMuted ? (
             <>
-              <Disc3 className="w-3.5 h-3.5 text-yellow-400 animate-spin" />
+              <GcSpriteIcon name="icon-disc" className="w-3.5 h-3.5 text-yellow-400 animate-spin"  />
               <span className="hidden sm:inline text-[10px] truncate max-w-[90px]">{currentTrack.name}</span>
             </>
           ) : (
             <>
-              <Music className="w-3.5 h-3.5" />
+              <GcSpriteIcon name="icon-music" className="w-3.5 h-3.5"  />
               <span className="hidden sm:inline text-[10px]">Música</span>
             </>
           )}
@@ -163,9 +147,9 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
           title={isSfxMuted ? 'Efectos de Sonido: Silenciados (clic para activar)' : 'Efectos de Sonido: Activos (clic para silenciar)'}
         >
           {isSfxMuted ? (
-            <VolumeX className="w-3.5 h-3.5 text-red-400" />
+            <GcSpriteIcon name="icon-volume-off" className="w-3.5 h-3.5 text-red-400"  />
           ) : (
-            <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+            <GcSpriteIcon name="icon-volume" className="w-3.5 h-3.5 text-amber-400"  />
           )}
           <span className="hidden md:inline text-[10px] font-mono">SFX</span>
         </button>
@@ -181,9 +165,9 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
           title={isNarratorEnabled ? 'Narrador Activo (Voz de árbitro)' : 'Narrador Silenciado'}
         >
           {isNarratorEnabled ? (
-            <Mic className="w-3.5 h-3.5 text-cyan-400" />
+            <GcSpriteIcon name="icon-mic" className="w-3.5 h-3.5 text-cyan-400"  />
           ) : (
-            <MicOff className="w-3.5 h-3.5 text-neutral-500" />
+            <GcSpriteIcon name="icon-mic-off" className="w-3.5 h-3.5 text-neutral-500"  />
           )}
           <span className="hidden lg:inline text-[10px]">Voz</span>
         </button>
@@ -194,7 +178,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
           className="p-1.5 rounded-lg bg-[#181d28] hover:bg-[#222a3a] border border-[#2c374d] text-neutral-400 hover:text-white transition-all cursor-pointer"
           title="Ajustes de Sonido, Música y Volumen"
         >
-          <Settings2 className="w-3.5 h-3.5" />
+          <GcSpriteIcon name="icon-settings" className="w-3.5 h-3.5"  />
         </button>
       </div>
 
@@ -211,7 +195,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
             {/* Sticky Header */}
             <div className="flex items-center justify-between p-4 border-b border-[#242d40] shrink-0 bg-[#141824]">
               <div className="flex items-center gap-2">
-                <Sliders className="w-5 h-5 text-yellow-400" />
+                <GcSpriteIcon name="icon-sliders" className="w-5 h-5 text-yellow-400"  />
                 <div>
                   <h3 className="text-sm sm:text-base font-black text-white font-bungee tracking-wide">
                     AJUSTES DE AUDIO
@@ -233,7 +217,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                   }`}
                   title={areAllMuted ? 'Restaurar todo el audio' : 'Silenciar todo el audio'}
                 >
-                  {areAllMuted ? <VolumeX className="w-3 h-3 text-red-400" /> : <Volume2 className="w-3 h-3 text-yellow-400" />}
+                  {areAllMuted ? <GcSpriteIcon name="icon-volume-off" className="w-3 h-3 text-red-400"  /> : <GcSpriteIcon name="icon-volume" className="w-3 h-3 text-yellow-400"  />}
                   <span>{areAllMuted ? 'TODO MUDO' : 'SILENCIAR TODO'}</span>
                 </button>
 
@@ -242,7 +226,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                   className="p-1.5 rounded-xl bg-[#1e2535] hover:bg-[#2e3a50] text-neutral-300 hover:text-white border border-[#3b4760] transition-colors cursor-pointer"
                   title="Cerrar ventana de ajustes"
                 >
-                  <X className="w-4 h-4" />
+                  <GcSpriteIcon name="icon-close" className="w-4 h-4"  />
                 </button>
               </div>
             </div>
@@ -254,7 +238,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30">
-                      <Dices className="w-4 h-4 text-amber-400" />
+                      <GcSpriteIcon name="icon-dice" className="w-4 h-4 text-amber-400"  />
                     </div>
                     <div>
                       <span className="font-extrabold text-sm text-amber-300 block">
@@ -276,7 +260,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                     }`}
                     title={isSfxMuted ? 'Activar Efectos de Sonido' : 'Silenciar Efectos de Sonido'}
                   >
-                    {isSfxMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                    {isSfxMuted ? <GcSpriteIcon name="icon-volume-off" className="w-3.5 h-3.5"  /> : <GcSpriteIcon name="icon-volume" className="w-3.5 h-3.5"  />}
                     <span>{isSfxMuted ? 'SILENCIADO' : 'ACTIVO'}</span>
                   </button>
                 </div>
@@ -299,11 +283,11 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                       title={isSfxMuted ? 'Desilenciar' : 'Silenciar'}
                     >
                       {isSfxMuted || sfxVolume === 0 ? (
-                        <VolumeX className="w-4 h-4 text-red-400" />
+                        <GcSpriteIcon name="icon-volume-off" className="w-4 h-4 text-red-400"  />
                       ) : sfxVolume < 0.5 ? (
-                        <Volume1 className="w-4 h-4 text-amber-400" />
+                        <GcSpriteIcon name="icon-volume" className="w-4 h-4 text-amber-400"  />
                       ) : (
-                        <Volume2 className="w-4 h-4 text-amber-400" />
+                        <GcSpriteIcon name="icon-volume" className="w-4 h-4 text-amber-400"  />
                       )}
                     </button>
 
@@ -328,7 +312,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                   onClick={handleTestSfx}
                   className="w-full py-2 rounded-xl bg-[#1b2233] hover:bg-[#252f47] active:scale-98 text-amber-300 border border-amber-500/40 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow"
                 >
-                  <Dices className="w-4 h-4 text-amber-400" />
+                  <GcSpriteIcon name="icon-dice" className="w-4 h-4 text-amber-400"  />
                   <span>PROBAR SONIDO DE DADOS (SFX)</span>
                 </button>
               </div>
@@ -338,7 +322,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-lg bg-yellow-500/15 border border-yellow-500/30">
-                      <Music className="w-4 h-4 text-yellow-400" />
+                      <GcSpriteIcon name="icon-music" className="w-4 h-4 text-yellow-400"  />
                     </div>
                     <div>
                       <span className="font-extrabold text-sm text-yellow-300 block">
@@ -361,7 +345,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                       }`}
                       title={isMusicMuted ? 'Activar Música' : 'Silenciar Música'}
                     >
-                      {isMusicMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                      {isMusicMuted ? <GcSpriteIcon name="icon-volume-off" className="w-3.5 h-3.5"  /> : <GcSpriteIcon name="icon-volume" className="w-3.5 h-3.5"  />}
                       <span className="hidden sm:inline">{isMusicMuted ? 'MUTE' : 'ON'}</span>
                     </button>
 
@@ -374,7 +358,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                           : 'bg-yellow-400 text-black border-yellow-500 hover:bg-yellow-300'
                       }`}
                     >
-                      {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-black" />}
+                      {isPlaying ? <GcSpriteIcon name="icon-pause" className="w-3.5 h-3.5"  /> : <GcSpriteIcon name="icon-play" className="w-3.5 h-3.5 fill-black"  />}
                       <span>{isPlaying ? 'PAUSAR' : 'REPRODUCIR'}</span>
                     </button>
                   </div>
@@ -398,11 +382,11 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                       title={isMusicMuted ? 'Desilenciar' : 'Silenciar'}
                     >
                       {isMusicMuted || musicVolume === 0 ? (
-                        <VolumeX className="w-4 h-4 text-red-400" />
+                        <GcSpriteIcon name="icon-volume-off" className="w-4 h-4 text-red-400"  />
                       ) : musicVolume < 0.5 ? (
-                        <Volume1 className="w-4 h-4 text-yellow-400" />
+                        <GcSpriteIcon name="icon-volume" className="w-4 h-4 text-yellow-400"  />
                       ) : (
-                        <Volume2 className="w-4 h-4 text-yellow-400" />
+                        <GcSpriteIcon name="icon-volume" className="w-4 h-4 text-yellow-400"  />
                       )}
                     </button>
 
@@ -454,7 +438,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                         </div>
                         {currentTrack.id === t.id && isPlaying && !isMusicMuted && (
                           <span className="text-[10px] text-yellow-400 font-mono animate-pulse flex items-center gap-1">
-                            <Disc3 className="w-3 h-3 animate-spin" />
+                            <GcSpriteIcon name="icon-disc" className="w-3 h-3 animate-spin"  />
                             <span>SONANDO</span>
                           </span>
                         )}
@@ -469,7 +453,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30">
-                      <Mic className="w-4 h-4 text-cyan-400" />
+                      <GcSpriteIcon name="icon-mic" className="w-4 h-4 text-cyan-400"  />
                     </div>
                     <div>
                       <span className="font-extrabold text-sm text-cyan-300 block">
@@ -489,7 +473,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                         : 'bg-neutral-900 text-neutral-500 border-neutral-700 hover:text-neutral-400'
                     }`}
                   >
-                    {isNarratorEnabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
+                    {isNarratorEnabled ? <GcSpriteIcon name="icon-mic" className="w-3.5 h-3.5"  /> : <GcSpriteIcon name="icon-mic-off" className="w-3.5 h-3.5"  />}
                     <span>{isNarratorEnabled ? 'ACTIVO' : 'SILENCIADO'}</span>
                   </button>
                 </div>
@@ -506,7 +490,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <Mic className="w-4 h-4 text-cyan-400" />
+                    <GcSpriteIcon name="icon-mic" className="w-4 h-4 text-cyan-400"  />
                     <input
                       type="range"
                       min="0"
@@ -543,7 +527,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                   onClick={handleTestNarrator}
                   className="w-full py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:brightness-110 active:scale-98 text-black font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow cursor-pointer"
                 >
-                  <Volume2 className="w-3.5 h-3.5 text-black" />
+                  <GcSpriteIcon name="icon-volume" className="w-3.5 h-3.5 text-black"  />
                   <span>PROBAR VOZ DEL NARRADOR</span>
                 </button>
               </div>
@@ -555,7 +539,7 @@ export const AudioControlBar: React.FC<AudioControlBarProps> = ({ className = ''
                 onClick={() => setShowSettings(false)}
                 className="w-full py-3 bg-yellow-400 hover:bg-yellow-300 active:scale-[0.98] text-black font-black text-xs rounded-xl shadow-lg transition-all cursor-pointer font-bungee tracking-wider flex items-center justify-center gap-2"
               >
-                <Check className="w-4 h-4" />
+                <GcSpriteIcon name="icon-check" className="w-4 h-4"  />
                 <span>LISTO · GUARDAR Y CERRAR</span>
               </button>
             </div>
