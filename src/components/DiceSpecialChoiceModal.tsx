@@ -1,6 +1,6 @@
 import React from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { DiceD5Canvas } from './DiceD5Canvas';
-import { Layers, Zap, Sparkles, CheckCircle2 } from 'lucide-react';
 import { sound } from '../audio/soundManager';
 
 interface DiceSpecialChoiceModalProps {
@@ -31,9 +31,9 @@ export const DiceSpecialChoiceModal: React.FC<DiceSpecialChoiceModalProps> = ({
       <div className="relative w-full max-w-md bg-gradient-to-b from-[#181d2a] to-[#0f121a] border-2 border-yellow-400 rounded-3xl p-6 shadow-[0_0_40px_rgba(250,204,21,0.25)] text-center">
         {/* Glow Header */}
         <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-yellow-400/20 border border-yellow-400/50 text-yellow-300 font-black text-xs tracking-wider mb-2">
-          <Sparkles className="w-4 h-4 text-yellow-300 animate-spin" />
+          <GcSpriteIcon name="icon-spark" className="w-4 h-4 text-yellow-300 animate-spin"  />
           <span>¡REGLA D6: CARA ESPECIAL 6!</span>
-          <Sparkles className="w-4 h-4 text-yellow-300 animate-spin" />
+          <GcSpriteIcon name="icon-spark" className="w-4 h-4 text-yellow-300 animate-spin"  />
         </div>
 
         <div className="my-3 flex justify-center">
@@ -58,7 +58,7 @@ export const DiceSpecialChoiceModal: React.FC<DiceSpecialChoiceModalProps> = ({
             className={`p-4 rounded-2xl bg-gradient-to-r from-[#17263c] to-[#1e3454] hover:from-[#213554] hover:to-[#284672] active:scale-[0.98] border-2 border-cyan-400/70 text-left flex items-center gap-3.5 transition-all shadow-lg group ${canDrawCard ? 'cursor-pointer' : 'opacity-45 cursor-not-allowed grayscale'}`}
           >
             <div className="w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-              <Layers className="w-6 h-6" />
+              <GcSpriteIcon name="icon-cards" className="w-6 h-6"  />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between">
@@ -83,7 +83,7 @@ export const DiceSpecialChoiceModal: React.FC<DiceSpecialChoiceModalProps> = ({
             className="p-4 rounded-2xl bg-gradient-to-r from-[#2f1b1b] to-[#452222] hover:from-[#3e2424] hover:to-[#5a2c2c] active:scale-[0.98] border-2 border-amber-400/70 text-left flex items-center gap-3.5 transition-all shadow-lg cursor-pointer group"
           >
             <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-400/50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-              <Zap className="w-6 h-6" />
+              <GcSpriteIcon name="icon-zap" className="w-6 h-6"  />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between">
@@ -104,7 +104,7 @@ export const DiceSpecialChoiceModal: React.FC<DiceSpecialChoiceModalProps> = ({
         </div>
 
         <div className="text-[11px] text-neutral-400 flex items-center justify-center gap-1.5">
-          <CheckCircle2 className="w-3.5 h-3.5 text-yellow-400" />
+          <GcSpriteIcon name="icon-check" className="w-3.5 h-3.5 text-yellow-400"  />
           <span>Toca una opción para confirmar tu recompensa</span>
         </div>
       </div>
