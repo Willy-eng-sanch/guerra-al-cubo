@@ -233,7 +233,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           className="gc-menu-primary w-full py-3 text-xs md:text-sm"
         >
           MIS PARTIDAS · VER REPETICIONES
-        </GcSpriteButton>/button>
+        </GcSpriteButton>
 
         <div className="gc-menu-section-label">GUÍA Y COLECCIÓN</div>
         {/* Tutorial & Manual Táctico */}
