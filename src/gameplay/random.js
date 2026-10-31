@@ -33,9 +33,14 @@ export class GameplayRandomController {
     if (this.mode === 'replay') {
       const expected = this.recordedEvents[this.cursor];
       if (!expected) throw new ReplayRandomMismatchError('Replay agotado en ' + purpose + ' (' + (this.cursor + 1) + ').', { cursor: this.cursor, kind, purpose, constraints });
-      const matches = expected.kind === kind && expected.purpose === purpose &&
+      const matches = expected.sequence === this.cursor + 1 &&
+        expected.kind === kind &&
+        expected.purpose === purpose &&
         Object.keys(constraints).every(key => expected[key] === constraints[key]);
-      if (!matches || typeof expected.value !== 'number' || !Number.isFinite(expected.value)) {
+      const validValue = kind === 'INT'
+        ? Number.isInteger(expected.value) && expected.value >= constraints.min && expected.value <= constraints.max
+        : typeof expected.value === 'number' && Number.isFinite(expected.value) && expected.value >= 0 && expected.value < 1;
+      if (!matches || !validValue) {
         throw new ReplayRandomMismatchError(
           'Desincronización aleatoria en ' + (this.cursor + 1) + ': ' + expected.kind + '/' + expected.purpose + ' != ' + kind + '/' + purpose + '.',
           { cursor: this.cursor, expected, actual: { kind, purpose, ...constraints } }
