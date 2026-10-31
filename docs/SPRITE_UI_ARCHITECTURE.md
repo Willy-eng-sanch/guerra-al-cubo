@@ -135,23 +135,27 @@ Para pasar de placeholder a arte final:
 ## Estado actual
 
 Implementado en esta rama:
-- Atlas SVG con iconos semánticos.
-- Sprites vectoriales de botones, paneles, cartas, retratos, slots, tabs, insignias, banners y progreso.
-- Catálogo de sprites y componentes React.
-- Skin base aplicada a botones de pantallas y diálogos.
-- Skin de tarjetas en la biblioteca de repeticiones.
-- Banner de título en el menú principal.
-- Iconografía migrada al atlas en Setup, Draft, Campaña, Pase y juega, Roster y Enciclopedia.
-- Componentes compartidos `DiceCupShaker` y `HeroDiceCard` consumen símbolos del atlas en lugar de Lucide.
-- Fondo seamless animado aplicado a las pantallas principales.
-- Importación externa de replay fuera de la navegación pública.
+
+- Atlas SVG con **68 símbolos** únicos, sincronizados entre `gc-ui-atlas.svg`, el tipo `GcSpriteName` y `GC_SPRITE_CATALOG.iconSymbols`.
+- 13 marcos vectoriales nine-slice: 3 botones, panel, modal, carta, retrato, slot, banner, tab, badge y 2 piezas de progreso.
+- Fondo seamless de 192 × 192 px y animación lenta respetando movimiento reducido.
+- Componentes React: `GcSpriteIcon`, `GcSpriteButton`, `GcSpritePanel`, `GcSpriteCard`, `GcSpriteBadge`, `GcSpritePortrait`, `GcSpriteSlot`, `GcSpriteTitleBanner`, `GcSpriteProgress` y `GcRasterSprite`.
+- Iconografía migrada al atlas en los **36 módulos de la aplicación** que antes importaban iconos de Lucide. La inspección de esta rama no encontró imports `lucide-react` en esos módulos.
+- Marcos de tarjeta aplicados en selección de héroes, Draft/Setup compartidos, Arena (mano), Enciclopedia, Lobby Online y resultado postpartida.
+- Paneles sprite aplicados al vaso de selección, a la búsqueda/sala online y a la presentación de capítulo; el retrato del jefe usa `GcSpritePortrait`.
+- Las ventanas de dados, reacciones, habilidades, recompensas, tienda, progresión, tutorial, cinemática, audio y utilidades usan los símbolos compartidos.
+- `docs/SPRITE_ART_PRODUCTION_MANUAL.md` contiene el inventario para producción física, escaneo, limpieza de fondo, atlas y entrega de recursos.
+
+Todavía no existen atlas PNG/WebP de arte manual ni coordenadas reales para ellos. `GcRasterSprite` es la base de recorte, pero el manifiesto de coordenadas se completará cuando llegue el primer atlas raster aprobado.
 
 Trabajo pendiente:
-- Migrar iconos Lucide restantes de Arena, lobby online, tienda, misiones, componentes de combate y diálogos por IDs del atlas.
-- Migrar tarjetas de personaje/carta y paneles de Arena a `GcSpriteCard`, `GcSpritePanel` y `GcSpritePortrait` con sus datos actuales.
-- Añadir arte final original de los personajes, fondos y estados.
-- Crear pantallas de carga usando los sprites de progreso.
-- Revisar en navegador las 4 resoluciones objetivo y corregir cualquier marco 9-slice o botón demasiado comprimido.
+
+- Sustituir progresivamente los placeholders vectoriales por arte manual original conservando IDs, viewBox y cortes nine-slice.
+- Producir los 13 retratos/ilustraciones de héroe y las 50 ilustraciones de carta si se decide que cada carta tendrá arte propio.
+- Crear fondos finales de menú, arena y lobby, más cualquier fondo específico de capítulo.
+- Definir si las vistas de dados 3D se mantienen o si se quiere una futura versión 2D; los modelos 3D actuales siguen funcionando.
+- Añadir pantallas de carga que utilicen las barras de progreso existentes.
+- Revisión visual manual en navegador a 360×640, 768×1024, 1366×768 y 1920×1080.
 
 ## Criterios de aceptación
 
