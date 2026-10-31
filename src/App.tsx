@@ -110,7 +110,7 @@ export default function App() {
   // StrictMode replays effects in development; prevent duplicate random morphs/logs.
   const processedMorphRoundRef = useRef<string | null>(null);
   const [players, setPlayers] = useState<PlayerState[]>([]);
-  const [deck, setDeck] = useState<GameCard[]>([]);
+  const [deck, setDeckState] = useState<GameCard[]>([]);
   const [discardPile, setDiscardPile] = useState<GameCard[]>([]);
   const [log, setLog] = useState<CombatLogEntry[]>([]);
   const [phase, setPhase] = useState<MatchPhase>(MatchPhase.IDLE);
@@ -149,10 +149,16 @@ export default function App() {
   const botOrderTurnRef = useRef<number | null>(null);
   const playersRef = useRef<PlayerState[]>([]);
   const deckRef = useRef<GameCard[]>([]);
+  const setDeck = (value: GameCard[] | ((previous: GameCard[]) => GameCard[])) => {
+    const nextDeck = typeof value === 'function'
+      ? (value as (previous: GameCard[]) => GameCard[])(deckRef.current)
+      : value;
+    deckRef.current = nextDeck;
+    setDeckState(nextDeck);
+  };
   const replayRecorderRef = useRef<any>(null);
   const replayUiEventCounterRef = useRef(0);
   useEffect(() => { playersRef.current = players; }, [players]);
-  useEffect(() => { deckRef.current = deck; }, [deck]);
 
   const recordReplayEvent = (type: string, payload: Record<string, unknown> = {}) => {
     if (replayRecorderRef.current) appendReplayEvent(replayRecorderRef.current, type, payload);
@@ -415,12 +421,14 @@ export default function App() {
     source: string
   ): { cards: GameCard[]; choices: TramcubosoCardChoice[]; newDeck: GameCard[]; newDiscard: GameCard[] } => {
     const first = drawCardFromDeck(currentDeck, currentDiscard);
+    if (first.card) recordReplayEvent('CARD_OFFERED', { recipientId: player.id, source, cardUid: first.card.uid });
     if (!first.card) return { cards: [], choices: [], newDeck: first.newDeck, newDiscard: first.newDiscard };
     const activeHero = player.activeMorphCharacter || player.characterType;
     if (activeHero !== CharacterType.TRAMCUBOSO) {
       return { cards: [first.card], choices: [], newDeck: first.newDeck, newDiscard: first.newDiscard };
     }
     const second = drawCardFromDeck(first.newDeck, first.newDiscard);
+    if (second.card) recordReplayEvent('CARD_OFFERED', { recipientId: player.id, source, cardUid: second.card.uid, alternative: true });
     if (!second.card) return { cards: [first.card], choices: [], newDeck: second.newDeck, newDiscard: second.newDiscard };
     const offer: TramcubosoCardChoice = {
       playerId: player.id,
