@@ -2902,7 +2902,7 @@ export default function App() {
       }
       addLog(`+15 Aura de Calle obtenida por aguantar la refriega.`, true, "Aura");
       if (gameMode === GameMode.ONLINE_PVP) {
-        if (!replayPlaybackActiveRef.current) if (!replayPlaybackActiveRef.current) collectionManager.addCoins(25);
+        if (!replayPlaybackActiveRef.current) collectionManager.addCoins(25);
         addFloatingText(playersList[0]?.id || 1, "+25 Cubi-Monedas de Consuelo", "#fbbf24");
       }
       return;
@@ -2921,7 +2921,7 @@ export default function App() {
       addLog(`¡¡+35 AURA DE CALLE Y +1 CAJA DE 3 DADOS DESBLOQUEADA!!`, true, "Aura");
       addFloatingText(playersList[0]?.id || 1, "¡+1 CAJA DE 3 DADOS!", "#ffd600");
       if (gameMode === GameMode.ONLINE_PVP) {
-        if (!replayPlaybackActiveRef.current) if (!replayPlaybackActiveRef.current) collectionManager.addCoins(60);
+        if (!replayPlaybackActiveRef.current) collectionManager.addCoins(60);
         addFloatingText(playersList[0]?.id || 1, "¡+60 Cubi-Monedas de Victoria!", "#ffd600");
       }
       return;
