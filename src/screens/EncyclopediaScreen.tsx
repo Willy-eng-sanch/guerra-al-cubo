@@ -61,7 +61,7 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
   };
 
   return (
-    <div className="relative w-full min-h-screen bg-[#0f1116] p-3 md:p-6 text-white flex flex-col justify-between max-w-5xl mx-auto select-none">
+    <div className="gc-screen relative w-full min-h-screen bg-[#0f1116] p-3 md:p-6 text-white flex flex-col justify-between max-w-5xl mx-auto select-none">
       {/* Top Bar */}
       <div className="flex items-center justify-between border-b border-[#232b3d] pb-3">
         <button
