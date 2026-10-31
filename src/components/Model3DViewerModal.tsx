@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CharacterDef, CATEGORY_INFO, CharacterType } from '../types/game';
 import { DiceCharacterSprite } from './DiceCharacterSprite';
 import { Cube3DCanvas } from './Cube3DCanvas';
 import { createCharacterSpriteOverlayDataUrl } from './characterSpriteLayers';
 import { CartoonCombatClash, CombatClashData } from './CartoonCombatClash';
 import { sound } from '../audio/soundManager';
-import { X, Sparkles, Shield, Zap, Layers, Play, Sliders, Download, Box, Eye, Check } from 'lucide-react';
-
 interface Model3DViewerModalProps {
   character: CharacterDef;
   onClose: () => void;
@@ -128,7 +127,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                   : 'bg-[#181d29] text-cyan-300 border-[#2b354b] hover:text-white'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
+              <GcSpriteIcon name="icon-cards" className="w-3.5 h-3.5"  />
               <span>Arquitectura Modular & Capas</span>
             </button>
           </div>
@@ -137,7 +136,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
             onClick={onClose}
             className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <GcSpriteIcon name="icon-close" className="w-5 h-5"  />
           </button>
         </div>
 
@@ -169,7 +168,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
             {/* ADN Grid */}
             <div className="p-3 bg-[#0d1017] rounded-2xl border border-[#232c40] space-y-2">
               <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
-                <Zap className="w-3.5 h-3.5" />
+                <GcSpriteIcon name="icon-zap" className="w-3.5 h-3.5"  />
                 ADN DEL BARRIO (SISTEMA DE 5 CLASES)
               </span>
 
@@ -206,7 +205,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               <div className="p-3 bg-[#131724] rounded-xl border border-yellow-500/40 space-y-1">
                 <span className="font-black text-yellow-400 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <GcSpriteIcon name="icon-spark" className="w-3.5 h-3.5"  />
                   Habilidad Activa: {character.abilityName}
                 </span>
                 <p className="text-neutral-300 text-[11px] leading-snug">{character.abilityDescription}</p>
@@ -214,7 +213,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
 
               <div className="p-3 bg-[#131724] rounded-xl border border-cyan-500/40 space-y-1">
                 <span className="font-black text-cyan-400 flex items-center gap-1">
-                  <Shield className="w-3.5 h-3.5" />
+                  <GcSpriteIcon name="icon-shield" className="w-3.5 h-3.5"  />
                   Habilidad Pasiva: {character.passiveName}
                 </span>
                 <p className="text-neutral-300 text-[11px] leading-snug">{character.passiveDescription}</p>
@@ -238,7 +237,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                     : 'text-neutral-400 hover:text-white'
                 }`}
               >
-                <Layers className="w-3 h-3" />
+                <GcSpriteIcon name="icon-cards" className="w-3 h-3"  />
                 <span>2D Sorting Layers</span>
               </button>
 
@@ -250,7 +249,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                     : 'text-neutral-400 hover:text-white'
                 }`}
               >
-                <Box className="w-3 h-3" />
+                <GcSpriteIcon name="icon-cube" className="w-3 h-3"  />
                 <span>3D Decal Interactivo</span>
               </button>
 
@@ -262,7 +261,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                     : 'text-neutral-400 hover:text-white'
                 }`}
               >
-                <Eye className="w-3 h-3" />
+                <GcSpriteIcon name="icon-eye" className="w-3 h-3"  />
                 <span>Sprite Overlay PNG</span>
               </button>
             </div>
@@ -328,7 +327,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                 {/* 1. Base Dinámica: Tinte de Escuadrón */}
                 <div>
                   <span className="text-[10px] font-black uppercase text-amber-300 flex items-center gap-1">
-                    <Sliders className="w-3 h-3" />
+                    <GcSpriteIcon name="icon-sliders" className="w-3 h-3"  />
                     1. Base Dinámica: Tinte de Escuadrón
                   </span>
                   <div className="flex items-center gap-2 mt-1">
@@ -384,7 +383,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                     className="flex-1 py-2 px-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] uppercase tracking-wider transition-all shadow-[0_0_12px_rgba(168,85,247,0.5)] cursor-pointer flex items-center justify-center gap-1.5"
                     title="Exportar rasgos, ojos, sombreros y accesorios en PNG transparente (512x512)"
                   >
-                    <Download className="w-3.5 h-3.5" />
+                    <GcSpriteIcon name="icon-download" className="w-3.5 h-3.5"  />
                     <span>Exportar Overlay PNG</span>
                   </button>
 
@@ -399,7 +398,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                     onClick={handleTriggerTestClash}
                     className="flex-1 py-2 px-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-black text-[10px] uppercase tracking-wider transition-all shadow-[0_0_12px_rgba(6,182,212,0.5)] cursor-pointer flex items-center justify-center gap-1"
                   >
-                    <Play className="w-3 h-3 fill-black" />
+                    <GcSpriteIcon name="icon-play" className="w-3 h-3 fill-black"  />
                     <span>Choque Cómico</span>
                   </button>
                 </div>
@@ -410,7 +409,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
             <div className="p-3 bg-[#0d1017] rounded-2xl border border-[#232c40] space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase text-yellow-400 tracking-wider flex items-center gap-1">
-                  <Layers className="w-3.5 h-3.5" />
+                  <GcSpriteIcon name="icon-cards" className="w-3.5 h-3.5"  />
                   CONTROL DE CAPAS INTERACTIVAS (SORTING LAYERS)
                 </span>
                 <span className="text-[9px] text-neutral-400 font-mono">
@@ -426,7 +425,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                   }`}
                 >
                   <span>0. Sombra Base</span>
-                  {layers.shadow && <Check className="w-3 h-3 text-cyan-400" />}
+                  {layers.shadow && <GcSpriteIcon name="icon-check" className="w-3 h-3 text-cyan-400"  />}
                 </button>
 
                 <button
@@ -436,7 +435,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                   }`}
                 >
                   <span>1. Dado Neutro</span>
-                  {layers.dieBase && <Check className="w-3 h-3 text-cyan-400" />}
+                  {layers.dieBase && <GcSpriteIcon name="icon-check" className="w-3 h-3 text-cyan-400"  />}
                 </button>
 
                 <button
@@ -446,7 +445,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                   }`}
                 >
                   <span>2. Tinte Shader</span>
-                  {layers.teamTint && <Check className="w-3 h-3 text-cyan-400" />}
+                  {layers.teamTint && <GcSpriteIcon name="icon-check" className="w-3 h-3 text-cyan-400"  />}
                 </button>
 
                 <button
@@ -456,7 +455,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                   }`}
                 >
                   <span>3. Pips D6</span>
-                  {layers.pips && <Check className="w-3 h-3 text-cyan-400" />}
+                  {layers.pips && <GcSpriteIcon name="icon-check" className="w-3 h-3 text-cyan-400"  />}
                 </button>
 
                 <button
@@ -466,7 +465,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                   }`}
                 >
                   <span>4. Troquelado</span>
-                  {layers.papercraft && <Check className="w-3 h-3 text-cyan-400" />}
+                  {layers.papercraft && <GcSpriteIcon name="icon-check" className="w-3 h-3 text-cyan-400"  />}
                 </button>
 
                 <button
@@ -476,7 +475,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                   }`}
                 >
                   <span>5. Rasgos/Ojos</span>
-                  {layers.traits && <Check className="w-3 h-3 text-cyan-400" />}
+                  {layers.traits && <GcSpriteIcon name="icon-check" className="w-3 h-3 text-cyan-400"  />}
                 </button>
 
                 <button
@@ -486,7 +485,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                   }`}
                 >
                   <span>6. Sombreros/Gear</span>
-                  {layers.accessories && <Check className="w-3 h-3 text-cyan-400" />}
+                  {layers.accessories && <GcSpriteIcon name="icon-check" className="w-3 h-3 text-cyan-400"  />}
                 </button>
 
                 <button
@@ -496,7 +495,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
                   }`}
                 >
                   <span>7. Cinta Adhesiva</span>
-                  {layers.tape && <Check className="w-3 h-3 text-cyan-400" />}
+                  {layers.tape && <GcSpriteIcon name="icon-check" className="w-3 h-3 text-cyan-400"  />}
                 </button>
               </div>
             </div>
@@ -504,7 +503,7 @@ export const Model3DViewerModal: React.FC<Model3DViewerModalProps> = ({ characte
             {/* Character Accessories Highlight Box */}
             <div className="p-3 bg-[#0d1017] rounded-2xl border border-purple-500/40 space-y-1.5">
               <span className="text-[10px] font-black uppercase text-purple-300 tracking-wider flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5" />
+                <GcSpriteIcon name="icon-spark" className="w-3.5 h-3.5"  />
                 ACCESORIOS Y RASGOS EXCLUSIVOS DE {character.displayName.toUpperCase()}
               </span>
               <p className="text-[11px] text-neutral-300 leading-snug">
