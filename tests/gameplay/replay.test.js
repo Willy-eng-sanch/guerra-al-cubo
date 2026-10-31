@@ -232,3 +232,20 @@ test('el ejecutor detecta el primer campo divergente de un evento', async () => 
       error.details.firstDifference.path === 'root.message'
   );
 });
+
+
+test('el ejecutor aplica efectos automáticos de reglas registrados', async () => {
+  const replay = createMatchReplay({ seed: 12, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, { marker: 0 });
+  appendReplayEvent(replay, 'MATCH_STARTED', {});
+  appendReplayEvent(replay, 'RULE_EFFECT', { kind: 'MORPH_EXHAUSTED', playerId: 2, round: 13 });
+
+  const applied = [];
+  const execution = new ReplayExecutionController(replay, {
+    executeCommand: () => {},
+    applyRuleEffect: async effect => { applied.push(effect); }
+  });
+  const result = await execution.run();
+  assert.equal(result.status, 'FINISHED');
+  assert.deepEqual(applied, [{ kind: 'MORPH_EXHAUSTED', playerId: 2, round: 13 }]);
+});
