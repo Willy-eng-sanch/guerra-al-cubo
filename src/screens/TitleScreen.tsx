@@ -8,7 +8,7 @@ import { AudioControlBar } from '../components/AudioControlBar';
 import { collectionManager } from '../data/collectionManager';
 import { dailyMissionsManager } from '../data/dailyMissionsManager';
 import { CharacterType } from '../types/game';
-import { Swords, Trophy, Users, Shield, BookOpen, HelpCircle, Download, Zap, Package, Heart, Crown, Flame, Calendar } from 'lucide-react';
+import { Swords, Trophy, Users, Shield, BookOpen, HelpCircle, Download, Zap, Package, Heart, Crown, Flame, Calendar, History } from 'lucide-react';
 
 interface TitleScreenProps {
   onStartClick: () => void;
@@ -18,6 +18,7 @@ interface TitleScreenProps {
   onRosterClick: () => void;
   onCardsClick: () => void;
   onOnlineClick: () => void;
+  onReplayFile: (file: File) => void;
 }
 
 export const TitleScreen: React.FC<TitleScreenProps> = ({
@@ -27,7 +28,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   onPassAndPlayClick,
   onRosterClick,
   onCardsClick,
-  onOnlineClick
+  onOnlineClick,
+  onReplayFile
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showDownloadApk, setShowDownloadApk] = useState(false);
@@ -225,6 +227,22 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <Shield className="w-4 h-4 text-cyan-400" />
           <span>SELECCIONAR TUS 3 PERSONAJES (DIRECTO)</span>
         </button>
+
+        {/* Importar una partida grabada para comprobar la reconstrucción determinista */}
+        <label className="w-full py-2.5 bg-cyan-950/50 hover:bg-cyan-900/60 active:scale-[0.98] text-cyan-200 font-bold text-xs md:text-sm rounded-xl border border-cyan-500/40 flex items-center justify-center gap-2 transition-all cursor-pointer">
+          <History className="w-4 h-4 text-cyan-300" />
+          <span>REPRODUCIR PARTIDA GUARDADA (.GCREPLAY)</span>
+          <input
+            type="file"
+            accept=".gcreplay,application/json"
+            className="hidden"
+            onChange={event => {
+              const file = event.currentTarget.files?.[0];
+              if (file) onReplayFile(file);
+              event.currentTarget.value = '';
+            }}
+          />
+        </label>
 
         {/* Tutorial & Manual Táctico */}
         <button

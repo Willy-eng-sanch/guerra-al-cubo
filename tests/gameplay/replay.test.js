@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GameplayRandomController, ReplayRandomMismatchError } from '../../src/gameplay/random.js';
+import { findFirstReplayDifference, ReplayExecutionController, ReplayExecutionError } from '../../src/gameplay/replay-engine.js';
 import {
   appendReplayCheckpoint, appendReplayEvent, createMatchReplay, getReplayRandomResults,
   getReplayCommands, hashReplayState, parseMatchReplay, serializeMatchReplay, setReplayFinalResult, setReplayInitialState, validateMatchReplay
@@ -82,4 +83,200 @@ test('el archivo expone comandos en el orden exacto para reproducir ambos bandos
   appendReplayEvent(replay, 'BOT_DECISION', { kind: 'END_TURN', actorId: 2 });
   assert.deepEqual(getReplayCommands(replay).map(item => item.type), ['PLAYER_ACTION', 'BOT_DECISION']);
   assert.deepEqual(getReplayCommands(replay).map(item => item.sequence), [1, 3]);
+});
+
+
+test('las tiradas de configuración quedan fuera del flujo aleatorio reproducible', () => {
+  const replay = createMatchReplay({ seed: 42, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, { players: [], deck: [{ uid: 'initial-card' }] });
+  appendReplayEvent(replay, 'RANDOM_RESULT', { sequence: 1, kind: 'INT', purpose: 'deck.initial', min: 0, max: 9, raw: 0.3, value: 3 });
+  appendReplayEvent(replay, 'MATCH_STARTED', {});
+  appendReplayEvent(replay, 'RANDOM_RESULT', { sequence: 2, kind: 'INT', purpose: 'combat.attack', min: 1, max: 6, raw: 0.5, value: 4 });
+  appendReplayEvent(replay, 'RANDOM_RESULT', { sequence: 3, kind: 'INT', purpose: 'combat.defense', min: 1, max: 6, raw: 0.2, value: 2 });
+
+  const results = getReplayRandomResults(replay);
+  assert.deepEqual(results.map(item => item.purpose), ['combat.attack', 'combat.defense']);
+  assert.deepEqual(results.map(item => item.sequence), [1, 2]);
+  assert.deepEqual(results.map(item => item.originalSequence), [2, 3]);
+});
+
+test('el ejecutor aplica comandos en orden y verifica checkpoints', async () => {
+  const replay = createMatchReplay({ seed: 7, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, { marker: 0 });
+  appendReplayEvent(replay, 'MATCH_STARTED', {});
+  appendReplayEvent(replay, 'PLAYER_ACTION', { kind: 'SET_MARKER', value: 1 });
+  appendReplayEvent(replay, 'BOT_DECISION', { kind: 'BOT_TARGET', targetId: 2 });
+  appendReplayCheckpoint(replay, 'after-bot-choice', {
+    state: { marker: 1 },
+    stateHash: hashReplayState({ marker: 1 })
+  });
+  appendReplayEvent(replay, 'PLAYER_ACTION', { kind: 'SET_MARKER', value: 2 });
+  appendReplayCheckpoint(replay, 'end', {
+    state: { marker: 2 },
+    stateHash: hashReplayState({ marker: 2 })
+  });
+
+  let marker = 0;
+  const decisions = [];
+  const execution = new ReplayExecutionController(replay, {
+    executeCommand: async command => { marker = command.value; },
+    verifyBotDecision: async decision => { decisions.push(decision.targetId); assert.equal(marker, 1); },
+    captureCheckpoint: async () => ({ marker }),
+    assertRandomFullyConsumed: () => true
+  });
+
+  const result = await execution.run();
+  assert.equal(result.status, 'FINISHED');
+  assert.equal(result.consumedEvents, replay.events.length);
+  assert.deepEqual(decisions, [2]);
+  assert.equal(result.consumedCheckpoints, 2);
+});
+
+test('el ejecutor se detiene en el primer checkpoint divergente', async () => {
+  const replay = createMatchReplay({ seed: 8, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, { marker: 0 });
+  appendReplayEvent(replay, 'MATCH_STARTED', {});
+  appendReplayEvent(replay, 'PLAYER_ACTION', { kind: 'SET_MARKER', value: 1 });
+  appendReplayCheckpoint(replay, 'wrong-state', {
+    state: { marker: 99 },
+    stateHash: hashReplayState({ marker: 99 })
+  });
+
+  let marker = 0;
+  const execution = new ReplayExecutionController(replay, {
+    executeCommand: command => { marker = command.value; },
+    captureCheckpoint: () => ({ marker })
+  });
+  await assert.rejects(
+    () => execution.run(),
+    error => error instanceof ReplayExecutionError &&
+      error.kind === 'CHECKPOINT_MISMATCH' &&
+      error.sequence === 2 &&
+      error.details.firstDifference?.path === 'root.marker'
+  );
+  assert.equal(execution.getProgress().status, 'FAILED');
+  assert.equal(execution.getProgress().consumedEvents, 2);
+});
+
+test('el ejecutor no finaliza si quedan resultados aleatorios sin consumir', async () => {
+  const replay = createMatchReplay({ seed: 9, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, { marker: 0 });
+  appendReplayEvent(replay, 'MATCH_STARTED', {});
+  appendReplayEvent(replay, 'RANDOM_RESULT', { sequence: 1, kind: 'INT', purpose: 'dice', min: 1, max: 6, raw: 0.3, value: 2 });
+  const random = new GameplayRandomController({
+    mode: 'replay',
+    seed: replay.metadata.seed,
+    recordedEvents: getReplayRandomResults(replay)
+  });
+  const execution = new ReplayExecutionController(replay, {
+    executeCommand: () => {},
+    assertRandomFullyConsumed: () => random.assertFullyConsumed()
+  });
+  await assert.rejects(
+    () => execution.run(),
+    error => error instanceof ReplayExecutionError &&
+      error.kind === 'COMMAND_EXECUTION_FAILED'
+  );
+});
+
+
+test('el ejecutor verifica también los eventos derivados del comando', async () => {
+  const replay = createMatchReplay({ seed: 10, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, { marker: 0 });
+  appendReplayEvent(replay, 'MATCH_STARTED', {});
+  appendReplayEvent(replay, 'PLAYER_ACTION', { kind: 'SET_MARKER', value: 1 });
+  appendReplayEvent(replay, 'GAME_LOG', { message: 'marker set', actorName: 'Jugador' });
+
+  const observed = [];
+  const execution = new ReplayExecutionController(replay, {
+    executeCommand: command => {
+      observed.push({ type: 'PLAYER_ACTION', payload: command });
+      observed.push({ type: 'GAME_LOG', payload: { message: 'marker set', actorName: 'Jugador' } });
+    },
+    verifyEvent: event => {
+      if (event.type === 'MATCH_STARTED') return;
+      const actual = observed.shift();
+      assert.deepEqual(actual, { type: event.type, payload: event.payload });
+    }
+  });
+  const result = await execution.run();
+  assert.equal(result.status, 'FINISHED');
+  assert.deepEqual(observed, []);
+});
+
+test('el ejecutor detecta el primer campo divergente de un evento', async () => {
+  const replay = createMatchReplay({ seed: 11, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, { marker: 0 });
+  appendReplayEvent(replay, 'MATCH_STARTED', {});
+  appendReplayEvent(replay, 'PLAYER_ACTION', { kind: 'SET_MARKER', value: 1 });
+  appendReplayEvent(replay, 'GAME_LOG', { message: 'expected message' });
+
+  const execution = new ReplayExecutionController(replay, {
+    executeCommand: () => {},
+    verifyEvent: event => {
+      if (event.type === 'GAME_LOG') {
+        const difference = findFirstReplayDifference(
+          event.payload,
+          { message: 'different message' }
+        );
+        throw new ReplayExecutionError('event mismatch', {
+          kind: 'EVENT_MISMATCH', sequence: event.sequence, firstDifference: difference
+        });
+      }
+    }
+  });
+  await assert.rejects(
+    () => execution.run(),
+    error => error instanceof ReplayExecutionError &&
+      error.kind === 'EVENT_MISMATCH' &&
+      error.details.firstDifference.path === 'root.message'
+  );
+});
+
+
+test('el ejecutor aplica efectos automáticos de reglas registrados', async () => {
+  const replay = createMatchReplay({ seed: 12, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, { marker: 0 });
+  appendReplayEvent(replay, 'MATCH_STARTED', {});
+  appendReplayEvent(replay, 'RULE_EFFECT', { kind: 'MORPH_EXHAUSTED', playerId: 2, round: 13 });
+
+  const applied = [];
+  const execution = new ReplayExecutionController(replay, {
+    executeCommand: () => {},
+    applyRuleEffect: async effect => { applied.push(effect); }
+  });
+  const result = await execution.run();
+  assert.equal(result.status, 'FINISHED');
+  assert.deepEqual(applied, [{ kind: 'MORPH_EXHAUSTED', playerId: 2, round: 13 }]);
+});
+
+
+test('una decisión automática se valida antes de consumir una sola vez su evento observado', async () => {
+  const replay = createMatchReplay({ seed: 13, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, { marker: 0 });
+  appendReplayEvent(replay, 'MATCH_STARTED', {});
+  appendReplayEvent(replay, 'BOT_DECISION', { kind: 'BOT_CHOICE', value: 'A' });
+
+  const observed = [{ type: 'BOT_DECISION', payload: { kind: 'BOT_CHOICE', value: 'A' } }];
+  let validated = 0;
+  let consumed = 0;
+  const execution = new ReplayExecutionController(replay, {
+    executeCommand: () => {},
+    verifyBotDecision: async decision => {
+      validated += 1;
+      assert.equal(decision.value, 'A');
+      assert.equal(observed.length, 1, 'la validación no consume el evento');
+    },
+    verifyEvent: event => {
+      if (event.type === 'MATCH_STARTED') return;
+      const item = observed.shift();
+      assert.deepEqual(item, { type: event.type, payload: event.payload });
+      consumed += 1;
+    }
+  });
+  const result = await execution.run();
+  assert.equal(result.status, 'FINISHED');
+  assert.equal(validated, 1);
+  assert.equal(consumed, 1);
+  assert.deepEqual(observed, []);
 });

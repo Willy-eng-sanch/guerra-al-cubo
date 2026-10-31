@@ -21,7 +21,7 @@ import {
   getMaxPreparedStanceSlots,
   getMaxWeaponSlots
 } from './types/game';
-import { ALL_CARDS, createShuffledDeck, generateUniqueCardUid, getCardUidCounter } from './data/cards';
+import { ALL_CARDS, createShuffledDeck, generateUniqueCardUid, getCardUidCounter, resetCardUidCounter } from './data/cards';
 import { CHARACTER_LIST, CHARACTERS } from './data/characters';
 import { DEFAULT_CHAPTERS } from './data/campaign';
 import { sound } from './audio/soundManager';
@@ -30,8 +30,9 @@ import { narrator } from './audio/narratorManager';
 import { collectionManager } from './data/collectionManager';
 import { dailyMissionsManager } from './data/dailyMissionsManager';
 import { advanceTurnState, getMatchOutcome, resolveCubiculaTransfer, shouldAwardDefenderSixReward, takeFirstWeaponFromDeck } from './gameplay/rules.js';
-import { createMatchSeed, gameplayRandomInt, gameplayRandomPick, gameplayShuffle, startGameplayRandomRecording } from './gameplay/random.js';
-import { appendReplayCheckpoint, appendReplayEvent, createMatchReplay, downloadMatchReplay, hashReplayState, setReplayFinalResult, setReplayInitialState } from './gameplay/replay.js';
+import { createMatchSeed, gameplayRandomInt, gameplayRandomPick, gameplayShuffle, getGameplayRandomSession, startGameplayRandomRecording, startGameplayRandomReplay, stopGameplayRandomSession } from './gameplay/random.js';
+import { appendReplayCheckpoint, appendReplayEvent, createMatchReplay, downloadMatchReplay, getReplayRandomResults, hashReplayState, parseMatchReplay, setReplayFinalResult, setReplayInitialState } from './gameplay/replay.js';
+import { findFirstReplayDifference, ReplayExecutionController } from './gameplay/replay-engine.js';
 
 import { TitleScreen } from './screens/TitleScreen';
 import { SetupScreen } from './screens/SetupScreen';
@@ -158,9 +159,23 @@ export default function App() {
   };
   const replayRecorderRef = useRef<any>(null);
   const replayUiEventCounterRef = useRef(0);
+  const replayExecutionRef = useRef<ReplayExecutionController | null>(null);
+  const replayCommandDispatcherRef = useRef<((payload: any, event: any) => Promise<void>) | null>(null);
+  const replayStateSnapshotRef = useRef<any>(null);
+  const replayObservedEventsRef = useRef<Array<{ type: string; payload: any }>>([]);
+  const replayPlaybackActiveRef = useRef(false);
+  const [isReplayPlayback, setIsReplayPlayback] = useState(false);
+  const [replayProgress, setReplayProgress] = useState<any>(null);
+  const [replayFailure, setReplayFailure] = useState<string | null>(null);
   useEffect(() => { playersRef.current = players; }, [players]);
 
   const recordReplayEvent = (type: string, payload: Record<string, unknown> = {}) => {
+    if (replayPlaybackActiveRef.current) {
+      replayObservedEventsRef.current.push({
+        type,
+        payload: JSON.parse(JSON.stringify(payload))
+      });
+    }
     if (replayRecorderRef.current) appendReplayEvent(replayRecorderRef.current, type, payload);
   };
 
@@ -184,8 +199,10 @@ export default function App() {
       round: 1,
       turnIndex: 0,
       cardUidCounter: getCardUidCounter(),
+      selectedTargetId: initialPlayers.find(player => player.teamId === 2)?.id ?? initialPlayers[1]?.id ?? null,
       players: initialPlayers,
       deck: initialDeck,
+      discardPile: [],
       deckOrder,
       ...additional
     });
@@ -380,7 +397,13 @@ export default function App() {
 
   // Add log entry
   const addLog = (message: string, isCritical: boolean = false, actorOverride?: string) => {
-    const actor = actorOverride || (players[turnIndex]?.name ?? "Árbitro");
+    const logPlayers = replayPlaybackActiveRef.current && replayStateSnapshotRef.current?.players
+      ? replayStateSnapshotRef.current.players as PlayerState[]
+      : players;
+    const logTurnIndex = replayPlaybackActiveRef.current
+      ? replayStateSnapshotRef.current?.turnIndex ?? turnIndex
+      : turnIndex;
+    const actor = actorOverride || (logPlayers[logTurnIndex]?.name ?? "Árbitro");
     const entry: CombatLogEntry = {
       id: nextReplayUiEventId(),
       round,
@@ -554,7 +577,6 @@ export default function App() {
       });
     }
 
-    captureMatchInitialState(GameMode.QUICK_BATTLE, newPlayers, currentDeck, { matchType: 'DRAFT_3V3' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -562,6 +584,7 @@ export default function App() {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
     });
+    captureMatchInitialState(GameMode.QUICK_BATTLE, newPlayers, currentDeck, { matchType: 'DRAFT_3V3' });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -648,7 +671,6 @@ export default function App() {
       });
     }
 
-    captureMatchInitialState(GameMode.QUICK_BATTLE, newPlayers, currentDeck, { matchType: 'QUICK_BATTLE' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -656,6 +678,7 @@ export default function App() {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
     });
+    captureMatchInitialState(GameMode.QUICK_BATTLE, newPlayers, currentDeck, { matchType: 'QUICK_BATTLE' });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -765,7 +788,6 @@ export default function App() {
       });
     });
 
-    captureMatchInitialState(GameMode.STREET_CAMPAIGN, newPlayers, currentDeck, { matchType: 'STREET_CAMPAIGN' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -773,6 +795,7 @@ export default function App() {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
     });
+    captureMatchInitialState(GameMode.STREET_CAMPAIGN, newPlayers, currentDeck, { matchType: 'STREET_CAMPAIGN' });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -831,7 +854,6 @@ export default function App() {
       });
     }
 
-    captureMatchInitialState(GameMode.PASS_AND_PLAY, newPlayers, currentDeck, { matchType: 'PASS_AND_PLAY' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -839,6 +861,7 @@ export default function App() {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
     });
+    captureMatchInitialState(GameMode.PASS_AND_PLAY, newPlayers, currentDeck, { matchType: 'PASS_AND_PLAY' });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -946,7 +969,6 @@ export default function App() {
       });
     }
 
-    captureMatchInitialState(GameMode.ONLINE_PVP, newPlayers, currentDeck, { matchType: 'ONLINE_PVP' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -954,6 +976,7 @@ export default function App() {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
     });
+    captureMatchInitialState(GameMode.ONLINE_PVP, newPlayers, currentDeck, { matchType: 'ONLINE_PVP' });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -977,6 +1000,13 @@ export default function App() {
   };
 
   const currentTurnPlayer = players[turnIndex] || null;
+  replayStateSnapshotRef.current = {
+    isReplayPlayback, currentScreen, players, deck, discardPile, round, turnIndex, gameMode,
+    phase, activeClash, activeDiceRoll, isRollingAnimation, winner,
+    specialSixChoice, tramcubosoCardChoices, pendingDiceReroll, reactionPlayer,
+    supplyMagicOffer, cubinarcaOrderOffer, racubiteroLootOffer, cubinjaTransferOffer,
+    morphSelectionPlayerId, morphInventoryOffer
+  };
 
   const issueCubinarcaOrder = (kind: CubinarcaOrderKind, attackTargetId?: number) => {
     if (!cubinarcaOrderOffer) return;
@@ -2175,9 +2205,9 @@ export default function App() {
   };
 
   // Reaction handlers for Perfect Block
-  const handleEquipReaction = (cardId: number) => {
+  const handleEquipReaction = (cardId: number, cardUid?: string) => {
     if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0) return;
-    const card = reactionPlayer.hand.find(c => c.id === cardId && c.type === CardType.WEAPON);
+    const card = reactionPlayer.hand.find(c => c.id === cardId && c.type === CardType.WEAPON && (!cardUid || c.uid === cardUid));
     if (!card) return;
     recordPlayerAction('PERFECT_BLOCK_EQUIP_WEAPON', { playerId: reactionPlayer.id, cardUid: card.uid, cardId });
     sound.playCardDraw();
@@ -2205,10 +2235,10 @@ export default function App() {
     setReactionPlayer(null);
   };
 
-  const handleActivateReaction = (cardId: number) => {
+  const handleActivateReaction = (cardId: number, cardUid?: string) => {
     if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0 || isCubinjaHero(reactionPlayer)) return;
     const card = reactionPlayer.hand.find(
-      c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION
+      c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION && (!cardUid || c.uid === cardUid) && (!cardUid || c.uid === cardUid)
     );
     if (!card) return;
     recordPlayerAction('PERFECT_BLOCK_PLAY_TRICK', { playerId: reactionPlayer.id, cardUid: card.uid, cardId });
@@ -2233,10 +2263,10 @@ export default function App() {
     setReactionPlayer(null);
   };
 
-  const handlePrepareReaction = (cardId: number) => {
+  const handlePrepareReaction = (cardId: number, cardUid?: string) => {
     if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0 || isCubinjaHero(reactionPlayer)) return;
     const card = reactionPlayer.hand.find(
-      c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
+      c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE && (!cardUid || c.uid === cardUid) && (!cardUid || c.uid === cardUid)
     );
     if (!card) return;
     recordPlayerAction('PERFECT_BLOCK_PREPARE_STANCE', { playerId: reactionPlayer.id, cardUid: card.uid, cardId });
@@ -2263,10 +2293,10 @@ export default function App() {
   };
 
   // Equip Weapon
-  const handleEquipWeapon = (cardId: number) => {
+  const handleEquipWeapon = (cardId: number, cardUid?: string) => {
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
-    const card = attacker.hand.find(c => c.id === cardId && c.type === CardType.WEAPON);
+    const card = attacker.hand.find(c => c.id === cardId && c.type === CardType.WEAPON && (!cardUid || c.uid === cardUid));
     if (!card) return;
     recordPlayerAction('EQUIP_WEAPON', { cardId, cardUid: card.uid });
 
@@ -2307,7 +2337,7 @@ export default function App() {
   };
 
   // Prepare Stance
-  const handlePrepareStance = (cardId: number) => {
+  const handlePrepareStance = (cardId: number, cardUid?: string) => {
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || isCubinjaHero(attacker)) return;
     const card = attacker.hand.find(
@@ -2338,7 +2368,7 @@ export default function App() {
   };
 
   // Play Action Trick
-  const handlePlayActionTrick = (cardId: number, targetId?: number) => {
+  const handlePlayActionTrick = (cardId: number, targetId?: number, cardUid?: string) => {
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || isCubinjaHero(attacker)) return;
     const card = attacker.hand.find(
@@ -2755,26 +2785,32 @@ export default function App() {
     if (card) setCubinjaTransferOffer({ actorId: actor.id, card });
   };
 
-  const confirmCubinjaTransfer = (targetId: number) => {
-    const offer = cubinjaTransferOffer;
-    const actor = offer ? players.find(player => player.id === offer.actorId) : null;
-    const target = players.find(player => player.id === targetId);
-    if (!offer || !actor || !target || actor.actionPoints <= 0 ||
-        !actor.hand.some(card => card.uid === offer.card.uid) ||
+  const applyCubinjaTransfer = (actorId: number, cardUid: string, targetId: number) => {
+    const currentPlayers = playersRef.current.length > 0 ? playersRef.current : players;
+    const actor = currentPlayers.find(player => player.id === actorId);
+    const target = currentPlayers.find(player => player.id === targetId);
+    const card = actor?.hand.find(item => item.uid === cardUid);
+    if (!actor || !card || !target || actor.actionPoints <= 0 ||
         target.isEliminated || target.hp <= 0 || target.hand.length >= getMaxHandSize(target) ||
         (target.activeMorphCharacter || target.characterType) === CharacterType.CUBOGRO) return;
-    recordPlayerAction('CUBINJA_TRANSFER_TRICK', { actorId: actor.id, targetId: target.id, cardUid: offer.card.uid });
+    recordPlayerAction('CUBINJA_TRANSFER_TRICK', { actorId: actor.id, targetId: target.id, cardUid: card.uid });
     setPlayers(prev => prev.map(player => {
       if (player.id === actor.id) return {
         ...player,
         actionPoints: Math.max(0, player.actionPoints - 1),
-        hand: player.hand.filter(card => card.uid !== offer.card.uid)
+        hand: player.hand.filter(item => item.uid !== card.uid)
       };
-      if (player.id === target.id) return { ...player, hand: [...player.hand, offer.card] };
+      if (player.id === target.id) return { ...player, hand: [...player.hand, card] };
       return player;
     }));
     setCubinjaTransferOffer(null);
-    addLog(`Arsenal Ilimitado: ${actor.name} transfiere [${offer.card.name}] a ${target.name} por 1 Cúbit.`, true, actor.name);
+    addLog(`Arsenal Ilimitado: ${actor.name} transfiere [${card.name}] a ${target.name} por 1 Cúbit.`, true, actor.name);
+  };
+
+  const confirmCubinjaTransfer = (targetId: number) => {
+    const offer = cubinjaTransferOffer;
+    if (!offer) return;
+    applyCubinjaTransfer(offer.actorId, offer.card.uid || '', targetId);
   };
 
   // End Turn
@@ -3008,6 +3044,461 @@ export default function App() {
     finalizeMorphForm(offer.playerId, offer.form, keptHand, keptWeapons, keptStances);
   };
 
+  const waitForReplaySnapshot = (
+    predicate: (snapshot: any) => boolean,
+    description: string,
+    timeoutMs: number = 12000
+  ): Promise<any> => new Promise((resolve, reject) => {
+    const startedAt = Date.now();
+    const poll = () => {
+      const snapshot = replayStateSnapshotRef.current;
+      if (snapshot && predicate(snapshot)) {
+        resolve(snapshot);
+        return;
+      }
+      if (Date.now() - startedAt >= timeoutMs) {
+        reject(new Error('Tiempo agotado esperando ' + description + '.'));
+        return;
+      }
+      setTimeout(poll, 25);
+    };
+    poll();
+  });
+
+  const dispatchReplayPlayerAction = async (payload: any) => {
+    const state = replayStateSnapshotRef.current;
+    const activePlayer = state?.players?.[state.turnIndex];
+    const requireOffer = async (predicate: (snapshot: any) => boolean, label: string) =>
+      waitForReplaySnapshot(predicate, label, 10000);
+
+    switch (payload.kind) {
+      case 'ATTACK':
+        if (!Number.isInteger(payload.targetId)) throw new Error('ATTACK no contiene targetId.');
+        setActiveDiceRoll(null);
+        await new Promise(resolve => setTimeout(resolve, 35));
+        handleAttack(payload.targetId);
+        return;
+      case 'EQUIP_WEAPON': {
+        const player = replayStateSnapshotRef.current?.players?.[replayStateSnapshotRef.current.turnIndex];
+        const card = player?.hand?.find((item: GameCard) => item.uid === payload.cardUid);
+        if (!card) throw new Error('No se encontró el arma ' + payload.cardUid + ' en la mano del jugador activo.');
+        handleEquipWeapon(card.id, card.uid);
+        return;
+      }
+      case 'PREPARE_STANCE': {
+        const player = replayStateSnapshotRef.current?.players?.[replayStateSnapshotRef.current.turnIndex];
+        const card = player?.hand?.find((item: GameCard) => item.uid === payload.cardUid);
+        if (!card) throw new Error('No se encontró la postura ' + payload.cardUid + ' en la mano del jugador activo.');
+        handlePrepareStance(card.id, card.uid);
+        return;
+      }
+      case 'PLAY_ACTION_TRICK': {
+        const player = replayStateSnapshotRef.current?.players?.[replayStateSnapshotRef.current.turnIndex];
+        const card = player?.hand?.find((item: GameCard) => item.uid === payload.cardUid);
+        if (!card) throw new Error('No se encontró el truco ' + payload.cardUid + ' en la mano del jugador activo.');
+        handlePlayActionTrick(card.id, payload.targetId ?? undefined, card.uid);
+        return;
+      }
+      case 'HERO_ABILITY':
+        if (payload.hero === CharacterType.DRACUBON || payload.hero === CharacterType.CUBOGRO) {
+          setActiveDiceRoll(null);
+          await new Promise(resolve => setTimeout(resolve, 35));
+        }
+        handleUseHeroAbility(payload.targetId ?? undefined, payload.extraOption ?? undefined, payload.cubiculaMode ?? undefined);
+        return;
+      case 'END_TURN':
+        handleEndTurn();
+        return;
+      case 'SPECIAL_SIX_CHOICE': {
+        const actor = replayStateSnapshotRef.current?.players?.find((player: PlayerState) => player.id === payload.playerId);
+        if (!actor) throw new Error('No existe el jugador de la elección de Cara Especial 6.');
+        // Los bots ya resuelven esta elección dentro de la resolución del combate.
+        if (actor.isBot) return;
+        await requireOffer(s => s.specialSixChoice?.playerId === payload.playerId, 'la elección de Cara Especial 6');
+        handleApplySixChoice(payload.playerId, payload.choice);
+        return;
+      }
+      case 'TRAMCUBOSO_CARD_CHOICE':
+        await requireOffer(s => s.tramcubosoCardChoices?.[0]?.playerId === payload.playerId, 'la oferta de Selección Afortunada');
+        resolveTramcubosoCardChoice(payload.choiceIndex);
+        return;
+      case 'TRAMCUBOSO_REROLL_CHOICE':
+        await requireOffer(s => Boolean(s.pendingDiceReroll) && s.pendingDiceReroll.targetId === payload.targetId, 'la ventana de relanzamiento de Tramcuboso');
+        setActiveDiceRoll(null);
+        await new Promise(resolve => setTimeout(resolve, 35));
+        resolveTramcubosoReroll(payload.shouldReroll);
+        return;
+      case 'CUBINARCA_ORDER':
+        await requireOffer(s =>
+          s.cubinarcaOrderOffer?.issuerId === payload.issuerId &&
+          s.cubinarcaOrderOffer?.victimId === payload.victimId,
+          'la elección de orden de Cubinarca'
+        );
+        issueCubinarcaOrder(payload.kind, payload.attackTargetId ?? undefined);
+        return;
+      case 'CUBINARCA_TRANSFER_CARD': {
+        await requireOffer(s => s.players?.[s.turnIndex]?.cubinarcaOrder?.kind === 'TRANSFER_CARD', 'la orden de transferencia de Cubinarca');
+        const victim = replayStateSnapshotRef.current.players[replayStateSnapshotRef.current.turnIndex];
+        const cardIndex = victim.hand.findIndex((card: GameCard) => card.uid === payload.cardUid);
+        if (cardIndex < 0) throw new Error('La carta ordenada por Cubinarca ya no está en la mano.');
+        fulfillCubinarcaTransfer(cardIndex);
+        return;
+      }
+      case 'CUBINARCA_UNEQUIP_WEAPON': {
+        await requireOffer(s => s.players?.[s.turnIndex]?.cubinarcaOrder?.kind === 'UNEQUIP_WEAPON', 'la orden de desequipar de Cubinarca');
+        const victim = replayStateSnapshotRef.current.players[replayStateSnapshotRef.current.turnIndex];
+        const weaponIndex = victim.equippedWeapons.findIndex((card: GameCard) => card.uid === payload.weaponUid);
+        if (weaponIndex < 0) throw new Error('El arma ordenada por Cubinarca ya no está equipada.');
+        fulfillCubinarcaUnequip(weaponIndex);
+        return;
+      }
+      case 'CUBINARCA_DEFY_ORDER':
+        await requireOffer(s => Boolean(s.players?.[s.turnIndex]?.cubinarcaOrder), 'la orden pendiente de Cubinarca');
+        defyCubinarcaOrder();
+        return;
+      case 'PERFECT_BLOCK_EQUIP_WEAPON':
+        await requireOffer(s => s.reactionPlayer?.id === payload.playerId, 'la ventana de reacción de Bloqueo Perfecto');
+        handleEquipReaction(payload.cardId, payload.cardUid);
+        return;
+      case 'PERFECT_BLOCK_PLAY_TRICK':
+        await requireOffer(s => s.reactionPlayer?.id === payload.playerId, 'la ventana de reacción de Bloqueo Perfecto');
+        handleActivateReaction(payload.cardId, payload.cardUid);
+        return;
+      case 'PERFECT_BLOCK_PREPARE_STANCE':
+        await requireOffer(s => s.reactionPlayer?.id === payload.playerId, 'la ventana de reacción de Bloqueo Perfecto');
+        handlePrepareReaction(payload.cardId, payload.cardUid);
+        return;
+      case 'SKIP_PERFECT_BLOCK_REACTION':
+        await requireOffer(s => s.reactionPlayer?.id === payload.playerId, 'la ventana de reacción de Bloqueo Perfecto');
+        handleSkipReaction();
+        return;
+      case 'HADA_SUPPLY_TRANSFER':
+        await requireOffer(s => s.supplyMagicOffer?.actorId === payload.actorId, 'la oferta de Suministro Mágico');
+        {
+          const offer = replayStateSnapshotRef.current.supplyMagicOffer;
+          const gifted = offer.cards[payload.cardIndex];
+          const retained = offer.cards[1 - payload.cardIndex];
+          if (gifted?.uid !== payload.giftedCardUid || retained?.uid !== payload.retainedCardUid) {
+            throw new Error('Las cartas de Suministro Mágico no coinciden con la repetición.');
+          }
+        }
+        handleConfirmSupplyMagic(payload.cardIndex, payload.allyId);
+        return;
+      case 'RACUBITERO_LOOT_DISTRIBUTION':
+        await requireOffer(s => s.racubiteroLootOffer?.actorId === payload.actorId, 'la distribución de Saqueo Colectivo');
+        resolveRacubiteroLoot(payload.assignments);
+        return;
+      case 'CUBINJA_TRANSFER_TRICK':
+        applyCubinjaTransfer(payload.actorId, payload.cardUid, payload.targetId);
+        return;
+      case 'MORPH_FORM_SELECTED':
+        applyMorphForm(payload.playerId, payload.nextForm);
+        return;
+      case 'MORPH_INVENTORY_SELECTION':
+        await requireOffer(s => s.morphInventoryOffer?.playerId === payload.playerId, 'la selección de inventario de Mimetismo');
+        confirmMorphInventory(payload.selection);
+        return;
+      default:
+        throw new Error('Acción de replay no soportada: ' + String(payload.kind));
+    }
+  };
+
+  const applyReplayBotDecision = async (payload: any, alreadyObserved: boolean = false) => {
+    if (!alreadyObserved) recordReplayEvent('BOT_DECISION', payload);
+    if (payload.kind === 'TRAMCUBOSO_CARD_CHOICE') {
+      const state = await waitForReplaySnapshot(snapshot =>
+        snapshot.players.some((candidate: PlayerState) =>
+          candidate.id === payload.playerId &&
+          candidate.hand.some((card: GameCard) => card.uid === payload.selectedCardUid)
+        ),
+        'la carta elegida automáticamente por Tramcuboso'
+      );
+      const player = state.players.find((candidate: PlayerState) => candidate.id === payload.playerId);
+      if (!player) throw new Error('La decisión automática de Tramcuboso no tiene jugador asociado.');
+      return;
+    }
+    if (payload.kind === 'CUBINARCA_ORDER') {
+      await waitForReplaySnapshot(snapshot => {
+        const victim = snapshot.players.find((candidate: PlayerState) => candidate.id === payload.victimId);
+        return Boolean(victim?.cubinarcaOrder &&
+          victim.cubinarcaOrder.issuerId === payload.order?.issuerId &&
+          victim.cubinarcaOrder.kind === payload.order?.kind &&
+          (victim.cubinarcaOrder.attackTargetId ?? null) === (payload.order?.attackTargetId ?? null));
+      }, 'la orden automática de Cubinarca');
+      return;
+    }
+    const state = replayStateSnapshotRef.current;
+    if (payload.kind === 'CUBINARCA_FULFILL_TRANSFER') {
+      const victim = state.players.find((player: PlayerState) => player.id === payload.victimId);
+      const issuer = state.players.find((player: PlayerState) => player.id === payload.issuerId);
+      const card = victim?.hand.find((item: GameCard) => item.uid === payload.cardUid);
+      if (!victim || !issuer || !card) throw new Error('No se puede reconstruir la transferencia automática de Cubinarca.');
+      setPlayers(prev => prev.map(player => {
+        if (player.id === victim.id) return {
+          ...player,
+          hand: player.hand.filter(item => item.uid !== card.uid),
+          cubinarcaOrder: null,
+          blocksDisabledByOrder: false,
+          cubinarcaOrderDefiedThisTurn: false
+        };
+        if (player.id === issuer.id) return { ...player, hand: [...player.hand, card] };
+        return player;
+      }));
+      addLog(`${victim.name} obedece la orden y entrega [${card.name}] a ${issuer.name}.`, true, victim.name);
+      return;
+    }
+    if (payload.kind === 'CUBINARCA_FULFILL_UNEQUIP') {
+      const victim = state.players.find((player: PlayerState) => player.id === payload.victimId);
+      const weapon = victim?.equippedWeapons.find(card => card.uid === payload.weaponUid);
+      if (!victim || !weapon) throw new Error('No se puede reconstruir el desequipamiento automático de Cubinarca.');
+      const hasSpace = victim.hand.length < getMaxHandSize(victim);
+      setPlayers(prev => prev.map(player => player.id === victim.id ? {
+        ...player,
+        equippedWeapons: player.equippedWeapons.filter(card => card.uid !== weapon.uid),
+        hand: hasSpace ? [...player.hand, weapon] : player.hand,
+        cubinarcaOrder: null,
+        blocksDisabledByOrder: false,
+        cubinarcaOrderDefiedThisTurn: false
+      } : player));
+      if (!hasSpace) returnCardsToGlobalPile([weapon]);
+      addLog(`${victim.name} obedece la orden y desequipa [${weapon.name}].`, true, victim.name);
+      return;
+    }
+    if (payload.kind === 'CUBINARCA_AUTO_DEFY') {
+      const victim = state.players.find((player: PlayerState) => player.id === payload.victimId);
+      if (!victim) throw new Error('No existe el jugador que desobedeció la orden de Cubinarca.');
+      setPlayers(prev => prev.map(player => player.id === victim.id
+        ? { ...player, blocksDisabledByOrder: true, cubinarcaOrderDefiedThisTurn: true }
+        : player
+      ));
+      return;
+    }
+    throw new Error('Decisión automática de replay no soportada: ' + String(payload.kind));
+  };
+
+  const startReplayPlayback = async (input: unknown) => {
+    try {
+      const replay = parseMatchReplay(input as any);
+      const initial = replay.initialState as any;
+      if (!Array.isArray(initial.players) || !Array.isArray(initial.deck)) {
+        throw new Error('La repetición no incluye la lista inicial de jugadores y el mazo.');
+      }
+
+      setReplayFailure(null);
+      setReplayProgress({ status: 'RESTORING', consumedEvents: 0, totalEvents: replay.events.length });
+      replayRecorderRef.current = null;
+      replayObservedEventsRef.current = [];
+      replayPlaybackActiveRef.current = true;
+      stopGameplayRandomSession();
+      resetCardUidCounter(initial.cardUidCounter ?? 0);
+      const restoredPlayers = JSON.parse(JSON.stringify(initial.players)) as PlayerState[];
+      const restoredDeck = JSON.parse(JSON.stringify(initial.deck)) as GameCard[];
+      playersRef.current = restoredPlayers;
+      deckRef.current = restoredDeck;
+      startGameplayRandomReplay(replay.metadata.seed, getReplayRandomResults(replay));
+
+      setIsReplayPlayback(true);
+      setCurrentScreen(CurrentScreen.ARENA);
+      setIsMatchIntroPlaying(false);
+      matchIntroCompletedRef.current = true;
+      setPlayers(restoredPlayers);
+      setDeck(restoredDeck);
+      setDiscardPile(initial.discardPile || []);
+      setRound(initial.round ?? 1);
+      setTurnIndex(initial.turnIndex ?? 0);
+      setGameMode(initial.gameMode as GameMode);
+      setSelectedTargetId(initial.selectedTargetId ?? null);
+      setWinner(null);
+      setPhase(MatchPhase.IDLE);
+      setActiveClash(null);
+      setActiveDiceRoll(null);
+      setIsRollingAnimation(false);
+      setLog([]);
+      setSupplyMagicOffer(null);
+      setTramcubosoCardChoices([]);
+      setCubinarcaOrderOffer(null);
+      setPendingDiceReroll(null);
+      setRacubiteroLootOffer(null);
+      setCubinjaTransferOffer(null);
+      setMorphSelectionPlayerId(null);
+      setMorphInventoryOffer(null);
+      setReactionPlayer(null);
+      eliminatedInventoryReturnedRef.current.clear();
+      botOrderTurnRef.current = null;
+      processedMorphRoundRef.current = null;
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const controller = new ReplayExecutionController(replay, {
+        executeCommand: async (payload: any, event: any) => {
+          if (!replayCommandDispatcherRef.current) throw new Error('El dispatcher de comandos de replay no está disponible.');
+          await replayCommandDispatcherRef.current(payload, event);
+        },
+        applyRuleEffect: async (payload: any) => {
+          recordReplayEvent('RULE_EFFECT', payload);
+          if (payload.kind !== 'MORPH_EXHAUSTED') {
+            throw new Error('Efecto de regla de replay no soportado: ' + String(payload.kind));
+          }
+          const player = replayStateSnapshotRef.current?.players?.find(
+            (candidate: PlayerState) => candidate.id === payload.playerId
+          );
+          if (!player || !player.morphFormsUsed || player.morphFormsUsed.length < 12) {
+            throw new Error('Cambiaformas no tiene agotadas las 12 formas como indica la repetición.');
+          }
+          setPlayers(previous => previous.map(candidate => candidate.id === player.id
+            ? { ...candidate, activeMorphRound: payload.round, morphExhausted: true }
+            : candidate
+          ));
+          addLog(player.name + " ha agotado sus 12 formas y conservará la última hasta terminar la partida.", true, player.name);
+        },
+        verifyBotDecision: async (payload: any, event: any) => {
+          const matchStarted = replay.events.find((candidate: any) => candidate.type === 'MATCH_STARTED');
+          if (matchStarted && event.sequence < matchStarted.sequence) return;
+          const observed = replayObservedEventsRef.current[0];
+          if (observed?.type === event.type) {
+            const difference = findFirstReplayDifference(event.payload, observed.payload);
+            if (difference) {
+              throw new Error(
+                'La decisión automática diverge en ' + difference.path +
+                ': esperado=' + JSON.stringify(difference.expected) +
+                ', observado=' + JSON.stringify(difference.actual)
+              );
+            }
+            // verifyEvent consume este evento una sola vez después de waitForIdle.
+            await applyReplayBotDecision(payload, true);
+            return;
+          }
+          await applyReplayBotDecision(payload, false);
+        },
+        waitForIdle: async (event: any) => {
+          const isCombatAction = event.type === 'PLAYER_ACTION' && (
+            event.payload?.kind === 'ATTACK' ||
+            event.payload?.kind === 'TRAMCUBOSO_REROLL_CHOICE' ||
+            (event.payload?.kind === 'HERO_ABILITY' &&
+              [CharacterType.DRACUBON, CharacterType.CUBOGRO].includes(event.payload?.hero))
+          );
+          if (isCombatAction) {
+            setActiveDiceRoll(null);
+            if (event.payload?.kind === 'ATTACK' || event.payload?.kind === 'TRAMCUBOSO_REROLL_CHOICE' ||
+                [CharacterType.DRACUBON, CharacterType.CUBOGRO].includes(event.payload?.hero)) {
+              await waitForReplaySnapshot(s => Boolean(s.pendingDiceReroll) || Boolean(s.activeDiceRoll), 'la resolución del combate', 15000);
+              if (!replayStateSnapshotRef.current?.pendingDiceReroll) {
+                await new Promise(resolve => setTimeout(resolve, 380));
+                setActiveDiceRoll(null);
+              }
+            }
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 45));
+          }
+
+          const eventIndex = replay.events.findIndex((candidate: any) => candidate.sequence === event.sequence);
+          const laterCommands = replay.events.slice(eventIndex + 1).some((candidate: any) =>
+            candidate.type === 'PLAYER_ACTION' || candidate.type === 'BOT_DECISION'
+          );
+          if (!laterCommands && replay.finalResult) {
+            await waitForReplaySnapshot(s => Boolean(s.winner) || s.phase === MatchPhase.MATCH_OVER, 'el resultado final de la partida', 8000);
+          }
+        },
+        captureCheckpoint: async (checkpoint: any) => {
+          const snapshot = replayStateSnapshotRef.current;
+          const expectedState = checkpoint.state?.state ?? checkpoint.state;
+          if (Object.prototype.hasOwnProperty.call(expectedState, 'deckOrder')) {
+            return {
+              gameMode: snapshot.gameMode,
+              players: snapshot.players,
+              deckOrder: snapshot.deck.map((card: GameCard) => ({ id: card.id, uid: card.uid })),
+              cardUidCounter: getCardUidCounter()
+            };
+          }
+          if (Object.prototype.hasOwnProperty.call(expectedState, 'winnerId')) {
+            const outcome = getMatchOutcome(snapshot.players);
+            return {
+              players: snapshot.players,
+              winnerId: outcome?.winner?.id ?? null,
+              kind: outcome?.kind ?? null
+            };
+          }
+          return {
+            players: snapshot.players,
+            turnIndex: snapshot.turnIndex,
+            round: snapshot.round,
+            deck: snapshot.deck
+          };
+        },
+        verifyEvent: async (event: any) => {
+          const matchStarted = replay.events.find((candidate: any) => candidate.type === 'MATCH_STARTED');
+          if (
+            event.type === 'RANDOM_RESULT' ||
+            event.type === 'MATCH_RECORDING_STARTED' ||
+            event.type === 'MATCH_STARTED' ||
+            event.type === 'MATCH_FINISHED' ||
+            event.type === 'REPLAY_EXPORTED' ||
+            (matchStarted && event.sequence < matchStarted.sequence)
+          ) return;
+
+          const startedAt = Date.now();
+          while (replayObservedEventsRef.current.length === 0 && Date.now() - startedAt < 12000) {
+            await new Promise(resolve => setTimeout(resolve, 25));
+          }
+          const observed = replayObservedEventsRef.current.shift();
+          if (!observed) {
+            throw new Error('Falta el evento observado ' + event.type + ' en la secuencia ' + event.sequence + '.');
+          }
+          const difference = findFirstReplayDifference(
+            { type: event.type, payload: event.payload },
+            { type: observed.type, payload: observed.payload }
+          );
+          if (difference) {
+            throw new Error(
+              'Primer evento divergente en la secuencia ' + event.sequence +
+              ' en ' + difference.path +
+              ': esperado=' + JSON.stringify(difference.expected) +
+              ', observado=' + JSON.stringify(difference.actual)
+            );
+          }
+        },
+        assertRandomFullyConsumed: () => {
+          const randomSession = getGameplayRandomSession();
+          if (!randomSession) throw new Error('La sesión aleatoria de replay se cerró antes de verificar el final.');
+          return randomSession.assertFullyConsumed();
+        },
+        assertEventsFullyObserved: () => {
+          if (replayObservedEventsRef.current.length > 0) {
+            const extra = replayObservedEventsRef.current[0];
+            throw new Error(
+              'La reproducción generó eventos adicionales no presentes en el archivo. ' +
+              'Primer evento extra: ' + extra.type + ' ' + JSON.stringify(extra.payload)
+            );
+          }
+          return true;
+        },
+        onProgress: (progress: any) => setReplayProgress(progress)
+      });
+      replayExecutionRef.current = controller;
+      await controller.run();
+      setReplayProgress(controller.getProgress());
+      replayPlaybackActiveRef.current = false;
+      setIsReplayPlayback(false);
+      stopGameplayRandomSession();
+    } catch (error: any) {
+      setReplayFailure(error?.message || String(error));
+      setReplayProgress(replayExecutionRef.current?.getProgress?.() ?? { status: 'FAILED' });
+      replayPlaybackActiveRef.current = false;
+      setIsReplayPlayback(false);
+      stopGameplayRandomSession();
+    }
+  };
+
+  const handleReplayFile = async (file: File) => {
+    try {
+      const serialized = await file.text();
+      await startReplayPlayback(serialized);
+    } catch (error: any) {
+      setReplayFailure(error?.message || 'No se pudo leer el archivo .gcreplay.');
+    }
+  };
+
+  replayCommandDispatcherRef.current = dispatchReplayPlayerAction;
+
   // Cambiaformas selecciona una forma cualquiera de los otros 12 héroes y no puede repetirla.
   useEffect(() => {
     if (currentScreen !== CurrentScreen.ARENA) {
@@ -3016,7 +3507,7 @@ export default function App() {
       setMorphInventoryOffer(null);
       return;
     }
-    if (winner || isMatchIntroPlaying || players.length === 0 || morphSelectionPlayerId !== null || morphInventoryOffer) return;
+    if (isReplayPlayback || winner || isMatchIntroPlaying || players.length === 0 || morphSelectionPlayerId !== null || morphInventoryOffer) return;
     const morph = players.find(player =>
       player.characterType === CharacterType.CAMBIAFORMAS && !player.isEliminated && player.hp > 0 &&
       player.activeMorphRound !== round && !player.morphExhausted
@@ -3030,6 +3521,7 @@ export default function App() {
       character.type !== CharacterType.CAMBIAFORMAS && !used.includes(character.type)
     );
     if (available.length === 0) {
+      recordReplayEvent('RULE_EFFECT', { kind: 'MORPH_EXHAUSTED', playerId: morph.id, round });
       setPlayers(previous => previous.map(player => player.id === morph.id
         ? { ...player, activeMorphRound: round, morphExhausted: true }
         : player
@@ -3052,7 +3544,7 @@ export default function App() {
 
 // Auto-skip turn if current active player is eliminated or dead (CRITICAL FIX FOR STUCK 'PENSANDO')
   useEffect(() => {
-    if (currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
+    if (isReplayPlayback || currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
     const currentP = players[turnIndex];
     if (currentP && (currentP.isEliminated || currentP.hp <= 0)) {
       const skipTimer = setTimeout(() => {
@@ -3064,7 +3556,7 @@ export default function App() {
 
   // Bot AI Turn execution
   useEffect(() => {
-    if (currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
+    if (isReplayPlayback || currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
     const activePlayer = players[turnIndex];
     if (!activePlayer || !activePlayer.isBot || activePlayer.isEliminated || activePlayer.hp <= 0) return;
 
@@ -3107,6 +3599,12 @@ export default function App() {
             getMaxHandSize(activePlayer) > 0 &&
             issuer.hand.length < getMaxHandSize(issuer)
           ) {
+            recordReplayEvent('BOT_DECISION', {
+              kind: 'CUBINARCA_FULFILL_TRANSFER',
+              victimId: activePlayer.id,
+              issuerId: issuer.id,
+              cardUid: card.uid
+            });
             setPlayers(prev => prev.map(player => {
               if (player.id === activePlayer.id) return {
                 ...player,
@@ -3120,6 +3618,7 @@ export default function App() {
             }));
             addLog(`${activePlayer.name} obedece la orden y entrega [${card.name}] a ${issuer.name}.`, true, activePlayer.name);
           } else {
+            recordReplayEvent('BOT_DECISION', { kind: 'CUBINARCA_AUTO_DEFY', victimId: activePlayer.id, order: pendingOrder });
             setPlayers(prev => prev.map(player => player.id === activePlayer.id
               ? { ...player, blocksDisabledByOrder: true, cubinarcaOrderDefiedThisTurn: true }
               : player
@@ -3129,6 +3628,11 @@ export default function App() {
           const weapon = activePlayer.equippedWeapons[0];
           if (weapon) {
             const hasSpace = activePlayer.hand.length < getMaxHandSize(activePlayer);
+            recordReplayEvent('BOT_DECISION', {
+              kind: 'CUBINARCA_FULFILL_UNEQUIP',
+              victimId: activePlayer.id,
+              weaponUid: weapon.uid
+            });
             setPlayers(prev => prev.map(player => player.id === activePlayer.id ? {
               ...player,
               equippedWeapons: player.equippedWeapons.slice(1),
@@ -3140,6 +3644,7 @@ export default function App() {
             if (!hasSpace) returnCardsToGlobalPile([weapon]);
             addLog(`${activePlayer.name} obedece la orden y desequipa [${weapon.name}].`, true, activePlayer.name);
           } else {
+            recordReplayEvent('BOT_DECISION', { kind: 'CUBINARCA_AUTO_DEFY', victimId: activePlayer.id, order: pendingOrder });
             setPlayers(prev => prev.map(player => player.id === activePlayer.id
               ? { ...player, blocksDisabledByOrder: true, cubinarcaOrderDefiedThisTurn: true }
               : player
@@ -3252,6 +3757,40 @@ export default function App() {
 
   return (
     <div className="w-full min-h-screen bg-[#0f1116] text-white">
+      {(isReplayPlayback || replayFailure || replayProgress?.status === 'FINISHED') && (
+        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] w-[min(92vw,560px)] rounded-xl border border-cyan-500/50 bg-slate-950/95 px-4 py-3 shadow-2xl">
+          {isReplayPlayback ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-xs font-extrabold tracking-wider text-cyan-300">RECONSTRUYENDO PARTIDA</div>
+                <div className="text-[11px] text-slate-300">
+                  {replayProgress?.consumedEvents ?? 0} / {replayProgress?.totalEvents ?? 0} eventos · {replayProgress?.consumedCheckpoints ?? 0} / {replayProgress?.totalCheckpoints ?? 0} checkpoints
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  replayExecutionRef.current?.stop();
+                  replayPlaybackActiveRef.current = false;
+                  setIsReplayPlayback(false);
+                  stopGameplayRandomSession();
+                }}
+                className="shrink-0 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-800"
+              >
+                Detener
+              </button>
+            </div>
+          ) : replayFailure ? (
+            <div>
+              <div className="text-xs font-extrabold tracking-wider text-rose-300">REPLAY DETENIDO · DIVERGENCIA</div>
+              <div className="mt-1 break-words text-xs text-slate-200">{replayFailure}</div>
+            </div>
+          ) : (
+            <div className="text-xs font-bold text-emerald-300">
+              Reconstrucción completada · Todos los checkpoints y resultados aleatorios fueron verificados.
+            </div>
+          )}
+        </div>
+      )}
       {currentScreen === CurrentScreen.TITLE && (
         <TitleScreen
           onStartClick={() => setCurrentScreen(CurrentScreen.SETUP)}
@@ -3261,6 +3800,7 @@ export default function App() {
           onRosterClick={() => setCurrentScreen(CurrentScreen.ROSTER)}
           onCardsClick={() => setCurrentScreen(CurrentScreen.ENCYCLOPEDIA)}
           onOnlineClick={() => setCurrentScreen(CurrentScreen.ONLINE_LOBBY)}
+          onReplayFile={handleReplayFile}
         />
       )}
 
