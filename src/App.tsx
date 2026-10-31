@@ -3203,7 +3203,8 @@ export default function App() {
     }
   };
 
-  const applyReplayBotDecision = async (payload: any) => {
+  const applyReplayBotDecision = async (payload: any, alreadyObserved: boolean = false) => {
+    if (!alreadyObserved) recordReplayEvent('BOT_DECISION', payload);
     if (payload.kind === 'TRAMCUBOSO_CARD_CHOICE') {
       const state = await waitForReplaySnapshot(snapshot =>
         snapshot.players.some((candidate: PlayerState) =>
@@ -3333,6 +3334,7 @@ export default function App() {
           await replayCommandDispatcherRef.current(payload, event);
         },
         applyRuleEffect: async (payload: any) => {
+          recordReplayEvent('RULE_EFFECT', payload);
           if (payload.kind !== 'MORPH_EXHAUSTED') {
             throw new Error('Efecto de regla de replay no soportado: ' + String(payload.kind));
           }
@@ -3362,10 +3364,10 @@ export default function App() {
               );
             }
             replayObservedEventsRef.current.shift();
-            await applyReplayBotDecision(payload);
+            await applyReplayBotDecision(payload, true);
             return;
           }
-          await applyReplayBotDecision(payload);
+          await applyReplayBotDecision(payload, false);
         },
         waitForIdle: async (event: any) => {
           const isCombatAction = event.type === 'PLAYER_ACTION' && (
