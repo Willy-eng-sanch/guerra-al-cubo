@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import {
   ActiveDiceRoll,
   CombatLogEntry,
@@ -28,21 +29,6 @@ import { CubinarcaOrderModal } from '../components/CubinarcaOrderModal';
 import { PostMatchStatsModal } from '../components/PostMatchStatsModal';
 import { AudioControlBar } from '../components/AudioControlBar';
 import { FTUECombatGuide } from '../components/FTUECombatGuide';
-import {
-  BarChart3,
-  Sword,
-  Shield,
-  Zap,
-  RotateCw,
-  LogOut,
-  FastForward,
-  Trophy,
-  History,
-  Info,
-  Sparkles,
-  BookOpen,
-  Download
-} from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface ArenaScreenProps {
@@ -260,7 +246,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
             className="p-1.5 rounded-xl bg-[#141822] hover:bg-[#1e2433] border border-[#263044] text-neutral-400 hover:text-white transition-all"
             title="Salir al Menú"
           >
-            <LogOut className="w-4 h-4" />
+            <GcSpriteIcon name="icon-exit" className="w-4 h-4"  />
           </button>
           <div className="bg-[#1b212f] px-3 py-1 rounded-xl border border-[#283449] flex items-center gap-2">
             <span className="text-xs font-black text-yellow-400 tracking-wider">
@@ -300,7 +286,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                 : 'bg-[#151922] text-neutral-400 border-[#263044]'
             }`}
           >
-            <FastForward className="w-3.5 h-3.5" />
+            <GcSpriteIcon name="icon-fast-forward" className="w-3.5 h-3.5"  />
             <span>{isFastSpeed ? '2x' : '1x'}</span>
           </button>
 
@@ -309,7 +295,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
             className="p-1.5 px-2 rounded-xl bg-yellow-400/15 hover:bg-yellow-400/25 border border-yellow-400/50 text-yellow-300 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer"
             title="Manual Táctico & Tutorial"
           >
-            <BookOpen className="w-3.5 h-3.5" />
+            <GcSpriteIcon name="icon-book" className="w-3.5 h-3.5"  />
             <span className="hidden sm:inline">Manual</span>
           </button>
 
@@ -318,14 +304,14 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
             className="p-1.5 rounded-xl bg-[#141822] hover:bg-[#1e2433] border border-[#263044] text-neutral-300"
             title="Historial de Combate"
           >
-            <History className="w-4 h-4" />
+            <GcSpriteIcon name="icon-history" className="w-4 h-4"  />
           </button>
           <button
             onClick={onExportReplay}
             className="p-1.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-600/50 text-cyan-300"
             title="Exportar repetición determinista (.gcreplay)"
           >
-            <Download className="w-4 h-4" />
+            <GcSpriteIcon name="icon-download" className="w-4 h-4"  />
           </button>
         </div>
       </header>
@@ -392,7 +378,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                 {/* Shield Barrier if active */}
                 {currentTurnPlayer.shieldBarrier !== undefined && currentTurnPlayer.shieldBarrier > 0 && (
                   <span className="px-2 py-0.5 rounded-md bg-blue-950/90 text-blue-300 font-black border border-blue-500 text-[10px] flex items-center gap-1 shadow-sm">
-                    <Shield className="w-3 h-3 text-blue-400" />
+                    <GcSpriteIcon name="icon-shield" className="w-3 h-3 text-blue-400"  />
                     <span>+{currentTurnPlayer.shieldBarrier} BARRERA</span>
                   </span>
                 )}
@@ -425,7 +411,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                   className="flex items-center gap-1.5 bg-[#121622] px-2.5 py-1 rounded-xl border border-yellow-500/40"
                   title={`Superpoder Heroico: ${actorHeroDef?.signatureSuperpowerName}. ${actorHeroDef?.signatureSuperpowerDesc}. ¡Se desata al acertar el tiro de bloqueo coincidiendo con el atacante!`}
                 >
-                  <Shield className="w-3.5 h-3.5 text-yellow-400" />
+                  <GcSpriteIcon name="icon-shield" className="w-3.5 h-3.5 text-yellow-400"  />
                   <span className="text-[10px] font-black text-yellow-300">SUPER-BLOQUEO:</span>
                   <span className="text-[10px] text-cyan-300 font-bold max-w-[130px] truncate">
                     {actorHeroDef?.signatureSuperpowerName}
@@ -452,7 +438,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                     : 'bg-[#181c26] text-neutral-500 border border-[#232938] cursor-not-allowed'
                 }`}
               >
-                <Sword className="w-4 h-4" />
+                <GcSpriteIcon name="icon-swords" className="w-4 h-4"  />
                 <span>
                   {selectedTarget
                     ? `ATACAR A ${selectedTarget.name.slice(0, 6)}`
@@ -470,7 +456,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                     : 'bg-[#161922] text-neutral-500 border-[#232938] cursor-not-allowed'
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
+                <GcSpriteIcon name="icon-spark" className="w-3.5 h-3.5 text-yellow-400"  />
                 <span className="truncate">
                   {actorHeroDef?.abilityName || 'Habilidad'}
                 </span>
@@ -490,7 +476,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                 onClick={onEndTurn}
                 className="py-3 px-2 bg-[#1f2736] hover:bg-[#2a3549] active:scale-[0.98] text-neutral-200 border border-[#37445c] rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
               >
-                <RotateCw className="w-3.5 h-3.5" />
+                <GcSpriteIcon name="icon-refresh" className="w-3.5 h-3.5"  />
                 <span>TERMINAR TURNO</span>
               </button>
             </div>
@@ -569,7 +555,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
                         {/* Synergy Flash ribbon */}
                         {hasSynergy && (
                           <div className="absolute top-0 right-0 bg-gradient-to-l from-yellow-500 to-amber-600 text-black font-black text-[8px] px-1.5 py-0.2 rounded-bl-md shadow-sm flex items-center gap-0.5">
-                            <Zap className="w-2 h-2 fill-black" />
+                            <GcSpriteIcon name="icon-zap" className="w-2 h-2 fill-black"  />
                             <span>SINERGIA</span>
                           </div>
                         )}
@@ -666,7 +652,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
         ) : (
           <div className="bg-[#141822] border border-[#242c3d] rounded-2xl p-4 text-center">
             <span className="text-sm font-black text-yellow-400 animate-pulse flex items-center justify-center gap-2">
-              <RotateCw className="w-4 h-4 animate-spin" />
+              <GcSpriteIcon name="icon-refresh" className="w-4 h-4 animate-spin"  />
               <span>
                 {currentTurnPlayer
                   ? `Turno de ${currentTurnPlayer.name}... Pensando táctica...`
@@ -692,7 +678,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           <div className="relative w-full max-w-lg max-h-[75vh] bg-[#141823] border border-[#2b354b] rounded-2xl p-5 flex flex-col">
             <div className="flex items-center justify-between border-b border-[#252f44] pb-2.5 mb-3">
               <h3 className="text-base font-black text-white flex items-center gap-2">
-                <History className="w-5 h-5 text-yellow-400" />
+                <GcSpriteIcon name="icon-history" className="w-5 h-5 text-yellow-400"  />
                 <span>HISTORIAL DE LA GUERRA</span>
               </h3>
               <button
@@ -759,7 +745,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           onClick={() => setShowStatsModal(true)}
           className="pointer-events-auto fixed bottom-5 right-5 z-40 px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black font-bungee text-xs rounded-2xl shadow-2xl flex items-center gap-2 border-2 border-yellow-500 animate-bounce cursor-pointer"
         >
-          <BarChart3 className="w-4 h-4 text-black" />
+          <GcSpriteIcon name="icon-chart" className="w-4 h-4 text-black"  />
           <span>VER ESTADÍSTICAS</span>
         </button>
       )}
