@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GameplayRandomController, ReplayRandomMismatchError } from '../../src/gameplay/random.js';
 import { findFirstReplayDifference, ReplayExecutionController, ReplayExecutionError } from '../../src/gameplay/replay-engine.js';
+import { createReplayLogText } from '../../src/gameplay/replay-storage.js';
 import {
   appendReplayCheckpoint, appendReplayEvent, createMatchReplay, getReplayRandomResults,
   getReplayCommands, hashReplayState, parseMatchReplay, serializeMatchReplay, setReplayFinalResult, setReplayInitialState, validateMatchReplay
@@ -279,4 +280,40 @@ test('una decisión automática se valida antes de consumir una sola vez su even
   assert.equal(validated, 1);
   assert.equal(consumed, 1);
   assert.deepEqual(observed, []);
+});
+
+
+test('el log exportable conserva metadata, estado inicial, comandos y resultados', () => {
+  const replay = createMatchReplay({
+    seed: 4242,
+    mode: 'QUICK_BATTLE',
+    metadata: { matchLabel: 'Prueba de archivo' }
+  });
+  setReplayInitialState(replay, {
+    matchType: 'QUICK_BATTLE',
+    players: [
+      { id: 1, name: 'Jugador azul', characterType: 'TRAMCUBOSO', teamId: 1, isBot: false, hp: 20, maxHp: 20 },
+      { id: 2, name: 'Bot rojo', characterType: 'CUBICULA', teamId: 2, isBot: true, hp: 18, maxHp: 18 }
+    ],
+    deck: [{ id: 4, uid: 'card-4' }]
+  });
+  appendReplayEvent(replay, 'MATCH_STARTED', { gameMode: 'QUICK_BATTLE' });
+  appendReplayEvent(replay, 'PLAYER_ACTION', { kind: 'ATTACK', actorId: 1, targetId: 2 });
+  appendReplayEvent(replay, 'RANDOM_RESULT', { purpose: 'combat.attack.d6', min: 1, max: 6, value: 5, sequence: 1 });
+  appendReplayEvent(replay, 'GAME_LOG', { message: 'Jugador azul golpea a Bot rojo', actorName: 'Jugador azul', round: 1 });
+  setReplayFinalResult(replay, { kind: 'TEAM', winningTeamId: 1, winnerId: 1, finalPlayers: [] });
+
+  const log = createReplayLogText(replay);
+  assert.match(log, /GUERRA CÚBITA — REGISTRO DE PARTIDA/);
+  assert.match(log, /Prueba de archivo|QUICK_BATTLE/);
+  assert.match(log, /Jugador azul/);
+  assert.match(log, /PLAYER_ACTION.*ATTACK/);
+  assert.match(log, /combat.attack.d6 => 5/);
+  assert.match(log, /Jugador azul golpea a Bot rojo/);
+  assert.match(log, /RESULTADO FINAL/);
+  assert.match(log, /winningTeamId/);
+});
+
+test('no se genera log para una repetición inválida', () => {
+  assert.throws(() => createReplayLogText({ format: 'incorrecto' }), /Formato de archivo desconocido/);
 });
