@@ -33,6 +33,7 @@ import { advanceTurnState, getMatchOutcome, resolveCubiculaTransfer, shouldAward
 import { createMatchSeed, gameplayRandomInt, gameplayRandomPick, gameplayShuffle, getGameplayRandomSession, startGameplayRandomRecording, startGameplayRandomReplay, stopGameplayRandomSession } from './gameplay/random.js';
 import { appendReplayCheckpoint, appendReplayEvent, createMatchReplay, downloadMatchReplay, getReplayRandomResults, hashReplayState, parseMatchReplay, setReplayFinalResult, setReplayInitialState } from './gameplay/replay.js';
 import { findFirstReplayDifference, ReplayExecutionController } from './gameplay/replay-engine.js';
+import { downloadReplayLog, saveCompletedReplay } from './gameplay/replay-storage.js';
 
 import { TitleScreen } from './screens/TitleScreen';
 import { SetupScreen } from './screens/SetupScreen';
@@ -43,6 +44,7 @@ import { EncyclopediaScreen } from './screens/EncyclopediaScreen';
 import { ArenaScreen } from './screens/ArenaScreen';
 import { DraftScreen } from './screens/DraftScreen';
 import { OnlineLobbyScreen } from './screens/OnlineLobbyScreen';
+import { ReplayArchiveScreen } from './screens/ReplayArchiveScreen';
 import { DiceSpecialChoiceModal } from './components/DiceSpecialChoiceModal';
 import { TramcubosoCardChoiceModal } from './components/TramcubosoCardChoiceModal';
 import { TramcubosoRerollModal } from './components/TramcubosoRerollModal';
@@ -164,6 +166,9 @@ export default function App() {
   const replayStateSnapshotRef = useRef<any>(null);
   const replayObservedEventsRef = useRef<Array<{ type: string; payload: any }>>([]);
   const replayPlaybackActiveRef = useRef(false);
+  const persistedReplayMatchIdsRef = useRef<Set<string>>(new Set());
+  const [replaySaveStatus, setReplaySaveStatus] = useState<'IDLE' | 'SAVING' | 'SAVED' | 'ERROR'>('IDLE');
+  const [replaySaveError, setReplaySaveError] = useState<string | null>(null);
   const [isReplayPlayback, setIsReplayPlayback] = useState(false);
   const [replayProgress, setReplayProgress] = useState<any>(null);
   const [replayFailure, setReplayFailure] = useState<string | null>(null);
@@ -232,6 +237,33 @@ export default function App() {
     if (!replay || !replay.initialState) return;
     appendReplayEvent(replay, 'REPLAY_EXPORTED', { eventCount: replay.events.length });
     downloadMatchReplay(replay);
+  };
+
+  const persistCompletedMatchReplay = async (replay: any) => {
+    const matchId = replay?.metadata?.matchId;
+    if (!replay?.finalResult || !matchId || persistedReplayMatchIdsRef.current.has(matchId)) return;
+    persistedReplayMatchIdsRef.current.add(matchId);
+    setReplaySaveStatus('SAVING');
+    setReplaySaveError(null);
+    try {
+      await saveCompletedReplay(replay);
+      setReplaySaveStatus('SAVED');
+    } catch (error: any) {
+      persistedReplayMatchIdsRef.current.delete(matchId);
+      setReplaySaveStatus('ERROR');
+      setReplaySaveError(error?.message || 'No se pudo guardar la partida en este dispositivo.');
+    }
+  };
+
+  const retrySaveCompletedMatchReplay = () => {
+    const replay = replayRecorderRef.current;
+    if (replay?.finalResult) void persistCompletedMatchReplay(replay);
+  };
+
+  const exportCompletedMatchLog = () => {
+    const replay = replayRecorderRef.current;
+    if (!replay?.finalResult) return;
+    downloadReplayLog(replay);
   };
 
   const nextReplayUiEventId = () => {
@@ -2888,6 +2920,9 @@ export default function App() {
     if (replayRecorderRef.current && !replayRecorderRef.current.finalResult) {
       recordReplayCheckpoint('match-finished', { players: playersList, winnerId: outcome.winner?.id ?? null, kind: outcome.kind });
       setReplayFinalResult(replayRecorderRef.current, { kind: outcome.kind, winningTeamId: outcome.winningTeamId ?? null, winnerId: outcome.winner?.id ?? null, finalPlayers: playersList });
+      // Persist before showing post-match statistics: the player must never need to
+      // reach the arena's toolbar to keep a completed match.
+      void persistCompletedMatchReplay(replayRecorderRef.current);
     }
 
     if (outcome.kind === 'TEAM' && outcome.winningTeamId === 2) {
@@ -3839,6 +3874,14 @@ export default function App() {
           onCardsClick={() => setCurrentScreen(CurrentScreen.ENCYCLOPEDIA)}
           onOnlineClick={() => setCurrentScreen(CurrentScreen.ONLINE_LOBBY)}
           onReplayFile={handleReplayFile}
+          onReplayArchiveClick={() => setCurrentScreen(CurrentScreen.REPLAY_ARCHIVE)}
+        />
+      )}
+
+      {currentScreen === CurrentScreen.REPLAY_ARCHIVE && (
+        <ReplayArchiveScreen
+          onBack={() => setCurrentScreen(CurrentScreen.TITLE)}
+          onReplay={replay => { void startReplayPlayback(replay); }}
         />
       )}
 
@@ -3944,6 +3987,10 @@ export default function App() {
           onPrepareReaction={handlePrepareReaction}
           onSkipReaction={handleSkipReaction}
           onExportReplay={exportMatchReplay}
+          onExportReplayLog={exportCompletedMatchLog}
+          replaySaveStatus={replaySaveStatus}
+          replaySaveError={replaySaveError}
+          onRetrySaveReplay={retrySaveCompletedMatchReplay}
         />
       )}
 
