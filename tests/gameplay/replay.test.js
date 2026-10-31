@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GameplayRandomController, ReplayRandomMismatchError } from '../../src/gameplay/random.js';
 import { findFirstReplayDifference, ReplayExecutionController, ReplayExecutionError } from '../../src/gameplay/replay-engine.js';
-import { createReplayLogText } from '../../src/gameplay/replay-storage.js';
+import { createReplayLogText, saveCompletedReplay } from '../../src/gameplay/replay-storage.js';
 import {
   appendReplayCheckpoint, appendReplayEvent, createMatchReplay, getReplayRandomResults,
   getReplayCommands, hashReplayState, parseMatchReplay, serializeMatchReplay, setReplayFinalResult, setReplayInitialState, validateMatchReplay
@@ -316,4 +316,55 @@ test('el log exportable conserva metadata, estado inicial, comandos y resultados
 
 test('no se genera log para una repetición inválida', () => {
   assert.throws(() => createReplayLogText({ format: 'incorrecto' }), /Formato de archivo desconocido/);
+});
+
+
+
+test('el guardado archiva una copia estable aunque el registro original reciba eventos tardíos', async () => {
+  const replay = createMatchReplay({ seed: 8742, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, {
+    gameMode: 'QUICK_BATTLE',
+    players: [{ id: 1, name: 'Jugador', characterType: 'CUBINJA', hp: 20, maxHp: 20 }],
+    deck: []
+  });
+  appendReplayEvent(replay, 'MATCH_STARTED', { gameMode: 'QUICK_BATTLE' });
+  setReplayFinalResult(replay, { kind: 'FREE_FOR_ALL', winnerId: 1, finalPlayers: [] });
+
+  const storedRecords = new Map();
+  const factory = {
+    open() {
+      const request = {};
+      queueMicrotask(() => {
+        request.result = {
+          objectStoreNames: { contains: () => true },
+          transaction() {
+            const tx = {
+              objectStore() {
+                return {
+                  put(record) {
+                    storedRecords.set(record.matchId, JSON.parse(JSON.stringify(record)));
+                    queueMicrotask(() => tx.oncomplete?.());
+                  }
+                };
+              }
+            };
+            return tx;
+          },
+          close() {}
+        };
+        request.onsuccess?.();
+      });
+      return request;
+    }
+  };
+
+  const pendingSave = saveCompletedReplay(replay, factory);
+  appendReplayEvent(replay, 'GAME_LOG', { message: 'Evento añadido después del inicio del guardado' });
+  const summary = await pendingSave;
+  const stored = storedRecords.get(replay.metadata.matchId);
+
+  assert.ok(stored);
+  assert.equal(summary.eventCount, stored.replay.events.length);
+  assert.equal(stored.eventCount, stored.replay.events.length);
+  assert.equal(stored.replay.events.some(event => event.payload?.message === 'Evento añadido después del inicio del guardado'), false);
 });
