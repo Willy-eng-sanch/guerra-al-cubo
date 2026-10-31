@@ -3820,7 +3820,7 @@ export default function App() {
   return (
     <div className="w-full min-h-screen bg-[#0f1116] text-white">
       {(isReplayPlayback || replayFailure || replayProgress?.status === 'FINISHED') && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/55 px-3 pt-4">
+        <div className="gc-modal-overlay fixed inset-0 z-[100] flex items-start justify-center bg-black/55 px-3 pt-4">
           <div className="w-full max-w-[560px] rounded-xl border border-cyan-500/50 bg-slate-950 px-4 py-4 shadow-2xl">
             {!replayFailure && replayProgress?.status !== 'FINISHED' && replayProgress?.status !== 'STOPPED' ? (
               <div className="flex items-center justify-between gap-3">
