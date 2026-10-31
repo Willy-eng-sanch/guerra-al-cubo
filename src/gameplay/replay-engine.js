@@ -16,7 +16,7 @@ export class ReplayExecutionError extends Error {
   }
 }
 
-export function findFirstReplayDifference(expected, actual, path = '
+export function findFirstReplayDifference(expected, actual, path = 'root') {
   if (Object.is(expected, actual)) return null;
   const expectedArray = Array.isArray(expected);
   const actualArray = Array.isArray(actual);
