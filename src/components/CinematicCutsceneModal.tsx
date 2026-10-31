@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, Sparkles, Swords } from 'lucide-react';
-
+import { GcSpriteIcon } from '../ui/SpriteUI';
 interface CinematicCutsceneModalProps {
   videoUrl?: string;
   characterName: string;
@@ -34,11 +33,11 @@ export const CinematicCutsceneModal: React.FC<CinematicCutsceneModalProps> = ({
           onClick={onClose}
           className="absolute top-3 right-3 p-1.5 rounded-lg text-neutral-400 hover:text-white"
         >
-          <X className="w-5 h-5" />
+          <GcSpriteIcon name="icon-close" className="w-5 h-5"  />
         </button>
 
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-400 text-black text-xs font-black uppercase tracking-wider">
-          <Swords className="w-3.5 h-3.5" />
+          <GcSpriteIcon name="icon-swords" className="w-3.5 h-3.5"  />
           <span>¡ACCIÓN TÁCTICA!</span>
         </div>
 
