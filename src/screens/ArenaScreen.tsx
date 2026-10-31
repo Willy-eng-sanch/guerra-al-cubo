@@ -145,6 +145,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   const [selectedHandCard, setSelectedHandCard] = useState<GameCard | null>(null);
   const [showTutorialModal, setShowTutorialModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(true);
+  const isMatchOver = phase === MatchPhase.MATCH_OVER || winner !== null;
 
   // Trigger confetti on victory & auto show stats
   React.useEffect(() => {
@@ -238,7 +239,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
 
   return (
     <div
-      className="relative w-full min-h-screen bg-[#0a0c10] text-white flex flex-col justify-between p-2 sm:p-4 select-none overflow-x-hidden bg-cover bg-center bg-no-repeat"
+      className={`relative w-full min-h-screen bg-[#0a0c10] text-white flex flex-col justify-between p-2 sm:p-4 select-none overflow-x-hidden bg-cover bg-center bg-no-repeat ${isMatchOver ? 'pointer-events-none' : ''}`}
       style={{
         backgroundImage: `linear-gradient(to bottom, rgba(10, 12, 16, 0.88) 0%, rgba(10, 12, 16, 0.70) 40%, rgba(10, 12, 16, 0.94) 85%), url('/assets/aistudio/Gemini_Generated_Image_mexdy9mexdy9mexd_2dc8e00b.jpeg')`,
       }}
@@ -753,7 +754,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
       {(phase === MatchPhase.MATCH_OVER || winner !== null) && !showStatsModal && (
         <button
           onClick={() => setShowStatsModal(true)}
-          className="fixed bottom-5 right-5 z-40 px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black font-bungee text-xs rounded-2xl shadow-2xl flex items-center gap-2 border-2 border-yellow-500 animate-bounce cursor-pointer"
+          className="pointer-events-auto fixed bottom-5 right-5 z-40 px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black font-bungee text-xs rounded-2xl shadow-2xl flex items-center gap-2 border-2 border-yellow-500 animate-bounce cursor-pointer"
         >
           <BarChart3 className="w-4 h-4 text-black" />
           <span>VER ESTADÍSTICAS</span>
