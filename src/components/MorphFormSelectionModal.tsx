@@ -1,7 +1,6 @@
 import React from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CharacterDef, CharacterType } from '../types/game';
-import { Sparkles } from 'lucide-react';
-
 interface MorphFormSelectionModalProps {
   playerName: string;
   availableForms: CharacterDef[];
@@ -16,7 +15,7 @@ export const MorphFormSelectionModal: React.FC<MorphFormSelectionModalProps> = (
     <div className="w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl border-2 border-violet-400/70 bg-gradient-to-b from-[#1b1628] to-[#10121c] p-5 text-white shadow-2xl">
       <div className="text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-500/10 px-3 py-1 text-[10px] font-black tracking-widest text-violet-200">
-          <Sparkles className="h-4 w-4" /> MIMETISMO · CAMBIAFORMAS
+          <GcSpriteIcon name="icon-spark" className="h-4 w-4"  /> MIMETISMO · CAMBIAFORMAS
         </span>
         <h2 className="mt-3 text-2xl font-black">Elige tu nueva forma</h2>
         <p className="mt-1 text-sm text-neutral-300">{playerName} puede adoptar cualquiera de los otros 12 héroes, aunque no estén presentes en la partida.</p>
