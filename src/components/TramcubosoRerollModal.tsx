@@ -27,7 +27,7 @@ const DiceRow: React.FC<{ label: string; values: number[] }> = ({ label, values 
 export const TramcubosoRerollModal: React.FC<TramcubosoRerollModalProps> = ({
   actorName, attackerName, defenderName, attackerRolls, defenderRolls, onReroll, onKeep
 }) => (
-  <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
+  <div className="gc-modal-overlay fixed inset-0 z-[110] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
     <div className="w-full max-w-lg rounded-3xl border-2 border-emerald-400/70 bg-gradient-to-b from-[#17251f] to-[#0d1311] p-5 text-white shadow-2xl">
       <div className="text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/50 bg-emerald-400/10 px-3 py-1 text-[10px] font-black tracking-widest text-emerald-300">
