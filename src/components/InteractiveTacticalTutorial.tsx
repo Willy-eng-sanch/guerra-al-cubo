@@ -1,26 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  X, 
-  Dices, 
-  Shield, 
-  Swords, 
-  Sparkles, 
-  BookOpen, 
-  AlertTriangle, 
-  CheckCircle2, 
-  ChevronRight, 
-  ChevronLeft, 
-  RotateCw, 
-  Zap, 
-  Download,
-  Info,
-  HelpCircle,
-  Flame,
-  Coins,
-  Brain,
-  ShieldCheck,
-  UserCheck
-} from 'lucide-react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CardCategory, CATEGORY_INFO, CharacterType } from '../types/game';
 import { CHARACTERS, CHARACTER_LIST } from '../data/characters';
 import { ALL_CARDS } from '../data/cards';
@@ -149,7 +128,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
         <div className="p-4 bg-gradient-to-r from-[#171d2b] to-[#121622] border-b border-[#28344c] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-yellow-400 text-black font-black">
-              <Dices className="w-5 h-5" />
+              <GcSpriteIcon name="icon-dice" className="w-5 h-5"  />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -196,7 +175,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
               className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition-all"
               title="Cerrar"
             >
-              <X className="w-5 h-5" />
+              <GcSpriteIcon name="icon-close" className="w-5 h-5"  />
             </button>
           </div>
         </div>
@@ -244,7 +223,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
                 <div className="space-y-4">
                   <div className="bg-[#171d2b] p-4 rounded-2xl border border-[#2b374e]">
                     <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-                      <Swords className="w-4 h-4 text-amber-400" />
+                      <GcSpriteIcon name="icon-swords" className="w-4 h-4 text-amber-400"  />
                       <span>Físicas de Dados, Bloqueo Perfecto (Parry) y Cara 6</span>
                     </h3>
                     <p className="text-xs text-neutral-300 leading-relaxed mt-1">
@@ -307,7 +286,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
                       disabled={isSimRolling}
                       className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:brightness-110 active:scale-95 text-black font-black text-xs sm:text-sm shadow-lg flex items-center gap-2 transition-all cursor-pointer"
                     >
-                      <RotateCw className={`w-4 h-4 ${isSimRolling ? 'animate-spin' : ''}`} />
+                      <GcSpriteIcon name="icon-refresh" className={`w-4 h-4 ${isSimRolling ? 'animate-spin' : ''}`}  />
                       <span>{isSimRolling ? 'Rodando dados...' : 'Lanzar Dados de Prueba'}</span>
                     </button>
 
@@ -323,7 +302,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
                 <div className="space-y-4">
                   <div className="bg-[#171d2b] p-4 rounded-2xl border border-[#2b374e]">
                     <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      <GcSpriteIcon name="icon-spark" className="w-4 h-4 text-purple-400"  />
                       <span>El Sistema de ADN del Barrio y las 5 Clases</span>
                     </h3>
                     <p className="text-xs text-neutral-300 leading-relaxed mt-1">
@@ -388,7 +367,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
                 <div className="space-y-4">
                   <div className="bg-[#171d2b] p-4 rounded-2xl border border-[#2b374e]">
                     <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-yellow-400" />
+                      <GcSpriteIcon name="icon-zap" className="w-4 h-4 text-yellow-400"  />
                       <span>Laboratorio Interactivo de Sinergias y Rechazos</span>
                     </h3>
                     <p className="text-xs text-neutral-300 leading-relaxed mt-1">
@@ -500,7 +479,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
                 <div className="space-y-4">
                   <div className="bg-[#171d2b] p-4 rounded-2xl border border-[#2b374e]">
                     <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                      <GcSpriteIcon name="icon-shield" className="w-4 h-4 text-cyan-400"  />
                       <span>Economía de Turno (3 Acciones) & Mecánica de Cobertura</span>
                     </h3>
                     <p className="text-xs text-neutral-300 leading-relaxed mt-1">
@@ -511,7 +490,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     <div className="p-3.5 rounded-2xl bg-[#141926] border border-amber-500/50 space-y-1.5">
                       <span className="text-xs font-black text-amber-400 uppercase tracking-wide flex items-center gap-1">
-                        <Swords className="w-4 h-4" />
+                        <GcSpriteIcon name="icon-swords" className="w-4 h-4"  />
                         Acción 1 (Ataque o Cobertura)
                       </span>
                       <p className="text-neutral-300 text-[11px] leading-relaxed">
@@ -521,7 +500,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
 
                     <div className="p-3.5 rounded-2xl bg-[#141926] border border-cyan-500/50 space-y-1.5">
                       <span className="text-xs font-black text-cyan-400 uppercase tracking-wide flex items-center gap-1">
-                        <Shield className="w-4 h-4" />
+                        <GcSpriteIcon name="icon-shield" className="w-4 h-4"  />
                         Acción 2 (Cartas & Mesa)
                       </span>
                       <p className="text-neutral-300 text-[11px] leading-relaxed">
@@ -531,7 +510,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
 
                     <div className="p-3.5 rounded-2xl bg-[#141926] border border-purple-500/50 space-y-1.5">
                       <span className="text-xs font-black text-purple-400 uppercase tracking-wide flex items-center gap-1">
-                        <Sparkles className="w-4 h-4" />
+                        <GcSpriteIcon name="icon-spark" className="w-4 h-4"  />
                         Acción Libre (Habilidad Única)
                       </span>
                       <p className="text-neutral-300 text-[11px] leading-relaxed">
@@ -542,7 +521,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
 
                   <div className="bg-[#121622] p-4 rounded-2xl border border-[#2b3952] space-y-2">
                     <h4 className="text-xs font-black text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Info className="w-4 h-4" />
+                      <GcSpriteIcon name="icon-info" className="w-4 h-4"  />
                       Estrategia Clave de Cobertura (Cover)
                     </h4>
                     <p className="text-xs text-neutral-300 leading-relaxed">
@@ -557,7 +536,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
                 <div className="space-y-4">
                   <div className="bg-[#171d2b] p-4 rounded-2xl border border-[#2b374e]">
                     <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-emerald-400" />
+                      <GcSpriteIcon name="icon-book" className="w-4 h-4 text-emerald-400"  />
                       <span>Construcción de Escuadrón & La Caleta de 15 Cartas</span>
                     </h3>
                     <p className="text-xs text-neutral-300 leading-relaxed mt-1">
@@ -568,7 +547,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="p-3.5 rounded-2xl bg-[#141926] border border-emerald-500/40 space-y-2">
                       <h4 className="font-black text-emerald-400 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <GcSpriteIcon name="icon-check" className="w-4 h-4"  />
                         Regla de Oro: Maximizar Sinergias
                       </h4>
                       <p className="text-neutral-300 leading-relaxed">
@@ -578,7 +557,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
 
                     <div className="p-3.5 rounded-2xl bg-[#141926] border border-red-500/40 space-y-2">
                       <h4 className="font-black text-red-400 flex items-center gap-1.5">
-                        <AlertTriangle className="w-4 h-4" />
+                        <GcSpriteIcon name="icon-warning" className="w-4 h-4"  />
                         Peligro: El Castigo de las Anti-Clases
                       </h4>
                       <p className="text-neutral-300 leading-relaxed">
@@ -612,7 +591,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
                   disabled={currentStep === 1}
                   className="px-4 py-2 rounded-xl bg-[#171c28] hover:bg-[#202738] border border-[#2b374e] text-neutral-300 font-bold text-xs flex items-center gap-1.5 disabled:opacity-40 transition-all cursor-pointer"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <GcSpriteIcon name="icon-back" className="w-4 h-4"  />
                   <span>Anterior</span>
                 </button>
 
@@ -639,7 +618,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
                   className="px-4 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-black font-black text-xs flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <span>{currentStep === 5 ? 'Ver 50 Cartas' : 'Siguiente'}</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <GcSpriteIcon name="icon-chevron" className="w-4 h-4"  />
                 </button>
               </div>
 
@@ -668,7 +647,7 @@ export const InteractiveTacticalTutorial: React.FC<InteractiveTacticalTutorialPr
                   rel="noreferrer"
                   className="p-2 px-3 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow"
                 >
-                  <Download className="w-4 h-4" />
+                  <GcSpriteIcon name="icon-download" className="w-4 h-4"  />
                   <span>Descargar Manual PDF</span>
                 </a>
               </div>
