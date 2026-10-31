@@ -452,7 +452,10 @@ export default function App() {
     const chooseAlternative = scoreTramcubosoCard(player, second.card) > scoreTramcubosoCard(player, first.card);
     const selectedCard = chooseAlternative ? second.card : first.card;
     const discardedCard = chooseAlternative ? first.card : second.card;
-    return { cards: [selectedCard], choices: [], newDeck: gameplayShuffle([...second.newDeck, discardedCard], 'deck.tramcuboso-rejected-card'), newDiscard: [] };
+    const reshuffledDeck = gameplayShuffle([...second.newDeck, discardedCard], 'deck.tramcuboso-rejected-card');
+    recordReplayEvent('DECK_SHUFFLED', { purpose: 'deck.tramcuboso-rejected-card', cardOrder: reshuffledDeck.map(card => ({ id: card.id, uid: card.uid })) });
+    recordReplayEvent('BOT_DECISION', { kind: 'TRAMCUBOSO_CARD_CHOICE', playerId: player.id, selectedCardUid: selectedCard.uid, rejectedCardUid: discardedCard.uid });
+    return { cards: [selectedCard], choices: [], newDeck: reshuffledDeck, newDiscard: [] };
   };
 
   const resolveTramcubosoCardChoice = (choiceIndex: 0 | 1) => {
@@ -1873,6 +1876,7 @@ export default function App() {
 
           // Resolve card rewards outside the React state updater to keep deck mutations deterministic.
           let currentDeckState = gameplayShuffle([...deck, ...racubiteroDiscardedCards], 'deck.racubitero.reorganize');
+          recordReplayEvent('DECK_SHUFFLED', { purpose: 'deck.racubitero.reorganize', cardOrder: currentDeckState.map(card => ({ id: card.id, uid: card.uid })) });
           let currentDiscardState: GameCard[] = [];
           const prepareCombatDraws = (player: PlayerState, count: number, source: string) => {
             const cards: GameCard[] = [];
