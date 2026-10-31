@@ -3363,7 +3363,7 @@ export default function App() {
                 ', observado=' + JSON.stringify(difference.actual)
               );
             }
-            replayObservedEventsRef.current.shift();
+            // verifyEvent consume este evento una sola vez después de waitForIdle.
             await applyReplayBotDecision(payload, true);
             return;
           }
