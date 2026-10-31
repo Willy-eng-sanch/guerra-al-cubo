@@ -152,7 +152,7 @@ test('el ejecutor se detiene en el primer checkpoint divergente', async () => {
     error => error instanceof ReplayExecutionError &&
       error.kind === 'CHECKPOINT_MISMATCH' &&
       error.sequence === 2 &&
-      error.details.firstDifference?.path === '$.marker'
+      error.details.firstDifference?.path === 'root.marker'
   );
   assert.equal(execution.getProgress().status, 'FAILED');
   assert.equal(execution.getProgress().consumedEvents, 2);
