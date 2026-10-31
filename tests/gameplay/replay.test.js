@@ -249,3 +249,33 @@ test('el ejecutor aplica efectos automáticos de reglas registrados', async () =
   assert.equal(result.status, 'FINISHED');
   assert.deepEqual(applied, [{ kind: 'MORPH_EXHAUSTED', playerId: 2, round: 13 }]);
 });
+
+
+test('una decisión automática se valida antes de consumir una sola vez su evento observado', async () => {
+  const replay = createMatchReplay({ seed: 13, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, { marker: 0 });
+  appendReplayEvent(replay, 'MATCH_STARTED', {});
+  appendReplayEvent(replay, 'BOT_DECISION', { kind: 'BOT_CHOICE', value: 'A' });
+
+  const observed = [{ type: 'BOT_DECISION', payload: { kind: 'BOT_CHOICE', value: 'A' } }];
+  let validated = 0;
+  let consumed = 0;
+  const execution = new ReplayExecutionController(replay, {
+    executeCommand: () => {},
+    verifyBotDecision: async decision => {
+      validated += 1;
+      assert.equal(decision.value, 'A');
+      assert.equal(observed.length, 1, 'la validación no consume el evento');
+    },
+    verifyEvent: event => {
+      const item = observed.shift();
+      assert.deepEqual(item, { type: event.type, payload: event.payload });
+      consumed += 1;
+    }
+  });
+  const result = await execution.run();
+  assert.equal(result.status, 'FINISHED');
+  assert.equal(validated, 1);
+  assert.equal(consumed, 1);
+  assert.deepEqual(observed, []);
+});
