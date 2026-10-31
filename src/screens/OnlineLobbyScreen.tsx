@@ -677,7 +677,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
             STATE C: IN ROOM LOBBY / WAITING FOR OPPONENT (3 VS 3 SQUADS READY)
            ========================================================================= */}
         {(networkState.status === 'WAITING_FOR_OPPONENT' || networkState.status === 'ROOM_LOBBY') && (
-          <div className="w-full max-w-5xl bg-[#121622]/95 border-2 border-[#2b3850] rounded-3xl p-4 sm:p-6 shadow-2xl backdrop-blur-md space-y-4 animate-fadeIn">
+          <GcSpritePanel tone="default" className="w-full max-w-5xl p-4 sm:p-6 space-y-4 animate-fadeIn">
             {/* Room Code & Share Banner */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-[#0a0d14] rounded-2xl border border-yellow-400/40">
               <div className="flex items-center gap-2">
@@ -838,7 +838,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                 <span>¡INICIAR COMBATE 3 VS 3!</span>
               </button>
             </div>
-          </div>
+          </GcSpritePanel>
         )}
       </main>
 
