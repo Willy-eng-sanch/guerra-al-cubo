@@ -139,6 +139,7 @@ export class ReplayExecutionController {
       if (!event) {
         await this._verifyCheckpointsAt(this.replay.events.length);
         await this.adapter.assertRandomFullyConsumed?.();
+        await this.adapter.assertEventsFullyObserved?.();
 
         if (this.checkpointCursor !== this.checkpoints.length) {
           throw new ReplayExecutionError('La repetición terminó con checkpoints sin verificar.', {
