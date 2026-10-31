@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { GameplayRandomController, ReplayRandomMismatchError } from '../../src/gameplay/random.js';
 import {
   appendReplayCheckpoint, appendReplayEvent, createMatchReplay, getReplayRandomResults,
-  parseMatchReplay, serializeMatchReplay, setReplayFinalResult, setReplayInitialState, validateMatchReplay
+  hashReplayState, parseMatchReplay, serializeMatchReplay, setReplayFinalResult, setReplayInitialState, validateMatchReplay
 } from '../../src/gameplay/replay.js';
 
 test('una semilla reproduce exactamente la secuencia y el barajado', () => {
@@ -64,4 +64,12 @@ test('el generador rechaza rangos y colecciones vacías', () => {
   const random = new GameplayRandomController({ mode: 'record', seed: 3 });
   assert.throws(() => random.int(2,1,'bad-range'), RangeError);
   assert.throws(() => random.pick([], 'empty-pick'), RangeError);
+});
+
+test('las huellas de estado son estables aunque cambie el orden de las claves', () => {
+  const first = { round: 3, players: [{ id: 1, hp: 12, hand: ['a', 'b'] }], turnIndex: 2 };
+  const second = { turnIndex: 2, players: [{ hand: ['a', 'b'], hp: 12, id: 1 }], round: 3 };
+  const third = { ...second, round: 4 };
+  assert.equal(hashReplayState(first), hashReplayState(second));
+  assert.notEqual(hashReplayState(first), hashReplayState(third));
 });
