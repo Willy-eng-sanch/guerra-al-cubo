@@ -1,6 +1,24 @@
 /** Formato JSON de repetición de Guerra Cúbita (.gcreplay). */
 export const REPLAY_FORMAT = 'guerra-cubita-replay';
 export const REPLAY_FORMAT_VERSION = 1;
+
+function stableSerialize(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return '[' + value.map(stableSerialize).join(',') + ']';
+  const keys = Object.keys(value).filter(key => value[key] !== undefined).sort();
+  return '{' + keys.map(key => JSON.stringify(key) + ':' + stableSerialize(value[key])).join(',') + '}';
+}
+
+/** Huella determinista para detectar divergencias entre checkpoints; no es una firma criptográfica. */
+export function hashReplayState(state) {
+  const serialized = stableSerialize(state);
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < serialized.length; index += 1) {
+    hash ^= serialized.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
 const cloneJson = value => value === undefined ? null : JSON.parse(JSON.stringify(value));
 function assertReplay(replay) {
   if (!replay || replay.format !== REPLAY_FORMAT || !Array.isArray(replay.events)) throw new TypeError('Objeto de repetición inválido.');
