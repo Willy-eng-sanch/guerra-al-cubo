@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GcSpriteIcon } from '../ui/SpriteUI';
+import { GcSpriteIcon, GcSpritePanel } from '../ui/SpriteUI';
 import { CharacterType } from '../types/game';
 import { CHARACTERS } from '../data/characters';
 import { sound } from '../audio/soundManager';
@@ -70,11 +70,10 @@ export const DiceCupShaker: React.FC<DiceCupShakerProps> = ({
   };
 
   return (
-    <div
-      className={`relative flex flex-col items-center p-3 md:p-4 rounded-3xl bg-[#121622] border-2 transition-all select-none ${
-        isDragOver
-          ? 'border-yellow-400 ring-4 ring-yellow-400/40 bg-[#1a2030] scale-[1.02]'
-          : 'border-[#2d3850]'
+    <GcSpritePanel
+      tone="warm"
+      className={`relative flex flex-col items-center p-3 md:p-4 rounded-3xl transition-all select-none ${
+        isDragOver ? 'gc-sprite-panel--drag-over ring-4 ring-yellow-400/40 bg-[#1a2030] scale-[1.02]' : ''
       } ${className}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -223,6 +222,6 @@ export const DiceCupShaker: React.FC<DiceCupShakerProps> = ({
             : `METE LOS ${maxCapacity} DADOS AL VASO PARA COMBATIR (${team.length}/${maxCapacity})`}
         </span>
       </button>
-    </div>
+    </GcSpritePanel>
   );
 };
