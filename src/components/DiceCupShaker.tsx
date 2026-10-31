@@ -71,7 +71,7 @@ export const DiceCupShaker: React.FC<DiceCupShakerProps> = ({
 
   return (
     <GcSpritePanel
-      tone="warm"
+      tone="default"
       className={`relative flex flex-col items-center p-3 md:p-4 rounded-3xl transition-all select-none ${
         isDragOver ? 'gc-sprite-panel--drag-over ring-4 ring-yellow-400/40 bg-[#1a2030] scale-[1.02]' : ''
       } ${className}`}
