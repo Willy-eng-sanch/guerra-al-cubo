@@ -29,13 +29,11 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   canUseInterception,
   interceptionUnavailableReason
 }) => {
-  // Start with a target from the same collection this ability is allowed to use.
-  // Cubicula and Cubinja target allies too; initializing them from validTargets
-  // (the rival list) could leave the confirm action disabled until another target
-  // was manually selected.
+  // The default Cubicula mode is DRAIN, so its initial target must be a rival.
+  // Ally-only abilities use the eligible ally list; all other targeted abilities use rivals.
   const initialAbilityTargets = character.type === CharacterType.CUBINJA
     ? validAllies.filter(target => !target.borrowedEquipmentEffects?.length)
-    : character.type === CharacterType.GLADIACUBON || character.type === CharacterType.CUBICULA
+    : character.type === CharacterType.GLADIACUBON
       ? validAllies
       : validTargets;
   const initialSelectedTargetId =
@@ -66,7 +64,11 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   const isTramcuboso = heroType === CharacterType.TRAMCUBOSO;
   const abilityTargets = isCubinja
     ? validAllies.filter(target => !target.borrowedEquipmentEffects?.length)
-    : isGladiacubon || isCubicula ? validAllies : validTargets;
+    : isGladiacubon
+      ? validAllies
+      : isCubicula
+        ? (cubiculaMode === 'DRAIN' ? validTargets : validAllies)
+        : validTargets;
 
   // Does this ability require choosing a rival or an ally?
   const needsTarget = heroType === CharacterType.CUBITO_DE_HIELO || heroType === CharacterType.PIRATA || isCubicula || isGladiacubon || isCubogro || isCubinja;
@@ -76,6 +78,14 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
   const isSupplyMagic = heroType === CharacterType.HADA_AL_CUBO;
 
   const cubiculaModesUsed = player.cubiculaModesUsedThisTurn || [];
+  const selectCubiculaMode = (mode: CubiculaMode) => {
+    const nextTargets = mode === 'DRAIN' ? validTargets : validAllies;
+    setCubiculaMode(mode);
+    setCurrentTargetId(current =>
+      nextTargets.find(target => target.id === current)?.id ?? nextTargets[0]?.id ?? null
+    );
+    setTransferAmount(current => Math.min(current, mode === 'DRAIN' ? 3 : 6));
+  };
   const isCubogroReady = !isCubogro || ((player.cubogroAbilityCharges || 0) > 0);
   const hasCubinjaEquipment = !isCubinja || player.equippedWeapons.length > 0;
   const isTramcubosoManualActivation = !isTramcuboso;
@@ -238,12 +248,13 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
           {isCubicula && (
             <div className="rounded-xl border border-pink-500/40 bg-pink-950/30 p-3 text-xs text-pink-100 space-y-2">
               <p className="font-black text-pink-200">Transfusión Nocturna · Coste: 1 Cúbit por modo</p>
+              <p>Drenaje: roba hasta 3 HP a un rival vivo, que siempre conserva al menos 1 HP. Donación: entrega hasta 6 HP tuyos a un aliado vivo. Puedes usar ambos modos en el mismo turno; comparten un enfriamiento de 3 rondas.</p>
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" disabled={cubiculaModesUsed.includes('DRAIN')} onClick={() => setCubiculaMode('DRAIN')} className={`rounded-lg border p-2 font-black ${cubiculaMode === 'DRAIN' ? 'border-pink-300 bg-pink-500/20' : 'border-pink-900'} disabled:opacity-40`}>DRENAJE</button>
-                <button type="button" disabled={cubiculaModesUsed.includes('DONATE')} onClick={() => setCubiculaMode('DONATE')} className={`rounded-lg border p-2 font-black ${cubiculaMode === 'DONATE' ? 'border-pink-300 bg-pink-500/20' : 'border-pink-900'} disabled:opacity-40`}>DONACIÓN</button>
+                <button type="button" disabled={cubiculaModesUsed.includes('DRAIN')} onClick={() => selectCubiculaMode('DRAIN')} className={`rounded-lg border p-2 font-black ${cubiculaMode === 'DRAIN' ? 'border-pink-300 bg-pink-500/20' : 'border-pink-900'} disabled:opacity-40`}>DRENAJE · RIVAL</button>
+                <button type="button" disabled={cubiculaModesUsed.includes('DONATE')} onClick={() => selectCubiculaMode('DONATE')} className={`rounded-lg border p-2 font-black ${cubiculaMode === 'DONATE' ? 'border-pink-300 bg-pink-500/20' : 'border-pink-900'} disabled:opacity-40`}>DONACIÓN · ALIADO</button>
               </div>
               <label className="block">Cantidad: <b>{transferAmount} HP</b></label>
-              <input type="range" min={1} max={6} value={transferAmount} onChange={event => setTransferAmount(Number(event.target.value))} className="w-full" />
+              <input type="range" min={1} max={cubiculaMode === 'DRAIN' ? 3 : 6} value={transferAmount} onChange={event => setTransferAmount(Number(event.target.value))} className="w-full" />
               {cubiculaModesUsed.length > 0 && <p>Ya utilizaste {cubiculaModesUsed.join(' y ')} en este turno; el otro modo sigue disponible y ambos comparten el enfriamiento posterior.</p>}
             </div>
           )}
@@ -363,7 +374,7 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
             <div className="bg-[#151c2b] border-2 border-cyan-500/50 p-4 rounded-xl space-y-2.5">
               <span className="text-xs font-black text-cyan-300 flex items-center gap-1.5">
                 <Target className="w-4 h-4 text-cyan-400" />
-                <span>{isGladiacubon ? "Selecciona al aliado que quieres escudar:" : isCubicula ? "Selecciona al aliado que recibe la transferencia:" : isCubinja ? "Selecciona al aliado que recibirá el préstamo:" : "Selecciona el objetivo para tu habilidad:"}</span>
+                <span>{isGladiacubon ? "Selecciona al aliado que quieres escudar:" : isCubicula ? (cubiculaMode === 'DRAIN' ? "Selecciona al rival del que vas a drenar vida:" : "Selecciona al aliado que recibirá la donación:") : isCubinja ? "Selecciona al aliado que recibirá el préstamo:" : "Selecciona el objetivo para tu habilidad:"}</span>
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -400,6 +411,11 @@ export const HeroAbilityModal: React.FC<HeroAbilityModalProps> = ({
               )}
               {isGladiacubon && validAllies.length === 0 && (
                 <p className="text-[11px] text-amber-200">No hay aliados vivos elegibles para proteger.</p>
+              )}
+              {isCubicula && abilityTargets.length === 0 && (
+                <p className="text-[11px] text-amber-200">
+                  {cubiculaMode === 'DRAIN' ? "No hay rivales vivos a los que drenar vida." : "No hay aliados vivos a los que donar vida."}
+                </p>
               )}
             </div>
           )}
