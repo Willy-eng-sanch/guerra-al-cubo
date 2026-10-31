@@ -32,7 +32,7 @@ import { dailyMissionsManager } from './data/dailyMissionsManager';
 import { advanceTurnState, getMatchOutcome, resolveCubiculaTransfer, shouldAwardDefenderSixReward, takeFirstWeaponFromDeck } from './gameplay/rules.js';
 import { createMatchSeed, gameplayRandomInt, gameplayRandomPick, gameplayShuffle, getGameplayRandomSession, startGameplayRandomRecording, startGameplayRandomReplay, stopGameplayRandomSession } from './gameplay/random.js';
 import { appendReplayCheckpoint, appendReplayEvent, createMatchReplay, downloadMatchReplay, getReplayRandomResults, hashReplayState, parseMatchReplay, setReplayFinalResult, setReplayInitialState } from './gameplay/replay.js';
-import { ReplayExecutionController } from './gameplay/replay-engine.js';
+import { findFirstReplayDifference, ReplayExecutionController } from './gameplay/replay-engine.js';
 
 import { TitleScreen } from './screens/TitleScreen';
 import { SetupScreen } from './screens/SetupScreen';
@@ -3336,8 +3336,15 @@ export default function App() {
           const matchStarted = replay.events.find((candidate: any) => candidate.type === 'MATCH_STARTED');
           const isPreMatchDecision = matchStarted && event.sequence < matchStarted.sequence;
           const observed = replayObservedEventsRef.current[0];
-          if (!isPreMatchDecision && observed?.type === event.type &&
-              hashReplayState(observed.payload) === hashReplayState(event.payload)) {
+          if (!isPreMatchDecision && observed?.type === event.type) {
+            const difference = findFirstReplayDifference(event.payload, observed.payload);
+            if (difference) {
+              throw new Error(
+                'La decisión automática diverge en ' + difference.path +
+                ': esperado=' + JSON.stringify(difference.expected) +
+                ', observado=' + JSON.stringify(difference.actual)
+              );
+            }
             replayObservedEventsRef.current.shift();
             await applyReplayBotDecision(payload);
             return;
@@ -3418,15 +3425,16 @@ export default function App() {
           if (!observed) {
             throw new Error('Falta el evento observado ' + event.type + ' en la secuencia ' + event.sequence + '.');
           }
-          if (
-            observed.type !== event.type ||
-            hashReplayState(observed.payload) !== hashReplayState(event.payload)
-          ) {
+          const difference = findFirstReplayDifference(
+            { type: event.type, payload: event.payload },
+            { type: observed.type, payload: observed.payload }
+          );
+          if (difference) {
             throw new Error(
               'Primer evento divergente en la secuencia ' + event.sequence +
-              ': esperado ' + event.type + ', observado ' + observed.type +
-              '. payload esperado=' + JSON.stringify(event.payload) +
-              '; payload observado=' + JSON.stringify(observed.payload)
+              ' en ' + difference.path +
+              ': esperado=' + JSON.stringify(difference.expected) +
+              ', observado=' + JSON.stringify(difference.actual)
             );
           }
         },
