@@ -3392,6 +3392,15 @@ export default function App() {
     }
   };
 
+  const handleReplayFile = async (file: File) => {
+    try {
+      const serialized = await file.text();
+      await startReplayPlayback(serialized);
+    } catch (error: any) {
+      setReplayFailure(error?.message || 'No se pudo leer el archivo .gcreplay.');
+    }
+  };
+
   replayCommandDispatcherRef.current = dispatchReplayPlayerAction;
 
   // Cambiaformas selecciona una forma cualquiera de los otros 12 héroes y no puede repetirla.
@@ -3660,6 +3669,7 @@ export default function App() {
           onRosterClick={() => setCurrentScreen(CurrentScreen.ROSTER)}
           onCardsClick={() => setCurrentScreen(CurrentScreen.ENCYCLOPEDIA)}
           onOnlineClick={() => setCurrentScreen(CurrentScreen.ONLINE_LOBBY)}
+          onReplayFile={handleReplayFile}
         />
       )}
 
