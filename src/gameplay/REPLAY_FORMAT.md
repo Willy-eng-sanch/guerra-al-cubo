@@ -29,3 +29,11 @@ Esta entrega establece el formato, el proveedor aleatorio, las pruebas de consum
 resultados y la exportación. La instrumentación completa de acciones, checkpoints
 periódicos, importador/reproductor visual y los dos bots que ejecutan el historial
 se completarán en etapas posteriores. Aún no es un replay integral.
+
+## Checkpoints e integridad
+
+La aplicación toma un checkpoint en el estado inicial, al avanzar cada turno y al
+terminar la partida. Cada checkpoint incluye una huella FNV-1a de una serialización
+estable de las claves del estado. La huella sirve para detectar divergencias durante
+la reconstrucción; no es una firma criptográfica ni sustituye una futura comparación
+detallada por campos.
