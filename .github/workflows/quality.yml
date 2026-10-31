@@ -26,8 +26,16 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Install dependencies
+      - name: Install dependencies (official npm registry with retries)
+        env:
+          npm_config_registry: https://registry.npmjs.org/
+          npm_config_fetch_retries: 5
+          npm_config_fetch_retry_factor: 2
+          npm_config_fetch_retry_mintimeout: 10000
+          npm_config_fetch_retry_maxtimeout: 120000
         run: npm ci --no-audit --no-fund
+      - name: Automated gameplay rules
+        run: npm test
       - name: TypeScript check
         run: npm run lint
       - name: Production build

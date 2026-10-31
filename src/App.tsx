@@ -29,6 +29,7 @@ import { music } from './audio/musicManager';
 import { narrator } from './audio/narratorManager';
 import { collectionManager } from './data/collectionManager';
 import { dailyMissionsManager } from './data/dailyMissionsManager';
+import { advanceTurnState, getMatchOutcome, resolveCubiculaTransfer } from './gameplay/rules.js';
 
 import { TitleScreen } from './screens/TitleScreen';
 import { SetupScreen } from './screens/SetupScreen';
@@ -2509,34 +2510,19 @@ export default function App() {
       sound.playStanceActivate();
     } else if (hero === CharacterType.CUBICULA) {
       const mode = cubiculaMode || 'DRAIN';
-      const target = players.find(p => p.id === targetId && p.id !== actor.id && !p.isEliminated && p.hp > 0 &&
-        actor.teamId !== undefined && p.teamId === actor.teamId);
-      const usedModes = actor.cubiculaModesUsedThisTurn || [];
-      const requested = Math.max(1, Math.min(6, extraOption || 1));
-      if (!target || actor.actionPoints <= 0 || usedModes.includes(mode)) return;
-      const donor = mode === 'DRAIN' ? target : actor;
-      const receiver = mode === 'DRAIN' ? actor : target;
-      const transferred = Math.min(requested, Math.max(0, donor.hp - 1), Math.max(0, receiver.maxHp - receiver.hp));
-      if (transferred <= 0) {
-        addLog("Transfusión Nocturna no puede transferir vida: el donante debe conservar 1 HP y el receptor no tiene espacio.", false, actor.name);
+      const transfer = resolveCubiculaTransfer(players, actor.id, targetId, mode, extraOption || 1);
+      if (!transfer.ok) {
+        if (transfer.reason === 'no-transferable-hp') {
+          addLog("Transfusión Nocturna no puede transferir vida: el donante debe conservar 1 HP y el receptor no tiene espacio.", false, actor.name);
+        }
         return;
       }
-      setPlayers(prev => prev.map(p => {
-        if (p.id === actor.id) return {
-          ...p,
-          hp: mode === 'DRAIN' ? Math.min(p.maxHp, p.hp + transferred) : Math.max(1, p.hp - transferred),
-          actionPoints: Math.max(0, p.actionPoints - 1),
-          cubiculaModesUsedThisTurn: [...usedModes, mode]
-        };
-        if (p.id === target.id) return {
-          ...p,
-          hp: mode === 'DRAIN' ? Math.max(1, p.hp - transferred) : Math.min(p.maxHp, p.hp + transferred)
-        };
-        return p;
-      }));
-      addLog(`${actor.name} usa Transfusión Nocturna · ${mode === 'DRAIN' ? 'Drenaje' : 'Donación'}: transfiere ${transferred} HP ${mode === 'DRAIN' ? 'desde' : 'hacia'} ${target.name}. Ambos modos comparten enfriamiento de 3 rondas al terminar el turno.`, true, actor.name);
-      addFloatingText(mode === 'DRAIN' ? actor.id : target.id, `+${transferred} HP`, "#f472b6");
-      addFloatingText(mode === 'DRAIN' ? target.id : actor.id, `-${transferred} HP`, "#ef4444");
+
+      setPlayers(transfer.players);
+      const target = players.find(p => p.id === targetId)!;
+      addLog(`${actor.name} usa Transfusión Nocturna · ${mode === 'DRAIN' ? 'Drenaje' : 'Donación'}: transfiere ${transfer.transferred} HP ${mode === 'DRAIN' ? 'desde el rival' : 'hacia el aliado'} ${target.name}. El donante conserva al menos 1 HP. Ambos modos comparten enfriamiento de 3 rondas al terminar el turno.`, true, actor.name);
+      addFloatingText(mode === 'DRAIN' ? actor.id : target.id, `+${transfer.transferred} HP`, "#f472b6");
+      addFloatingText(mode === 'DRAIN' ? target.id : actor.id, `-${transfer.transferred} HP`, "#ef4444");
     } else if (hero === CharacterType.FLAUCUBISTA_DESAFINADO) {
       // La apuesta del Flaucubista es una excepción explícita: usa D5, no el D6 general.
       const chosenNum = extraOption && extraOption >= 1 && extraOption <= 5
@@ -2691,53 +2677,13 @@ export default function App() {
       return;
     }
 
-    // 2. Step forward in a single pass until we find the next non-eliminated player
-    let nextIdx = (turnIndex + 1) % turnPlayers.length;
-    let cycles = 0;
-    let roundsToAdd = 0;
-
-    while ((turnPlayers[nextIdx].isEliminated || turnPlayers[nextIdx].hp <= 0) && cycles < turnPlayers.length) {
-      if (nextIdx === 0) {
-        roundsToAdd++;
-      }
-      nextIdx = (nextIdx + 1) % turnPlayers.length;
-      cycles++;
-    }
-
-    if (cycles >= turnPlayers.length) {
+    // The shared gameplay rule owns turn order, round rollover and per-turn resets.
+    const transition = advanceTurnState(turnPlayers, turnIndex, round);
+    if (transition.finished) {
       checkVictory(turnPlayers);
       return;
     }
-
-    const nextRound = (nextIdx <= turnIndex) ? round + 1 + roundsToAdd : round + roundsToAdd;
-
-    const updated = turnPlayers.map((p, idx) => {
-      if (idx === turnIndex) {
-        return {
-          ...p,
-          ...(p.cubinarcaOrder ? {
-            blocksDisabledByOrder: true,
-            cubinarcaOrderDefiedThisTurn: p.blocksDisabledByOrder ? p.cubinarcaOrderDefiedThisTurn : false
-          } : {}),
-          abilityCooldownRemaining: p.cubiculaModesUsedThisTurn?.length ? 3 : p.abilityCooldownRemaining,
-          cubiculaModesUsedThisTurn: [],
-          borrowedEquipmentEffects: p.borrowedEquipmentEffects ? [] : p.borrowedEquipmentEffects,
-          borrowedEquipmentSourceId: p.borrowedEquipmentEffects ? null : p.borrowedEquipmentSourceId
-        };
-      }
-      if (idx === nextIdx) {
-        return {
-          ...p,
-          actionPoints: 2,
-          isFrozen: false,
-          cubiculaModesUsedThisTurn: [],
-          abilityCooldownRemaining: Math.max(0, p.abilityCooldownRemaining - 1),
-          cubinarcaOrderDefiedThisTurn: false
-        };
-      }
-      return p;
-    });
-
+    const { players: updated, turnIndex: nextIdx, round: nextRound } = transition;
     setPlayers(updated);
     setTurnIndex(nextIdx);
     setRound(nextRound);
@@ -2764,45 +2710,50 @@ export default function App() {
 
   // Check Victory (Squad Team vs Team or Free-For-All)
   const checkVictory = (playersList: PlayerState[] = players) => {
-    const hasTeams = playersList.some(p => p.teamId === 1) && playersList.some(p => p.teamId === 2);
+    const outcome = getMatchOutcome(playersList);
+    if (!outcome) return;
 
-    if (hasTeams) {
-      const aliveTeam1 = playersList.filter(p => p.teamId === 1 && !p.isEliminated && p.hp > 0);
-      const aliveTeam2 = playersList.filter(p => p.teamId === 2 && !p.isEliminated && p.hp > 0);
-
-      if (aliveTeam1.length === 0 && aliveTeam2.length > 0) {
-        setWinner(aliveTeam2[0]);
-        setPhase(MatchPhase.MATCH_OVER);
-        addLog(`¡¡EL BANDO RIVAL (ROJO) HA DERROTADO A TODA TU ESCUADRA!!`, true, "Árbitro");
-        narrator.narrateVictory("El Bando Rojo");
-        collectionManager.recordMatchResult(false);
-        dailyMissionsManager.recordMatch(false);
-        addLog(`+15 Aura de Calle obtenida por aguantar la refriega.`, true, "Aura");
-        if (gameMode === GameMode.ONLINE_PVP) {
-          collectionManager.addCoins(25);
-          addFloatingText(playersList[0]?.id || 1, "+25 Cubi-Monedas de Consuelo", "#fbbf24");
-        }
-        return;
-      } else if (aliveTeam2.length === 0 && aliveTeam1.length > 0) {
-        setWinner(aliveTeam1[0]);
-        setPhase(MatchPhase.MATCH_OVER);
-        addLog(`¡¡VICTORIA TOTAL! TU BANDO (AZUL) HA DERROTADO A TODOS LOS RIVALES!!`, true, "Árbitro");
-        narrator.narrateVictory("Tu Escuadra Azul");
-        collectionManager.recordMatchResult(true);
-        dailyMissionsManager.recordMatch(true);
-        addLog(`¡¡+35 AURA DE CALLE Y +1 CAJA DE 3 DADOS DESBLOQUEADA!!`, true, "Aura");
-        addFloatingText(playersList[0]?.id || 1, "¡+1 CAJA DE 3 DADOS!", "#ffd600");
-        if (gameMode === GameMode.ONLINE_PVP) {
-          collectionManager.addCoins(60);
-          addFloatingText(playersList[0]?.id || 1, "¡+60 Cubi-Monedas de Victoria!", "#ffd600");
-        }
-        return;
+    if (outcome.kind === 'TEAM' && outcome.winningTeamId === 2) {
+      const winnerPlayer = outcome.winner;
+      setWinner(winnerPlayer);
+      setPhase(MatchPhase.MATCH_OVER);
+      addLog(`¡¡EL BANDO RIVAL (ROJO) HA DERROTADO A TODA TU ESCUADRA!!`, true, "Árbitro");
+      narrator.narrateVictory("El Bando Rojo");
+      collectionManager.recordMatchResult(false);
+      dailyMissionsManager.recordMatch(false);
+      addLog(`+15 Aura de Calle obtenida por aguantar la refriega.`, true, "Aura");
+      if (gameMode === GameMode.ONLINE_PVP) {
+        collectionManager.addCoins(25);
+        addFloatingText(playersList[0]?.id || 1, "+25 Cubi-Monedas de Consuelo", "#fbbf24");
       }
+      return;
     }
 
-    const alive = playersList.filter(p => !p.isEliminated && p.hp > 0);
-    if (alive.length <= 1 && playersList.length > 1) {
-      const champ = alive[0] || null;
+    if (outcome.kind === 'TEAM' && outcome.winningTeamId === 1) {
+      const winnerPlayer = outcome.winner;
+      setWinner(winnerPlayer);
+      setPhase(MatchPhase.MATCH_OVER);
+      addLog(`¡¡VICTORIA TOTAL! TU BANDO (AZUL) HA DERROTADO A TODOS LOS RIVALES!!`, true, "Árbitro");
+      narrator.narrateVictory("Tu Escuadra Azul");
+      collectionManager.recordMatchResult(true);
+      dailyMissionsManager.recordMatch(true);
+      addLog(`¡¡+35 AURA DE CALLE Y +1 CAJA DE 3 DADOS DESBLOQUEADA!!`, true, "Aura");
+      addFloatingText(playersList[0]?.id || 1, "¡+1 CAJA DE 3 DADOS!", "#ffd600");
+      if (gameMode === GameMode.ONLINE_PVP) {
+        collectionManager.addCoins(60);
+        addFloatingText(playersList[0]?.id || 1, "¡+60 Cubi-Monedas de Victoria!", "#ffd600");
+      }
+      return;
+    }
+
+    if (outcome.kind === 'DRAW') {
+      setWinner(null);
+      setPhase(MatchPhase.MATCH_OVER);
+      return;
+    }
+
+    if (outcome.kind === 'FREE_FOR_ALL') {
+      const champ = outcome.winner;
       setWinner(champ);
       setPhase(MatchPhase.MATCH_OVER);
       if (champ) {
@@ -2826,7 +2777,6 @@ export default function App() {
       }
     }
   };
-
     const finalizeMorphForm = (
     playerId: number,
     nextForm: CharacterType,
@@ -3121,18 +3071,24 @@ export default function App() {
             p => !p.isEliminated && p.hp > 0 && p.id !== activePlayer.id && (!opposingTeamId || p.teamId === opposingTeamId)
           );
           if (rivals.length > 0) {
-            const target = rivals.reduce(
-              (prev, curr) => (curr.hp < prev.hp ? curr : prev),
-              rivals[0]
-            );
+            const activeHero = currentP.activeMorphCharacter || currentP.characterType;
+            // Cubicula drains the healthiest rival first, matching Drenaje Nocturno's
+            // "rival más fuerte" rule; other bots continue prioritizing the weakest rival.
+            const target = activeHero === CharacterType.CUBICULA
+              ? rivals.reduce((prev, curr) => (curr.hp > prev.hp ? curr : prev), rivals[0])
+              : rivals.reduce((prev, curr) => (curr.hp < prev.hp ? curr : prev), rivals[0]);
             if (target) {
               setSelectedTargetId(target.id);
-              const activeHero = currentP.activeMorphCharacter || currentP.characterType;
               if (activeHero === CharacterType.DRACUBON && rivals.length >= 2) {
                 const secondTarget = rivals.find(p => p.id !== target.id);
                 if (secondTarget) handleUseHeroAbility(target.id, secondTarget.id);
                 else handleAttack(target.id);
-              } else if (activeHero === CharacterType.CUBICULA && currentP.actionPoints >= 2) {
+              } else if (
+                activeHero === CharacterType.CUBICULA &&
+                currentP.actionPoints >= 1 &&
+                currentP.hp < currentP.maxHp &&
+                target.hp > 1
+              ) {
                 handleUseHeroAbility(target.id);
               } else {
                 handleAttack(target.id);
