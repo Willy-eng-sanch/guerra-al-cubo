@@ -3443,6 +3443,16 @@ export default function App() {
           if (!randomSession) throw new Error('La sesión aleatoria de replay se cerró antes de verificar el final.');
           return randomSession.assertFullyConsumed();
         },
+        assertEventsFullyObserved: () => {
+          if (replayObservedEventsRef.current.length > 0) {
+            const extra = replayObservedEventsRef.current[0];
+            throw new Error(
+              'La reproducción generó eventos adicionales no presentes en el archivo. ' +
+              'Primer evento extra: ' + extra.type + ' ' + JSON.stringify(extra.payload)
+            );
+          }
+          return true;
+        },
         onProgress: (progress: any) => setReplayProgress(progress)
       });
       replayExecutionRef.current = controller;
