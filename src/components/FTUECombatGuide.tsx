@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { MatchPhase } from '../types/game';
-import { Sparkles, X, ChevronRight, HelpCircle, Check } from 'lucide-react';
-
 interface FTUECombatGuideProps {
   phase: MatchPhase;
   isHumanTurn: boolean;
@@ -82,7 +81,7 @@ export const FTUECombatGuide: React.FC<FTUECombatGuideProps> = ({
         onClick={() => setIsMinimized(false)}
         className="fixed bottom-3 left-3 z-40 px-3 py-1.5 bg-[#141924]/90 hover:bg-[#1e2638] border border-yellow-400/60 rounded-xl text-yellow-300 text-xs font-bold shadow-xl flex items-center gap-1.5 backdrop-blur-md cursor-pointer animate-pulse"
       >
-        <HelpCircle className="w-3.5 h-3.5 text-yellow-400" />
+        <GcSpriteIcon name="icon-help" className="w-3.5 h-3.5 text-yellow-400"  />
         <span>Guía de Turno</span>
       </button>
     );
@@ -114,7 +113,7 @@ export const FTUECombatGuide: React.FC<FTUECombatGuideProps> = ({
               className="p-1 text-neutral-400 hover:text-white rounded hover:bg-neutral-800 transition-colors"
               title="Ya sé jugar, no mostrar más"
             >
-              <X className="w-3.5 h-3.5" />
+              <GcSpriteIcon name="icon-close" className="w-3.5 h-3.5"  />
             </button>
           </div>
         </div>
