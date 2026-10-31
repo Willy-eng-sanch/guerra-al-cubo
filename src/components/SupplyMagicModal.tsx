@@ -21,7 +21,7 @@ export const SupplyMagicModal: React.FC<SupplyMagicModalProps> = ({
   const selectedAlly = allies.find(ally => ally.id === selectedAllyId);
 
   return (
-    <div className="fixed inset-0 z-[70] bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
+    <div className="gc-modal-overlay fixed inset-0 z-[70] bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
       <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto bg-[#101722] border-2 border-emerald-400/70 rounded-2xl shadow-2xl text-white">
         <div className="p-4 sm:p-5 border-b border-emerald-500/30 bg-emerald-950/40">
           <div className="flex items-center gap-2 text-emerald-300">
