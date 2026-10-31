@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
+    branches: [main, feat/deterministic-match-replay]
 
 # CI only reads the repository; it must never push generated changes.
 permissions:

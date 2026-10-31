@@ -1,4 +1,5 @@
 import { CardCategory, CardRarity, CardType, GameCard, TrickTiming } from '../types/game';
+import { gameplayShuffle } from '../gameplay/random.js';
 
 // Base de Cartas Oficial del Manual Táctico (50 cartas en 5 Clases)
 export const ALL_CARDS: GameCard[] = [
@@ -605,20 +606,27 @@ export const ALL_CARDS: GameCard[] = [
 
 let cardUidCounter = 0;
 
+// Los UID se reinician al crear una partida: son únicos dentro de ese replay
+// y reproducibles al reconstruirlo desde el mismo estado inicial.
+export function resetCardUidCounter(value: number = 0): void {
+  if (!Number.isSafeInteger(value) || value < 0) throw new RangeError('Contador de cartas inválido.');
+  cardUidCounter = value;
+}
+
+export function getCardUidCounter(): number {
+  return cardUidCounter;
+}
+
 export function generateUniqueCardUid(cardId: number): string {
   cardUidCounter += 1;
-  return `${cardId}-${Date.now()}-${cardUidCounter}-${Math.random().toString(36).substring(2, 9)}`;
+  return String(cardId) + '-' + String(cardUidCounter).padStart(5, '0');
 }
 
 export function createShuffledDeck(): GameCard[] {
-  // Deep clone all cards and ensure every card has an unconditionally unique uid
+  resetCardUidCounter(0);
   const deck: GameCard[] = ALL_CARDS.map(c => ({
     ...c,
     uid: generateUniqueCardUid(c.id)
   }));
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
-  }
-  return deck;
+  return gameplayShuffle(deck, 'deck.initial.shuffle');
 }

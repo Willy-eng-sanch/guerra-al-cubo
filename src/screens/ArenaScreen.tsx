@@ -40,7 +40,8 @@ import {
   History,
   Info,
   Sparkles,
-  BookOpen
+  BookOpen,
+  Download
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -85,6 +86,7 @@ interface ArenaScreenProps {
   onActivateReaction: (cardId: number) => void;
   onPrepareReaction: (cardId: number) => void;
   onSkipReaction: () => void;
+  onExportReplay: () => void;
 }
 
 export const ArenaScreen: React.FC<ArenaScreenProps> = ({
@@ -127,7 +129,8 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   onEquipReaction,
   onActivateReaction,
   onPrepareReaction,
-  onSkipReaction
+  onSkipReaction,
+  onExportReplay
 }) => {
   const [showLogModal, setShowLogModal] = useState(false);
   const [showAbilityModal, setShowAbilityModal] = useState(false);
@@ -305,6 +308,13 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
             title="Historial de Combate"
           >
             <History className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onExportReplay}
+            className="p-1.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-600/50 text-cyan-300"
+            title="Exportar repetición determinista (.gcreplay)"
+          >
+            <Download className="w-4 h-4" />
           </button>
         </div>
       </header>
