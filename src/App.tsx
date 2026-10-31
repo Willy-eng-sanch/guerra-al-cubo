@@ -163,13 +163,14 @@ export default function App() {
   const replayCommandDispatcherRef = useRef<((payload: any, event: any) => Promise<void>) | null>(null);
   const replayStateSnapshotRef = useRef<any>(null);
   const replayObservedEventsRef = useRef<Array<{ type: string; payload: any }>>([]);
+  const replayPlaybackActiveRef = useRef(false);
   const [isReplayPlayback, setIsReplayPlayback] = useState(false);
   const [replayProgress, setReplayProgress] = useState<any>(null);
   const [replayFailure, setReplayFailure] = useState<string | null>(null);
   useEffect(() => { playersRef.current = players; }, [players]);
 
   const recordReplayEvent = (type: string, payload: Record<string, unknown> = {}) => {
-    if (isReplayPlayback) {
+    if (replayPlaybackActiveRef.current) {
       replayObservedEventsRef.current.push({
         type,
         payload: JSON.parse(JSON.stringify(payload))
@@ -396,7 +397,13 @@ export default function App() {
 
   // Add log entry
   const addLog = (message: string, isCritical: boolean = false, actorOverride?: string) => {
-    const actor = actorOverride || (players[turnIndex]?.name ?? "Árbitro");
+    const logPlayers = replayPlaybackActiveRef.current && replayStateSnapshotRef.current?.players
+      ? replayStateSnapshotRef.current.players as PlayerState[]
+      : players;
+    const logTurnIndex = replayPlaybackActiveRef.current
+      ? replayStateSnapshotRef.current?.turnIndex ?? turnIndex
+      : turnIndex;
+    const actor = actorOverride || (logPlayers[logTurnIndex]?.name ?? "Árbitro");
     const entry: CombatLogEntry = {
       id: nextReplayUiEventId(),
       round,
@@ -3280,6 +3287,7 @@ export default function App() {
       setReplayProgress({ status: 'RESTORING', consumedEvents: 0, totalEvents: replay.events.length });
       replayRecorderRef.current = null;
       replayObservedEventsRef.current = [];
+      replayPlaybackActiveRef.current = true;
       stopGameplayRandomSession();
       resetCardUidCounter(initial.cardUidCounter ?? 0);
       const restoredPlayers = JSON.parse(JSON.stringify(initial.players)) as PlayerState[];
@@ -3432,11 +3440,13 @@ export default function App() {
       replayExecutionRef.current = controller;
       await controller.run();
       setReplayProgress(controller.getProgress());
+      replayPlaybackActiveRef.current = false;
       setIsReplayPlayback(false);
       stopGameplayRandomSession();
     } catch (error: any) {
       setReplayFailure(error?.message || String(error));
       setReplayProgress(replayExecutionRef.current?.getProgress?.() ?? { status: 'FAILED' });
+      replayPlaybackActiveRef.current = false;
       setIsReplayPlayback(false);
       stopGameplayRandomSession();
     }
@@ -3723,6 +3733,7 @@ export default function App() {
               <button
                 onClick={() => {
                   replayExecutionRef.current?.stop();
+                  replayPlaybackActiveRef.current = false;
                   setIsReplayPlayback(false);
                   stopGameplayRandomSession();
                 }}
