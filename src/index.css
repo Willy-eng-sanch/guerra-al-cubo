@@ -722,3 +722,25 @@ button:disabled {
   image-rendering: auto;
   vertical-align: middle;
 }
+
+
+/* The title screen has its own full-cover photo layer, so its seamless tile
+   sits above that photo but below the interactive menu content. */
+.gc-screen--menu::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.14;
+  background-image: url('/assets/ui/gc-bg-tile.svg');
+  background-repeat: repeat;
+  background-size: 192px 192px;
+  animation: gc-sprite-drift 72s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-screen--menu::after {
+    animation: none;
+  }
+}
