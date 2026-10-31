@@ -43,23 +43,28 @@ function requestResult(request) {
 export async function saveCompletedReplay(replay, factory) {
   const errors = validateMatchReplay(replay);
   if (errors.length) throw new TypeError('No se puede guardar una repetición incompleta: ' + errors.join(' '));
-  if (!replay.finalResult) throw new TypeError('Solo se guardan partidas que ya tengan resultado final.');
 
-  const matchId = replay.metadata?.matchId;
+  // Capture an immutable point-in-time copy before the first await. Victory
+  // messages and delayed callbacks must not mutate the replay while IndexedDB
+  // is opening its connection or writing the transaction.
+  const replaySnapshot = JSON.parse(serializeMatchReplay(replay));
+  if (!replaySnapshot.finalResult) throw new TypeError('Solo se guardan partidas que ya tengan resultado final.');
+
+  const matchId = replaySnapshot.metadata?.matchId;
   if (!matchId) throw new TypeError('La partida no tiene identificador.');
   const record = {
     matchId,
-    createdAt: replay.metadata.createdAt || new Date().toISOString(),
+    createdAt: replaySnapshot.metadata.createdAt || new Date().toISOString(),
     savedAt: new Date().toISOString(),
-    mode: replay.metadata.mode || replay.initialState?.matchType || 'UNKNOWN',
-    seed: replay.metadata.seed,
-    round: replay.finalResult.finalPlayers?.[0]?.round ?? null,
-    winnerId: replay.finalResult.winnerId ?? null,
-    winningTeamId: replay.finalResult.winningTeamId ?? null,
-    playerCount: replay.initialState?.players?.length ?? 0,
-    eventCount: replay.events.length,
-    checkpointCount: replay.checkpoints.length,
-    replay
+    mode: replaySnapshot.metadata.mode || replaySnapshot.initialState?.matchType || 'UNKNOWN',
+    seed: replaySnapshot.metadata.seed,
+    round: replaySnapshot.finalResult.finalPlayers?.[0]?.round ?? null,
+    winnerId: replaySnapshot.finalResult.winnerId ?? null,
+    winningTeamId: replaySnapshot.finalResult.winningTeamId ?? null,
+    playerCount: replaySnapshot.initialState?.players?.length ?? 0,
+    eventCount: replaySnapshot.events.length,
+    checkpointCount: replaySnapshot.checkpoints.length,
+    replay: replaySnapshot
   };
 
   const db = await openReplayArchive(factory);
