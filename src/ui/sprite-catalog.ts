@@ -33,7 +33,8 @@ export const GC_SPRITE_CATALOG = {
     'icon-players', 'icon-cards', 'icon-book', 'icon-home', 'icon-play',
     'icon-back', 'icon-close', 'icon-check', 'icon-store', 'icon-calendar',
     'icon-spark', 'icon-volume', 'icon-settings', 'icon-delete', 'icon-download',
-    'icon-info', 'icon-warning', 'icon-chevron', 'icon-folder', 'icon-lock', 'icon-map'
+    'icon-info', 'icon-warning', 'icon-chevron', 'icon-folder', 'icon-lock', 'icon-map',
+    'icon-flame', 'icon-zap', 'icon-help'
   ]
 } as const;
 
