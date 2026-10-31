@@ -3030,6 +3030,369 @@ export default function App() {
     finalizeMorphForm(offer.playerId, offer.form, keptHand, keptWeapons, keptStances);
   };
 
+  const waitForReplaySnapshot = (
+    predicate: (snapshot: any) => boolean,
+    description: string,
+    timeoutMs: number = 12000
+  ): Promise<any> => new Promise((resolve, reject) => {
+    const startedAt = Date.now();
+    const poll = () => {
+      const snapshot = replayStateSnapshotRef.current;
+      if (snapshot && predicate(snapshot)) {
+        resolve(snapshot);
+        return;
+      }
+      if (Date.now() - startedAt >= timeoutMs) {
+        reject(new Error('Tiempo agotado esperando ' + description + '.'));
+        return;
+      }
+      setTimeout(poll, 25);
+    };
+    poll();
+  });
+
+  const dispatchReplayPlayerAction = async (payload: any) => {
+    const state = replayStateSnapshotRef.current;
+    const activePlayer = state?.players?.[state.turnIndex];
+    const requireOffer = async (predicate: (snapshot: any) => boolean, label: string) =>
+      waitForReplaySnapshot(predicate, label, 10000);
+
+    switch (payload.kind) {
+      case 'ATTACK':
+        if (!Number.isInteger(payload.targetId)) throw new Error('ATTACK no contiene targetId.');
+        setActiveDiceRoll(null);
+        await new Promise(resolve => setTimeout(resolve, 35));
+        handleAttack(payload.targetId);
+        return;
+      case 'EQUIP_WEAPON': {
+        const player = replayStateSnapshotRef.current?.players?.[replayStateSnapshotRef.current.turnIndex];
+        const card = player?.hand?.find((item: GameCard) => item.uid === payload.cardUid);
+        if (!card) throw new Error('No se encontró el arma ' + payload.cardUid + ' en la mano del jugador activo.');
+        handleEquipWeapon(card.id, card.uid);
+        return;
+      }
+      case 'PREPARE_STANCE': {
+        const player = replayStateSnapshotRef.current?.players?.[replayStateSnapshotRef.current.turnIndex];
+        const card = player?.hand?.find((item: GameCard) => item.uid === payload.cardUid);
+        if (!card) throw new Error('No se encontró la postura ' + payload.cardUid + ' en la mano del jugador activo.');
+        handlePrepareStance(card.id, card.uid);
+        return;
+      }
+      case 'PLAY_ACTION_TRICK': {
+        const player = replayStateSnapshotRef.current?.players?.[replayStateSnapshotRef.current.turnIndex];
+        const card = player?.hand?.find((item: GameCard) => item.uid === payload.cardUid);
+        if (!card) throw new Error('No se encontró el truco ' + payload.cardUid + ' en la mano del jugador activo.');
+        handlePlayActionTrick(card.id, payload.targetId ?? undefined, card.uid);
+        return;
+      }
+      case 'HERO_ABILITY':
+        if (payload.hero === CharacterType.DRACUBON || payload.hero === CharacterType.CUBOGRO) {
+          setActiveDiceRoll(null);
+          await new Promise(resolve => setTimeout(resolve, 35));
+        }
+        handleUseHeroAbility(payload.targetId ?? undefined, payload.extraOption ?? undefined, payload.cubiculaMode ?? undefined);
+        return;
+      case 'END_TURN':
+        handleEndTurn();
+        return;
+      case 'SPECIAL_SIX_CHOICE': {
+        const actor = replayStateSnapshotRef.current?.players?.find((player: PlayerState) => player.id === payload.playerId);
+        if (!actor) throw new Error('No existe el jugador de la elección de Cara Especial 6.');
+        // Los bots ya resuelven esta elección dentro de la resolución del combate.
+        if (actor.isBot) return;
+        await requireOffer(s => s.specialSixChoice?.playerId === payload.playerId, 'la elección de Cara Especial 6');
+        handleApplySixChoice(payload.playerId, payload.choice);
+        return;
+      }
+      case 'TRAMCUBOSO_CARD_CHOICE':
+        await requireOffer(s => s.tramcubosoCardChoices?.[0]?.playerId === payload.playerId, 'la oferta de Selección Afortunada');
+        resolveTramcubosoCardChoice(payload.choiceIndex);
+        return;
+      case 'TRAMCUBOSO_REROLL_CHOICE':
+        await requireOffer(s => Boolean(s.pendingDiceReroll) && s.pendingDiceReroll.targetId === payload.targetId, 'la ventana de relanzamiento de Tramcuboso');
+        setActiveDiceRoll(null);
+        await new Promise(resolve => setTimeout(resolve, 35));
+        resolveTramcubosoReroll(payload.shouldReroll);
+        return;
+      case 'CUBINARCA_ORDER':
+        await requireOffer(s =>
+          s.cubinarcaOrderOffer?.issuerId === payload.issuerId &&
+          s.cubinarcaOrderOffer?.victimId === payload.victimId,
+          'la elección de orden de Cubinarca'
+        );
+        issueCubinarcaOrder(payload.kind, payload.attackTargetId ?? undefined);
+        return;
+      case 'CUBINARCA_TRANSFER_CARD': {
+        await requireOffer(s => s.players?.[s.turnIndex]?.cubinarcaOrder?.kind === 'TRANSFER_CARD', 'la orden de transferencia de Cubinarca');
+        const victim = replayStateSnapshotRef.current.players[replayStateSnapshotRef.current.turnIndex];
+        const cardIndex = victim.hand.findIndex((card: GameCard) => card.uid === payload.cardUid);
+        if (cardIndex < 0) throw new Error('La carta ordenada por Cubinarca ya no está en la mano.');
+        fulfillCubinarcaTransfer(cardIndex);
+        return;
+      }
+      case 'CUBINARCA_UNEQUIP_WEAPON': {
+        await requireOffer(s => s.players?.[s.turnIndex]?.cubinarcaOrder?.kind === 'UNEQUIP_WEAPON', 'la orden de desequipar de Cubinarca');
+        const victim = replayStateSnapshotRef.current.players[replayStateSnapshotRef.current.turnIndex];
+        const weaponIndex = victim.equippedWeapons.findIndex((card: GameCard) => card.uid === payload.weaponUid);
+        if (weaponIndex < 0) throw new Error('El arma ordenada por Cubinarca ya no está equipada.');
+        fulfillCubinarcaUnequip(weaponIndex);
+        return;
+      }
+      case 'CUBINARCA_DEFY_ORDER':
+        await requireOffer(s => Boolean(s.players?.[s.turnIndex]?.cubinarcaOrder), 'la orden pendiente de Cubinarca');
+        defyCubinarcaOrder();
+        return;
+      case 'PERFECT_BLOCK_EQUIP_WEAPON':
+        await requireOffer(s => s.reactionPlayer?.id === payload.playerId, 'la ventana de reacción de Bloqueo Perfecto');
+        handleEquipReaction(payload.cardId, payload.cardUid);
+        return;
+      case 'PERFECT_BLOCK_PLAY_TRICK':
+        await requireOffer(s => s.reactionPlayer?.id === payload.playerId, 'la ventana de reacción de Bloqueo Perfecto');
+        handleActivateReaction(payload.cardId, payload.cardUid);
+        return;
+      case 'PERFECT_BLOCK_PREPARE_STANCE':
+        await requireOffer(s => s.reactionPlayer?.id === payload.playerId, 'la ventana de reacción de Bloqueo Perfecto');
+        handlePrepareReaction(payload.cardId, payload.cardUid);
+        return;
+      case 'SKIP_PERFECT_BLOCK_REACTION':
+        await requireOffer(s => s.reactionPlayer?.id === payload.playerId, 'la ventana de reacción de Bloqueo Perfecto');
+        handleSkipReaction();
+        return;
+      case 'HADA_SUPPLY_TRANSFER':
+        await requireOffer(s => s.supplyMagicOffer?.actorId === payload.actorId, 'la oferta de Suministro Mágico');
+        {
+          const offer = replayStateSnapshotRef.current.supplyMagicOffer;
+          const gifted = offer.cards[payload.cardIndex];
+          const retained = offer.cards[1 - payload.cardIndex];
+          if (gifted?.uid !== payload.giftedCardUid || retained?.uid !== payload.retainedCardUid) {
+            throw new Error('Las cartas de Suministro Mágico no coinciden con la repetición.');
+          }
+        }
+        handleConfirmSupplyMagic(payload.cardIndex, payload.allyId);
+        return;
+      case 'RACUBITERO_LOOT_DISTRIBUTION':
+        await requireOffer(s => s.racubiteroLootOffer?.actorId === payload.actorId, 'la distribución de Saqueo Colectivo');
+        resolveRacubiteroLoot(payload.assignments);
+        return;
+      case 'CUBINJA_TRANSFER_TRICK':
+        applyCubinjaTransfer(payload.actorId, payload.cardUid, payload.targetId);
+        return;
+      case 'MORPH_FORM_SELECTED':
+        applyMorphForm(payload.playerId, payload.nextForm);
+        return;
+      case 'MORPH_INVENTORY_SELECTION':
+        await requireOffer(s => s.morphInventoryOffer?.playerId === payload.playerId, 'la selección de inventario de Mimetismo');
+        confirmMorphInventory(payload.selection);
+        return;
+      default:
+        throw new Error('Acción de replay no soportada: ' + String(payload.kind));
+    }
+  };
+
+  const applyReplayBotDecision = async (payload: any) => {
+    const state = replayStateSnapshotRef.current;
+    if (payload.kind === 'TRAMCUBOSO_CARD_CHOICE') {
+      const player = state.players.find((candidate: PlayerState) => candidate.id === payload.playerId);
+      if (!player || !player.hand.some((card: GameCard) => card.uid === payload.selectedCardUid)) {
+        throw new Error('La decisión automática de Tramcuboso no coincide: la carta elegida no llegó a la mano.');
+      }
+      return;
+    }
+    if (payload.kind === 'CUBINARCA_ORDER') {
+      const victim = state.players.find((candidate: PlayerState) => candidate.id === payload.victimId);
+      if (!victim?.cubinarcaOrder ||
+          victim.cubinarcaOrder.issuerId !== payload.order?.issuerId ||
+          victim.cubinarcaOrder.kind !== payload.order?.kind ||
+          (victim.cubinarcaOrder.attackTargetId ?? null) !== (payload.order?.attackTargetId ?? null)) {
+        throw new Error('La orden automática de Cubinarca diverge de la decisión registrada.');
+      }
+      return;
+    }
+    if (payload.kind === 'CUBINARCA_FULFILL_TRANSFER') {
+      const victim = state.players.find((player: PlayerState) => player.id === payload.victimId);
+      const issuer = state.players.find((player: PlayerState) => player.id === payload.issuerId);
+      const card = victim?.hand.find((item: GameCard) => item.uid === payload.cardUid);
+      if (!victim || !issuer || !card) throw new Error('No se puede reconstruir la transferencia automática de Cubinarca.');
+      setPlayers(prev => prev.map(player => {
+        if (player.id === victim.id) return {
+          ...player,
+          hand: player.hand.filter(item => item.uid !== card.uid),
+          cubinarcaOrder: null,
+          blocksDisabledByOrder: false,
+          cubinarcaOrderDefiedThisTurn: false
+        };
+        if (player.id === issuer.id) return { ...player, hand: [...player.hand, card] };
+        return player;
+      }));
+      addLog(`${victim.name} obedece la orden y entrega [${card.name}] a ${issuer.name}.`, true, victim.name);
+      return;
+    }
+    if (payload.kind === 'CUBINARCA_FULFILL_UNEQUIP') {
+      const victim = state.players.find((player: PlayerState) => player.id === payload.victimId);
+      const weapon = victim?.equippedWeapons.find(card => card.uid === payload.weaponUid);
+      if (!victim || !weapon) throw new Error('No se puede reconstruir el desequipamiento automático de Cubinarca.');
+      const hasSpace = victim.hand.length < getMaxHandSize(victim);
+      setPlayers(prev => prev.map(player => player.id === victim.id ? {
+        ...player,
+        equippedWeapons: player.equippedWeapons.filter(card => card.uid !== weapon.uid),
+        hand: hasSpace ? [...player.hand, weapon] : player.hand,
+        cubinarcaOrder: null,
+        blocksDisabledByOrder: false,
+        cubinarcaOrderDefiedThisTurn: false
+      } : player));
+      if (!hasSpace) returnCardsToGlobalPile([weapon]);
+      addLog(`${victim.name} obedece la orden y desequipa [${weapon.name}].`, true, victim.name);
+      return;
+    }
+    if (payload.kind === 'CUBINARCA_AUTO_DEFY') {
+      const victim = state.players.find((player: PlayerState) => player.id === payload.victimId);
+      if (!victim) throw new Error('No existe el jugador que desobedeció la orden de Cubinarca.');
+      setPlayers(prev => prev.map(player => player.id === victim.id
+        ? { ...player, blocksDisabledByOrder: true, cubinarcaOrderDefiedThisTurn: true }
+        : player
+      ));
+      return;
+    }
+    throw new Error('Decisión automática de replay no soportada: ' + String(payload.kind));
+  };
+
+  const startReplayPlayback = async (input: unknown) => {
+    try {
+      const replay = parseMatchReplay(input as any);
+      const initial = replay.initialState as any;
+      if (!Array.isArray(initial.players) || !Array.isArray(initial.deck)) {
+        throw new Error('La repetición no incluye la lista inicial de jugadores y el mazo.');
+      }
+
+      setReplayFailure(null);
+      setReplayProgress({ status: 'RESTORING', consumedEvents: 0, totalEvents: replay.events.length });
+      replayRecorderRef.current = null;
+      stopGameplayRandomSession();
+      resetCardUidCounter(initial.cardUidCounter ?? 0);
+      const restoredPlayers = JSON.parse(JSON.stringify(initial.players)) as PlayerState[];
+      const restoredDeck = JSON.parse(JSON.stringify(initial.deck)) as GameCard[];
+      playersRef.current = restoredPlayers;
+      deckRef.current = restoredDeck;
+      startGameplayRandomReplay(replay.metadata.seed, getReplayRandomResults(replay));
+
+      setIsReplayPlayback(true);
+      setIsMatchIntroPlaying(false);
+      matchIntroCompletedRef.current = true;
+      setPlayers(restoredPlayers);
+      setDeck(restoredDeck);
+      setDiscardPile(initial.discardPile || []);
+      setRound(initial.round ?? 1);
+      setTurnIndex(initial.turnIndex ?? 0);
+      setGameMode(initial.gameMode as GameMode);
+      setSelectedTargetId(initial.selectedTargetId ?? null);
+      setWinner(null);
+      setPhase(MatchPhase.IDLE);
+      setActiveClash(null);
+      setActiveDiceRoll(null);
+      setIsRollingAnimation(false);
+      setLog([]);
+      setSupplyMagicOffer(null);
+      setTramcubosoCardChoices([]);
+      setCubinarcaOrderOffer(null);
+      setPendingDiceReroll(null);
+      setRacubiteroLootOffer(null);
+      setCubinjaTransferOffer(null);
+      setMorphSelectionPlayerId(null);
+      setMorphInventoryOffer(null);
+      setReactionPlayer(null);
+      eliminatedInventoryReturnedRef.current.clear();
+      botOrderTurnRef.current = null;
+      processedMorphRoundRef.current = null;
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const controller = new ReplayExecutionController(replay, {
+        executeCommand: async (payload: any, event: any) => {
+          if (!replayCommandDispatcherRef.current) throw new Error('El dispatcher de comandos de replay no está disponible.');
+          await replayCommandDispatcherRef.current(payload, event);
+        },
+        verifyBotDecision: applyReplayBotDecision,
+        waitForIdle: async (event: any) => {
+          const isCombatAction = event.type === 'PLAYER_ACTION' && (
+            event.payload?.kind === 'ATTACK' ||
+            event.payload?.kind === 'TRAMCUBOSO_REROLL_CHOICE' ||
+            (event.payload?.kind === 'HERO_ABILITY' &&
+              [CharacterType.DRACUBON, CharacterType.CUBOGRO].includes(event.payload?.hero))
+          );
+          if (isCombatAction) {
+            const activeController = replayExecutionRef.current;
+            const eventIndex = replay.events.findIndex((candidate: any) => candidate.sequence === event.sequence);
+            const nextAction = replay.events.slice(eventIndex + 1).find((candidate: any) =>
+              candidate.type === 'PLAYER_ACTION' || candidate.type === 'BOT_DECISION'
+            );
+            setActiveDiceRoll(null);
+            if (event.payload?.kind === 'ATTACK' || event.payload?.kind === 'TRAMCUBOSO_REROLL_CHOICE' ||
+                [CharacterType.DRACUBON, CharacterType.CUBOGRO].includes(event.payload?.hero)) {
+              await waitForReplaySnapshot(s => Boolean(s.pendingDiceReroll) || Boolean(s.activeDiceRoll), 'la resolución del combate', 15000);
+              if (!replayStateSnapshotRef.current?.pendingDiceReroll) {
+                await new Promise(resolve => setTimeout(resolve, 380));
+                setActiveDiceRoll(null);
+              }
+            }
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 45));
+          }
+
+          const eventIndex = replay.events.findIndex((candidate: any) => candidate.sequence === event.sequence);
+          const laterCommands = replay.events.slice(eventIndex + 1).some((candidate: any) =>
+            candidate.type === 'PLAYER_ACTION' || candidate.type === 'BOT_DECISION'
+          );
+          if (!laterCommands && replay.finalResult) {
+            await waitForReplaySnapshot(s => Boolean(s.winner) || s.phase === MatchPhase.MATCH_OVER, 'el resultado final de la partida', 8000);
+          }
+        },
+        captureCheckpoint: async (checkpoint: any) => {
+          const snapshot = replayStateSnapshotRef.current;
+          const expectedState = checkpoint.state?.state ?? checkpoint.state;
+          if (Object.prototype.hasOwnProperty.call(expectedState, 'deckOrder')) {
+            return {
+              gameMode: snapshot.gameMode,
+              players: snapshot.players,
+              deckOrder: snapshot.deck.map((card: GameCard) => ({ id: card.id, uid: card.uid })),
+              cardUidCounter: getCardUidCounter()
+            };
+          }
+          if (Object.prototype.hasOwnProperty.call(expectedState, 'winnerId')) {
+            const outcome = getMatchOutcome(snapshot.players);
+            return {
+              players: snapshot.players,
+              winnerId: outcome?.winner?.id ?? null,
+              kind: outcome?.kind ?? null
+            };
+          }
+          return {
+            players: snapshot.players,
+            turnIndex: snapshot.turnIndex,
+            round: snapshot.round,
+            deck: snapshot.deck
+          };
+        },
+        assertRandomFullyConsumed: () => {
+          const randomSession = getGameplayRandomSession();
+          if (!randomSession) throw new Error('La sesión aleatoria de replay se cerró antes de verificar el final.');
+          return randomSession.assertFullyConsumed();
+        },
+        onProgress: (progress: any) => setReplayProgress(progress)
+      });
+      replayExecutionRef.current = controller;
+      await controller.run();
+      setReplayProgress(controller.getProgress());
+      setIsReplayPlayback(false);
+      stopGameplayRandomSession();
+    } catch (error: any) {
+      setReplayFailure(error?.message || String(error));
+      setReplayProgress(replayExecutionRef.current?.getProgress?.() ?? { status: 'FAILED' });
+      setIsReplayPlayback(false);
+      stopGameplayRandomSession();
+    }
+  };
+
+  replayCommandDispatcherRef.current = dispatchReplayPlayerAction;
+
   // Cambiaformas selecciona una forma cualquiera de los otros 12 héroes y no puede repetirla.
   useEffect(() => {
     if (currentScreen !== CurrentScreen.ARENA) {
