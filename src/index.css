@@ -197,3 +197,179 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #4a546d;
 }
+
+
+/* Guerra Cúbita UI foundation: predictable page, dialog and focus behavior. */
+:root {
+  color-scheme: dark;
+  --gc-bg: #0b0e15;
+  --gc-panel: #141b29;
+  --gc-panel-raised: #1b2536;
+  --gc-border: #344158;
+  --gc-text: #f5f7fb;
+  --gc-muted: #aab4c4;
+  --gc-accent: #22d3ee;
+  --gc-focus: #fde047;
+  --gc-layer-page: 0;
+  --gc-layer-floating: 30;
+  --gc-layer-modal: 80;
+  --gc-layer-dialog: 100;
+  --gc-layer-critical: 120;
+  --gc-layer-toast: 140;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  width: 100%;
+  margin: 0;
+}
+
+html {
+  min-height: 100%;
+  background: var(--gc-bg);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  color: var(--gc-text);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+[role="button"],
+a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  outline: 3px solid var(--gc-focus);
+  outline-offset: 3px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+.gc-screen {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  overflow-x: clip;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.gc-screen--menu {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start !important;
+  gap: clamp(0.75rem, 2vh, 1.5rem);
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+.gc-screen--menu button,
+.gc-screen--menu [role="button"] {
+  min-height: 2.75rem;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.gc-screen--archive {
+  padding-bottom: max(env(safe-area-inset-bottom), 1.25rem);
+}
+
+.gc-screen--arena {
+  min-height: 100svh;
+}
+
+.gc-menu-actions {
+  width: 100%;
+}
+
+.gc-modal-overlay {
+  box-sizing: border-box;
+  overscroll-behavior: contain;
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+  padding-right: max(0.5rem, env(safe-area-inset-right));
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  padding-left: max(0.5rem, env(safe-area-inset-left));
+}
+
+.gc-modal-shell {
+  box-sizing: border-box;
+  min-height: 0;
+  max-height: calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow: hidden;
+}
+
+.gc-modal-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+.gc-modal-actions {
+  flex: 0 0 auto;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.gc-screen button,
+.gc-modal-shell button {
+  scroll-margin-block: 1rem;
+}
+
+@media (pointer: coarse) {
+  .gc-screen button,
+  .gc-modal-shell button,
+  .gc-screen [role="button"] {
+    min-height: 2.75rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .gc-modal-shell {
+    max-height: calc(100dvh - 0.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 640px) {
+  .gc-modal-shell {
+    border-radius: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
