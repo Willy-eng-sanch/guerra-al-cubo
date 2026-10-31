@@ -82,7 +82,18 @@ export function parseMatchReplay(serialized) {
 }
 export function getReplayRandomResults(replay) {
   assertReplay(replay);
-  return replay.events.filter(event => event.type === 'RANDOM_RESULT').map(event => event.payload);
+  const matchStarted = replay.events.find(event => event.type === 'MATCH_STARTED');
+  const results = replay.events.filter(event =>
+    event.type === 'RANDOM_RESULT' && (!matchStarted || event.sequence > matchStarted.sequence)
+  );
+  // La reconstrucción parte del estado inicial ya resuelto. Los sorteos previos
+  // (barajado y roster) ya están representados en initialState y no se repiten.
+  // Se renumera el flujo de azar de la partida para que REPLAY comience en 1.
+  return results.map((event, index) => ({
+    ...cloneJson(event.payload),
+    sequence: index + 1,
+    originalSequence: event.payload?.sequence ?? null
+  }));
 }
 
 /** Comandos que el futuro reproductor ejecutará, sin pedir nuevas decisiones a los bots. */
