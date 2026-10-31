@@ -2509,10 +2509,20 @@ export default function App() {
       sound.playStanceActivate();
     } else if (hero === CharacterType.CUBICULA) {
       const mode = cubiculaMode || 'DRAIN';
-      const target = players.find(p => p.id === targetId && p.id !== actor.id && !p.isEliminated && p.hp > 0 &&
-        actor.teamId !== undefined && p.teamId === actor.teamId);
+      const target = players.find(p =>
+        p.id === targetId &&
+        p.id !== actor.id &&
+        !p.isEliminated &&
+        p.hp > 0 &&
+        (mode === 'DRAIN'
+          ? actor.teamId === undefined || p.teamId !== actor.teamId
+          : actor.teamId !== undefined && p.teamId === actor.teamId)
+      );
       const usedModes = actor.cubiculaModesUsedThisTurn || [];
-      const requested = Math.max(1, Math.min(6, extraOption || 1));
+      // DRAIN is capped at 3 HP to match Cubicula's Vampirism theme/signature
+      // and leave a meaningful opening without making a single action decisive.
+      const transferLimit = mode === 'DRAIN' ? 3 : 6;
+      const requested = Math.max(1, Math.min(transferLimit, extraOption || 1));
       if (!target || actor.actionPoints <= 0 || usedModes.includes(mode)) return;
       const donor = mode === 'DRAIN' ? target : actor;
       const receiver = mode === 'DRAIN' ? actor : target;
@@ -2534,7 +2544,7 @@ export default function App() {
         };
         return p;
       }));
-      addLog(`${actor.name} usa Transfusión Nocturna · ${mode === 'DRAIN' ? 'Drenaje' : 'Donación'}: transfiere ${transferred} HP ${mode === 'DRAIN' ? 'desde' : 'hacia'} ${target.name}. Ambos modos comparten enfriamiento de 3 rondas al terminar el turno.`, true, actor.name);
+      addLog(`${actor.name} usa Transfusión Nocturna · ${mode === 'DRAIN' ? 'Drenaje' : 'Donación'}: transfiere ${transferred} HP ${mode === 'DRAIN' ? 'desde el rival' : 'hacia el aliado'} ${target.name}. El donante conserva al menos 1 HP. Ambos modos comparten enfriamiento de 3 rondas al terminar el turno.`, true, actor.name);
       addFloatingText(mode === 'DRAIN' ? actor.id : target.id, `+${transferred} HP`, "#f472b6");
       addFloatingText(mode === 'DRAIN' ? target.id : actor.id, `-${transferred} HP`, "#ef4444");
     } else if (hero === CharacterType.FLAUCUBISTA_DESAFINADO) {
@@ -3121,18 +3131,24 @@ export default function App() {
             p => !p.isEliminated && p.hp > 0 && p.id !== activePlayer.id && (!opposingTeamId || p.teamId === opposingTeamId)
           );
           if (rivals.length > 0) {
-            const target = rivals.reduce(
-              (prev, curr) => (curr.hp < prev.hp ? curr : prev),
-              rivals[0]
-            );
+            const activeHero = currentP.activeMorphCharacter || currentP.characterType;
+            // Cubicula drains the healthiest rival first, matching Drenaje Nocturno's
+            // "rival más fuerte" rule; other bots continue prioritizing the weakest rival.
+            const target = activeHero === CharacterType.CUBICULA
+              ? rivals.reduce((prev, curr) => (curr.hp > prev.hp ? curr : prev), rivals[0])
+              : rivals.reduce((prev, curr) => (curr.hp < prev.hp ? curr : prev), rivals[0]);
             if (target) {
               setSelectedTargetId(target.id);
-              const activeHero = currentP.activeMorphCharacter || currentP.characterType;
               if (activeHero === CharacterType.DRACUBON && rivals.length >= 2) {
                 const secondTarget = rivals.find(p => p.id !== target.id);
                 if (secondTarget) handleUseHeroAbility(target.id, secondTarget.id);
                 else handleAttack(target.id);
-              } else if (activeHero === CharacterType.CUBICULA && currentP.actionPoints >= 2) {
+              } else if (
+                activeHero === CharacterType.CUBICULA &&
+                currentP.actionPoints >= 1 &&
+                currentP.hp < currentP.maxHp &&
+                target.hp > 1
+              ) {
                 handleUseHeroAbility(target.id);
               } else {
                 handleAttack(target.id);
