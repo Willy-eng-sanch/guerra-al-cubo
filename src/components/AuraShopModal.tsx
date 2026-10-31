@@ -109,7 +109,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md overflow-y-auto animate-fadeIn cursor-pointer"
+      className="gc-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md overflow-y-auto animate-fadeIn cursor-pointer"
     >
       <div
         onClick={(e) => e.stopPropagation()}
