@@ -2191,9 +2191,9 @@ export default function App() {
   };
 
   // Reaction handlers for Perfect Block
-  const handleEquipReaction = (cardId: number) => {
+  const handleEquipReaction = (cardId: number, cardUid?: string) => {
     if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0) return;
-    const card = reactionPlayer.hand.find(c => c.id === cardId && c.type === CardType.WEAPON);
+    const card = reactionPlayer.hand.find(c => c.id === cardId && c.type === CardType.WEAPON && (!cardUid || c.uid === cardUid));
     if (!card) return;
     recordPlayerAction('PERFECT_BLOCK_EQUIP_WEAPON', { playerId: reactionPlayer.id, cardUid: card.uid, cardId });
     sound.playCardDraw();
@@ -2221,10 +2221,10 @@ export default function App() {
     setReactionPlayer(null);
   };
 
-  const handleActivateReaction = (cardId: number) => {
+  const handleActivateReaction = (cardId: number, cardUid?: string) => {
     if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0 || isCubinjaHero(reactionPlayer)) return;
     const card = reactionPlayer.hand.find(
-      c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION
+      c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.RITUAL_ACTION && (!cardUid || c.uid === cardUid) && (!cardUid || c.uid === cardUid)
     );
     if (!card) return;
     recordPlayerAction('PERFECT_BLOCK_PLAY_TRICK', { playerId: reactionPlayer.id, cardUid: card.uid, cardId });
@@ -2249,10 +2249,10 @@ export default function App() {
     setReactionPlayer(null);
   };
 
-  const handlePrepareReaction = (cardId: number) => {
+  const handlePrepareReaction = (cardId: number, cardUid?: string) => {
     if (!reactionPlayer || getMaxHandSize(reactionPlayer) === 0 || isCubinjaHero(reactionPlayer)) return;
     const card = reactionPlayer.hand.find(
-      c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE
+      c => c.id === cardId && c.type === CardType.TRICK && c.timing === TrickTiming.PREPARED_STANCE && (!cardUid || c.uid === cardUid) && (!cardUid || c.uid === cardUid)
     );
     if (!card) return;
     recordPlayerAction('PERFECT_BLOCK_PREPARE_STANCE', { playerId: reactionPlayer.id, cardUid: card.uid, cardId });
@@ -2279,10 +2279,10 @@ export default function App() {
   };
 
   // Equip Weapon
-  const handleEquipWeapon = (cardId: number) => {
+  const handleEquipWeapon = (cardId: number, cardUid?: string) => {
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
-    const card = attacker.hand.find(c => c.id === cardId && c.type === CardType.WEAPON);
+    const card = attacker.hand.find(c => c.id === cardId && c.type === CardType.WEAPON && (!cardUid || c.uid === cardUid));
     if (!card) return;
     recordPlayerAction('EQUIP_WEAPON', { cardId, cardUid: card.uid });
 
@@ -2323,7 +2323,7 @@ export default function App() {
   };
 
   // Prepare Stance
-  const handlePrepareStance = (cardId: number) => {
+  const handlePrepareStance = (cardId: number, cardUid?: string) => {
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || isCubinjaHero(attacker)) return;
     const card = attacker.hand.find(
@@ -2354,7 +2354,7 @@ export default function App() {
   };
 
   // Play Action Trick
-  const handlePlayActionTrick = (cardId: number, targetId?: number) => {
+  const handlePlayActionTrick = (cardId: number, targetId?: number, cardUid?: string) => {
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || isCubinjaHero(attacker)) return;
     const card = attacker.hand.find(
@@ -2771,26 +2771,32 @@ export default function App() {
     if (card) setCubinjaTransferOffer({ actorId: actor.id, card });
   };
 
-  const confirmCubinjaTransfer = (targetId: number) => {
-    const offer = cubinjaTransferOffer;
-    const actor = offer ? players.find(player => player.id === offer.actorId) : null;
-    const target = players.find(player => player.id === targetId);
-    if (!offer || !actor || !target || actor.actionPoints <= 0 ||
-        !actor.hand.some(card => card.uid === offer.card.uid) ||
+  const applyCubinjaTransfer = (actorId: number, cardUid: string, targetId: number) => {
+    const currentPlayers = playersRef.current.length > 0 ? playersRef.current : players;
+    const actor = currentPlayers.find(player => player.id === actorId);
+    const target = currentPlayers.find(player => player.id === targetId);
+    const card = actor?.hand.find(item => item.uid === cardUid);
+    if (!actor || !card || !target || actor.actionPoints <= 0 ||
         target.isEliminated || target.hp <= 0 || target.hand.length >= getMaxHandSize(target) ||
         (target.activeMorphCharacter || target.characterType) === CharacterType.CUBOGRO) return;
-    recordPlayerAction('CUBINJA_TRANSFER_TRICK', { actorId: actor.id, targetId: target.id, cardUid: offer.card.uid });
+    recordPlayerAction('CUBINJA_TRANSFER_TRICK', { actorId: actor.id, targetId: target.id, cardUid: card.uid });
     setPlayers(prev => prev.map(player => {
       if (player.id === actor.id) return {
         ...player,
         actionPoints: Math.max(0, player.actionPoints - 1),
-        hand: player.hand.filter(card => card.uid !== offer.card.uid)
+        hand: player.hand.filter(item => item.uid !== card.uid)
       };
-      if (player.id === target.id) return { ...player, hand: [...player.hand, offer.card] };
+      if (player.id === target.id) return { ...player, hand: [...player.hand, card] };
       return player;
     }));
     setCubinjaTransferOffer(null);
-    addLog(`Arsenal Ilimitado: ${actor.name} transfiere [${offer.card.name}] a ${target.name} por 1 Cúbit.`, true, actor.name);
+    addLog(`Arsenal Ilimitado: ${actor.name} transfiere [${card.name}] a ${target.name} por 1 Cúbit.`, true, actor.name);
+  };
+
+  const confirmCubinjaTransfer = (targetId: number) => {
+    const offer = cubinjaTransferOffer;
+    if (!offer) return;
+    applyCubinjaTransfer(offer.actorId, offer.card.uid || '', targetId);
   };
 
   // End Turn
