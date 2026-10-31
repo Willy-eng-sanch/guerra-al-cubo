@@ -2064,10 +2064,10 @@ export default function App() {
           }
 
           const alientoDamageTotal = primaryDamageTotal + secondaryDamageTotal;
-          if (!attacker.isBot && alientoDamageTotal > 0) {
+          if (!replayPlaybackActiveRef.current && !attacker.isBot && alientoDamageTotal > 0) {
             dailyMissionsManager.recordDamage(alientoDamageTotal);
           }
-          if (isPerfectBlock || isCubinjaCardBlock) {
+          if (!replayPlaybackActiveRef.current && (isPerfectBlock || isCubinjaCardBlock)) {
             dailyMissionsManager.recordPerfectBlock();
           }
 
@@ -2332,7 +2332,7 @@ export default function App() {
     );
 
     addLog(`${attacker.name} equipó el arma: [${card.name}]`);
-    if (!attacker.isBot) dailyMissionsManager.recordCardPlayed();
+    if (!replayPlaybackActiveRef.current && !attacker.isBot) dailyMissionsManager.recordCardPlayed();
     applyCardClassSynergy(attacker.id, card, selectedTargetId);
   };
 
@@ -2896,11 +2896,13 @@ export default function App() {
       setPhase(MatchPhase.MATCH_OVER);
       addLog(`¡¡EL BANDO RIVAL (ROJO) HA DERROTADO A TODA TU ESCUADRA!!`, true, "Árbitro");
       narrator.narrateVictory("El Bando Rojo");
-      collectionManager.recordMatchResult(false);
-      dailyMissionsManager.recordMatch(false);
+      if (!replayPlaybackActiveRef.current) {
+        collectionManager.recordMatchResult(false);
+        dailyMissionsManager.recordMatch(false);
+      }
       addLog(`+15 Aura de Calle obtenida por aguantar la refriega.`, true, "Aura");
       if (gameMode === GameMode.ONLINE_PVP) {
-        collectionManager.addCoins(25);
+        if (!replayPlaybackActiveRef.current) collectionManager.addCoins(25);
         addFloatingText(playersList[0]?.id || 1, "+25 Cubi-Monedas de Consuelo", "#fbbf24");
       }
       return;
@@ -2912,12 +2914,14 @@ export default function App() {
       setPhase(MatchPhase.MATCH_OVER);
       addLog(`¡¡VICTORIA TOTAL! TU BANDO (AZUL) HA DERROTADO A TODOS LOS RIVALES!!`, true, "Árbitro");
       narrator.narrateVictory("Tu Escuadra Azul");
-      collectionManager.recordMatchResult(true);
-      dailyMissionsManager.recordMatch(true);
+      if (!replayPlaybackActiveRef.current) {
+        collectionManager.recordMatchResult(true);
+        dailyMissionsManager.recordMatch(true);
+      }
       addLog(`¡¡+35 AURA DE CALLE Y +1 CAJA DE 3 DADOS DESBLOQUEADA!!`, true, "Aura");
       addFloatingText(playersList[0]?.id || 1, "¡+1 CAJA DE 3 DADOS!", "#ffd600");
       if (gameMode === GameMode.ONLINE_PVP) {
-        collectionManager.addCoins(60);
+        if (!replayPlaybackActiveRef.current) collectionManager.addCoins(60);
         addFloatingText(playersList[0]?.id || 1, "¡+60 Cubi-Monedas de Victoria!", "#ffd600");
       }
       return;
@@ -2937,8 +2941,10 @@ export default function App() {
         addLog(`¡¡${champ.name} ES EL CAMPEÓN SUPREMO DE GUERRA CUBITA!!`, true, "Árbitro");
         narrator.narrateVictory(champ.name);
         const isHumanChamp = !champ.isBot;
-        collectionManager.recordMatchResult(isHumanChamp);
-        dailyMissionsManager.recordMatch(isHumanChamp);
+        if (!replayPlaybackActiveRef.current) {
+          collectionManager.recordMatchResult(isHumanChamp);
+          dailyMissionsManager.recordMatch(isHumanChamp);
+        }
         if (isHumanChamp) {
           addLog(`¡¡+35 AURA DE COMBATE Y +1 CAJA DE 3 DADOS GANADA!!`, true, "Aura");
           addFloatingText(champ.id, "¡+1 CAJA DE 3 DADOS!", "#ffd600");
