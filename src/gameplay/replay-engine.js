@@ -142,7 +142,7 @@ export class ReplayExecutionController {
   }
 
   async run() {
-    while (this.status !== 'FINISHED' && this.status !== 'FAILED') await this.step();
+    while (this.status !== 'FINISHED' && this.status !== 'FAILED' && this.status !== 'STOPPED') await this.step();
     return this.getProgress();
   }
 
