@@ -167,6 +167,7 @@ export default function App() {
   const replayObservedEventsRef = useRef<Array<{ type: string; payload: any }>>([]);
   const replayPlaybackActiveRef = useRef(false);
   const persistedReplayMatchIdsRef = useRef<Set<string>>(new Set());
+  const matchFinalizedRef = useRef(false);
   const [replaySaveStatus, setReplaySaveStatus] = useState<'IDLE' | 'SAVING' | 'SAVED' | 'ERROR'>('IDLE');
   const [replaySaveError, setReplaySaveError] = useState<string | null>(null);
   const [isReplayPlayback, setIsReplayPlayback] = useState(false);
@@ -185,6 +186,7 @@ export default function App() {
   };
 
   const beginMatchRecording = (mode: string, metadata: Record<string, unknown> = {}) => {
+    matchFinalizedRef.current = false;
     setReplaySaveStatus('IDLE');
     setReplaySaveError(null);
     const seed = createMatchSeed();
@@ -1296,6 +1298,7 @@ export default function App() {
     diceOverride?: CombatDiceOverride,
     isCubogroAbility: boolean = false
   ) => {
+    if (matchFinalizedRef.current) return;
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || attacker.isFrozen) return;
     const intendedTarget = players.find(p => p.id === targetId);
@@ -2328,6 +2331,7 @@ export default function App() {
 
   // Equip Weapon
   const handleEquipWeapon = (cardId: number, cardUid?: string) => {
+    if (matchFinalizedRef.current) return;
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
     const card = attacker.hand.find(c => c.id === cardId && c.type === CardType.WEAPON && (!cardUid || c.uid === cardUid));
@@ -2372,6 +2376,7 @@ export default function App() {
 
   // Prepare Stance
   const handlePrepareStance = (cardId: number, cardUid?: string) => {
+    if (matchFinalizedRef.current) return;
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || isCubinjaHero(attacker)) return;
     const card = attacker.hand.find(
@@ -2403,6 +2408,7 @@ export default function App() {
 
   // Play Action Trick
   const handlePlayActionTrick = (cardId: number, targetId?: number, cardUid?: string) => {
+    if (matchFinalizedRef.current) return;
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || isCubinjaHero(attacker)) return;
     const card = attacker.hand.find(
@@ -2482,6 +2488,7 @@ export default function App() {
 
   // Hero Ability
   const handleUseHeroAbility = (targetId?: number, extraOption?: number, cubiculaMode?: CubiculaMode) => {
+    if (matchFinalizedRef.current) return;
     const actor = currentTurnPlayer;
     if (!actor || actor.abilityCooldownRemaining > 0) return;
     const hero = actor.activeMorphCharacter || actor.characterType;
@@ -2849,6 +2856,7 @@ export default function App() {
 
   // End Turn
   const handleEndTurn = () => {
+    if (matchFinalizedRef.current) return;
     recordPlayerAction('END_TURN', { playerId: players[turnIndex]?.id ?? null });
     const turnPlayers = playersRef.current.length > 0 ? playersRef.current : players;
     if (turnPlayers.length === 0) return;
@@ -2918,14 +2926,18 @@ export default function App() {
   // Check Victory (Squad Team vs Team or Free-For-All)
   const checkVictory = (playersList: PlayerState[] = players) => {
     const outcome = getMatchOutcome(playersList);
-    if (!outcome) return;
-    if (replayRecorderRef.current && !replayRecorderRef.current.finalResult) {
+    if (!outcome || matchFinalizedRef.current) return;
+    matchFinalizedRef.current = true;
+
+    // Finalize after all outcome messages have been recorded. MATCH_FINISHED must
+    // be the last event, and delayed bot callbacks must not resolve the match twice.
+    const finalizeReplayCapture = () => {
+      const replay = replayRecorderRef.current;
+      if (!replay || replay.finalResult) return;
       recordReplayCheckpoint('match-finished', { players: playersList, winnerId: outcome.winner?.id ?? null, kind: outcome.kind });
-      setReplayFinalResult(replayRecorderRef.current, { kind: outcome.kind, winningTeamId: outcome.winningTeamId ?? null, winnerId: outcome.winner?.id ?? null, finalPlayers: playersList });
-      // Persist before showing post-match statistics: the player must never need to
-      // reach the arena's toolbar to keep a completed match.
-      void persistCompletedMatchReplay(replayRecorderRef.current);
-    }
+      setReplayFinalResult(replay, { kind: outcome.kind, winningTeamId: outcome.winningTeamId ?? null, winnerId: outcome.winner?.id ?? null, finalPlayers: playersList });
+      void persistCompletedMatchReplay(replay);
+    };
 
     if (outcome.kind === 'TEAM' && outcome.winningTeamId === 2) {
       const winnerPlayer = outcome.winner;
@@ -2942,6 +2954,7 @@ export default function App() {
         if (!replayPlaybackActiveRef.current) collectionManager.addCoins(25);
         addFloatingText(playersList[0]?.id || 1, "+25 Cubi-Monedas de Consuelo", "#fbbf24");
       }
+      finalizeReplayCapture();
       return;
     }
 
@@ -2961,12 +2974,14 @@ export default function App() {
         if (!replayPlaybackActiveRef.current) collectionManager.addCoins(60);
         addFloatingText(playersList[0]?.id || 1, "¡+60 Cubi-Monedas de Victoria!", "#ffd600");
       }
+      finalizeReplayCapture();
       return;
     }
 
     if (outcome.kind === 'DRAW') {
       setWinner(null);
       setPhase(MatchPhase.MATCH_OVER);
+      finalizeReplayCapture();
       return;
     }
 
@@ -2996,6 +3011,7 @@ export default function App() {
         }
       }
     }
+    finalizeReplayCapture();
   };
     const finalizeMorphForm = (
     playerId: number,
@@ -3330,6 +3346,7 @@ export default function App() {
       setReplayFailure(null);
       replayExecutionRef.current = null;
       setReplayProgress({ status: 'RESTORING', consumedEvents: 0, totalEvents: replay.events.length });
+      matchFinalizedRef.current = false;
       replayRecorderRef.current = null;
       replayObservedEventsRef.current = [];
       replayPlaybackActiveRef.current = true;
@@ -3552,7 +3569,7 @@ export default function App() {
       setMorphInventoryOffer(null);
       return;
     }
-    if (isReplayPlayback || winner || isMatchIntroPlaying || players.length === 0 || morphSelectionPlayerId !== null || morphInventoryOffer) return;
+    if (isReplayPlayback || winner || phase === MatchPhase.MATCH_OVER || isMatchIntroPlaying || players.length === 0 || morphSelectionPlayerId !== null || morphInventoryOffer) return;
     const morph = players.find(player =>
       player.characterType === CharacterType.CAMBIAFORMAS && !player.isEliminated && player.hp > 0 &&
       player.activeMorphRound !== round && !player.morphExhausted
@@ -3585,11 +3602,11 @@ export default function App() {
       const chosen = priority || gameplayRandomPick(available, 'cambiaformas.random-form');
       applyMorphForm(morph.id, chosen.type);
     } else setMorphSelectionPlayerId(morph.id);
-  }, [currentScreen, winner, isMatchIntroPlaying, players, round, morphSelectionPlayerId, morphInventoryOffer]);
+  }, [currentScreen, winner, phase, isMatchIntroPlaying, players, round, morphSelectionPlayerId, morphInventoryOffer]);
 
 // Auto-skip turn if current active player is eliminated or dead (CRITICAL FIX FOR STUCK 'PENSANDO')
   useEffect(() => {
-    if (isReplayPlayback || currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
+    if (isReplayPlayback || currentScreen !== CurrentScreen.ARENA || winner || phase === MatchPhase.MATCH_OVER || isMatchIntroPlaying) return;
     const currentP = players[turnIndex];
     if (currentP && (currentP.isEliminated || currentP.hp <= 0)) {
       const skipTimer = setTimeout(() => {
@@ -3597,11 +3614,11 @@ export default function App() {
       }, 300 * speedMultiplier);
       return () => clearTimeout(skipTimer);
     }
-  }, [turnIndex, players, currentScreen, winner, isMatchIntroPlaying, speedMultiplier]);
+  }, [turnIndex, players, currentScreen, winner, phase, isMatchIntroPlaying, speedMultiplier]);
 
   // Bot AI Turn execution
   useEffect(() => {
-    if (isReplayPlayback || currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
+    if (isReplayPlayback || currentScreen !== CurrentScreen.ARENA || winner || phase === MatchPhase.MATCH_OVER || isMatchIntroPlaying) return;
     const activePlayer = players[turnIndex];
     if (!activePlayer || !activePlayer.isBot || activePlayer.isEliminated || activePlayer.hp <= 0) return;
 
@@ -3798,7 +3815,7 @@ export default function App() {
     }, 700 * speedMultiplier);
 
     return () => clearTimeout(timer);
-  }, [turnIndex, players, currentScreen, winner, isMatchIntroPlaying, speedMultiplier]);
+  }, [turnIndex, players, currentScreen, winner, phase, isMatchIntroPlaying, speedMultiplier]);
 
   return (
     <div className="w-full min-h-screen bg-[#0f1116] text-white">
