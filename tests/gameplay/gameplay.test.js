@@ -79,7 +79,7 @@ test('el siguiente jugador inicia con exactamente 2 Cúbits; no acumula sobrante
 test('un jugador congelado pierde su turno y se entrega el turno al siguiente vivo', () => {
   const players = [
     p(1, 1),
-    p(2, 2, { isFrozen: true, actionPoints: 0, abilityCooldownRemaining: 2 }),
+    p(2, 2, { isFrozen: true, actionPoints: 1, abilityCooldownRemaining: 2 }),
     p(3, 1, { actionPoints: 0 })
   ];
   const r = advanceTurnState(players, 0, 3);
