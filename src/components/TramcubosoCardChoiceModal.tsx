@@ -14,7 +14,7 @@ export const TramcubosoCardChoiceModal: React.FC<TramcubosoCardChoiceModalProps>
 }) => {
   const cards = [initialCard, alternativeCard];
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
+    <div className="gc-modal-overlay fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
       <div className="w-full max-w-xl rounded-3xl border-2 border-emerald-400 bg-gradient-to-b from-[#17251f] to-[#0f1514] p-5 sm:p-6 shadow-[0_0_45px_rgba(16,185,129,0.25)]">
         <div className="text-center">
           <span className="inline-flex rounded-full border border-emerald-400/50 bg-emerald-400/10 px-3 py-1 text-[10px] font-black tracking-[0.18em] text-emerald-300">SELECCIÓN AFORTUNADA</span>
