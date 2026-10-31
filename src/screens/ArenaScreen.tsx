@@ -87,6 +87,10 @@ interface ArenaScreenProps {
   onPrepareReaction: (cardId: number) => void;
   onSkipReaction: () => void;
   onExportReplay: () => void;
+  onExportReplayLog: () => void;
+  replaySaveStatus: 'IDLE' | 'SAVING' | 'SAVED' | 'ERROR';
+  replaySaveError?: string | null;
+  onRetrySaveReplay: () => void;
 }
 
 export const ArenaScreen: React.FC<ArenaScreenProps> = ({
@@ -130,7 +134,11 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
   onActivateReaction,
   onPrepareReaction,
   onSkipReaction,
-  onExportReplay
+  onExportReplay,
+  onExportReplayLog,
+  replaySaveStatus,
+  replaySaveError,
+  onRetrySaveReplay
 }) => {
   const [showLogModal, setShowLogModal] = useState(false);
   const [showAbilityModal, setShowAbilityModal] = useState(false);
@@ -734,6 +742,10 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
           onRestartMatch={onRestartMatch}
           onExitBattle={onExitBattle}
           onClose={() => setShowStatsModal(false)}
+          onExportReplayLog={onExportReplayLog}
+          replaySaveStatus={replaySaveStatus}
+          replaySaveError={replaySaveError}
+          onRetrySaveReplay={onRetrySaveReplay}
         />
       )}
 
