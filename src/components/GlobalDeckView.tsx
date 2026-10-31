@@ -1,6 +1,5 @@
 import React from 'react';
-import { Layers, Sparkles, ShieldCheck } from 'lucide-react';
-
+import { GcSpriteIcon } from '../ui/SpriteUI';
 interface GlobalDeckViewProps {
   deckCount: number;
   isDrawingAnimation?: boolean;
@@ -35,7 +34,7 @@ export const GlobalDeckView: React.FC<GlobalDeckViewProps> = ({
             </div>
 
             <div className="w-5 h-5 rounded-full bg-yellow-400/20 border border-yellow-300 flex items-center justify-center">
-              <Layers className="w-3 h-3 text-yellow-300" />
+              <GcSpriteIcon name="icon-cards" className="w-3 h-3 text-yellow-300"  />
             </div>
 
             <div className="text-[7px] text-yellow-200 font-extrabold uppercase tracking-tighter">
@@ -67,12 +66,12 @@ export const GlobalDeckView: React.FC<GlobalDeckViewProps> = ({
           </div>
           <div className="text-[10px] text-neutral-300 flex flex-col sm:flex-row sm:items-center gap-x-2 gap-y-0.5 mt-0.5">
             <span className="flex items-center gap-1 text-yellow-400 font-semibold">
-              <Sparkles className="w-3 h-3" />
+              <GcSpriteIcon name="icon-spark" className="w-3 h-3"  />
               <span>Robas al cruzar umbrales de vida (≤20, ≤15, ≤10, ≤5 HP)</span>
             </span>
             <span className="hidden sm:inline text-neutral-600">•</span>
             <span className="flex items-center gap-1 text-cyan-300 font-semibold">
-              <ShieldCheck className="w-3 h-3" />
+              <GcSpriteIcon name="icon-shield" className="w-3 h-3"  />
               <span>Bloqueo Perfecto: hasta 2 cartas adicionales</span>
             </span>
           </div>

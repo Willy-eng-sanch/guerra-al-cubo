@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GcSpriteIcon } from '../ui/SpriteUI';
+import { GcSpriteCard, GcSpriteIcon } from '../ui/SpriteUI';
 import { ALL_CARDS } from '../data/cards';
 import { CardCategory, CardRarity, CardType, CATEGORY_INFO, TrickTiming } from '../types/game';
 interface EncyclopediaScreenProps {
@@ -173,13 +173,13 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
             const catInfo = CATEGORY_INFO[card.category] || CATEGORY_INFO[CardCategory.KABOOM];
 
             return (
-              <div
+              <GcSpriteCard
                 key={`encyclopedia-${card.id}-${idx}`}
                 style={{
                   borderColor: `${catInfo.borderColor}80`,
                   boxShadow: `0 0 15px ${catInfo.bgGlow}`
                 }}
-                className="p-3.5 rounded-2xl border-2 transition-all hover:scale-[1.01] bg-[#141722] flex flex-col justify-between"
+                className="p-3.5 transition-all hover:scale-[1.01] bg-[#141722] flex flex-col justify-between"
               >
                 <div>
                   {/* Top Header: ID, Category & Rarity */}
@@ -221,7 +221,7 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
                     {card.description}
                   </p>
 
-                  {/* Hero Synergy Box (PvZ Heroes Style) */}
+                  {/* Hero Synergy Box */}
                   {card.synergyEffect && (
                     <div
                       style={{
@@ -249,7 +249,7 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
                     {isWeapon ? '🗡️ Arma (Ranura)' : isStance ? '🛡️ Postura Preventiva' : '✨ Ritual Inmediato'}
                   </span>
                 </div>
-              </div>
+              </GcSpriteCard>
             );
           })}
         </div>

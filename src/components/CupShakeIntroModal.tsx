@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CharacterType } from '../types/game';
 import { CHARACTERS } from '../data/characters';
 import { sound } from '../audio/soundManager';
-import { Swords, Sparkles, FastForward, Shield } from 'lucide-react';
-
 interface CupShakeIntroModalProps {
   playerTeam: CharacterType[];
   rivalTeam: CharacterType[];
@@ -70,20 +69,20 @@ export const CupShakeIntroModal: React.FC<CupShakeIntroModalProps> = ({
         className="absolute top-4 right-4 z-40 px-3.5 py-1.5 rounded-full bg-[#1b2230]/80 hover:bg-[#2b374e] border border-neutral-600 text-xs font-bold text-neutral-300 flex items-center gap-1.5 transition-all cursor-pointer"
       >
         <span>Omitir animación</span>
-        <FastForward className="w-3.5 h-3.5" />
+        <GcSpriteIcon name="icon-fast-forward" className="w-3.5 h-3.5"  />
       </button>
 
       {/* Arena Title Badge Top */}
       <div className="absolute top-5 inset-x-0 mx-auto text-center z-30 pointer-events-none">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/70 border border-yellow-500/50 shadow-xl">
-          <Sparkles className="w-4 h-4 text-yellow-400" />
+          <GcSpriteIcon name="icon-spark" className="w-4 h-4 text-yellow-400"  />
           <span className="font-bungee text-xs md:text-sm text-yellow-300 tracking-wider">
             {stage === 'GATHER' && 'REUNIENDO LOS CUBOS EN EL CUBILETE...'}
             {stage === 'SHAKE' && '¡BATIENDO LOS PERSONAJES EN EL VASO!'}
             {stage === 'DUMP' && '¡ARROJANDO A LA ARENA!'}
             {stage === 'SETTLE' && '¡3 A LA IZQUIERDA VS 3 A LA DERECHA!'}
           </span>
-          <Sparkles className="w-4 h-4 text-yellow-400" />
+          <GcSpriteIcon name="icon-spark" className="w-4 h-4 text-yellow-400"  />
         </div>
       </div>
 
@@ -192,7 +191,7 @@ export const CupShakeIntroModal: React.FC<CupShakeIntroModalProps> = ({
             {/* LEFT SIDE: 3 PLAYER HEROES (BANDO AZUL) */}
             <div className="flex flex-col gap-5 md:gap-8 items-start z-30 animate-fade-in">
               <div className="flex items-center gap-1.5 bg-cyan-950/90 text-cyan-300 border-2 border-cyan-500 px-3 py-1 rounded-xl shadow-lg">
-                <Shield className="w-4 h-4 text-cyan-400" />
+                <GcSpriteIcon name="icon-shield" className="w-4 h-4 text-cyan-400"  />
                 <span className="text-xs md:text-sm font-black tracking-wider">
                   BANDO AZUL (TU ESCUADRA)
                 </span>
@@ -240,7 +239,7 @@ export const CupShakeIntroModal: React.FC<CupShakeIntroModalProps> = ({
             <div className="hidden sm:flex flex-col items-center justify-center z-30 mx-2">
               <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-tr from-[#ff1744] via-amber-500 to-cyan-400 p-1 shadow-2xl flex items-center justify-center animate-pulse">
                 <div className="w-full h-full rounded-full bg-neutral-950 flex flex-col items-center justify-center">
-                  <Swords className="w-6 h-6 text-yellow-300" />
+                  <GcSpriteIcon name="icon-swords" className="w-6 h-6 text-yellow-300"  />
                   <span className="font-bungee text-xs font-black text-white">VS</span>
                 </div>
               </div>
@@ -255,7 +254,7 @@ export const CupShakeIntroModal: React.FC<CupShakeIntroModalProps> = ({
                 <span className="text-xs md:text-sm font-black tracking-wider">
                   BANDO ROJO (ESCUADRA RIVAL)
                 </span>
-                <Shield className="w-4 h-4 text-red-400" />
+                <GcSpriteIcon name="icon-shield" className="w-4 h-4 text-red-400"  />
               </div>
 
               <div className="flex flex-col gap-4">
@@ -306,7 +305,7 @@ export const CupShakeIntroModal: React.FC<CupShakeIntroModalProps> = ({
             onClick={onComplete}
             className="w-full py-3.5 bg-gradient-to-r from-[#ff1744] to-[#c51162] hover:brightness-110 active:scale-95 text-white font-black text-sm md:text-base rounded-2xl shadow-2xl border-2 border-yellow-300 flex items-center justify-center gap-2 cursor-pointer transition-all animate-bounce"
           >
-            <Swords className="w-5 h-5 text-yellow-300" />
+            <GcSpriteIcon name="icon-swords" className="w-5 h-5 text-yellow-300"  />
             <span>¡INICIAR COMBATE 3 VS 3!</span>
           </button>
         </div>

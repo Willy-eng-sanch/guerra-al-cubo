@@ -1,22 +1,10 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { collectionManager, BoxOpeningResult } from '../data/collectionManager';
 import { Cube3DCanvas } from './Cube3DCanvas';
 import { sound } from '../audio/soundManager';
 import { CATEGORY_INFO } from '../types/game';
 import confetti from 'canvas-confetti';
-import {
-  Package,
-  Sparkles,
-  X,
-  Coins,
-  Check,
-  RotateCw,
-  Gift,
-  Shield,
-  Zap,
-  ArrowRight
-} from 'lucide-react';
-
 interface CrateOpeningModalProps {
   onClose: () => void;
   onSquadUpdated?: () => void;
@@ -76,7 +64,7 @@ export const CrateOpeningModal: React.FC<CrateOpeningModalProps> = ({
         <div className="flex items-center justify-between border-b border-[#232c40] pb-3 mb-4 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-yellow-400/20 border border-yellow-400 flex items-center justify-center shadow">
-              <Package className="w-5 h-5 text-yellow-400" />
+              <GcSpriteIcon name="icon-package" className="w-5 h-5 text-yellow-400"  />
             </div>
             <div className="text-left">
               <h3 className="text-base sm:text-lg font-black font-bungee text-white leading-tight">
@@ -90,7 +78,7 @@ export const CrateOpeningModal: React.FC<CrateOpeningModalProps> = ({
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 bg-[#181d2a] px-3 py-1.5 rounded-xl border border-yellow-500/40 text-yellow-300 text-xs font-mono font-bold">
-              <Coins className="w-4 h-4 text-yellow-400" />
+              <GcSpriteIcon name="icon-coins" className="w-4 h-4 text-yellow-400"  />
               <span>{collectionManager.getCoins()} Monedas</span>
             </div>
 
@@ -98,7 +86,7 @@ export const CrateOpeningModal: React.FC<CrateOpeningModalProps> = ({
               onClick={onClose}
               className="p-1.5 rounded-xl bg-[#1b2232] hover:bg-[#283248] text-neutral-400 hover:text-white border border-[#2f3b52] transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <GcSpriteIcon name="icon-close" className="w-5 h-5"  />
             </button>
           </div>
         </div>
@@ -113,7 +101,7 @@ export const CrateOpeningModal: React.FC<CrateOpeningModalProps> = ({
               <div className="relative mx-auto w-40 h-40 flex items-center justify-center">
                 <div className="absolute inset-0 bg-yellow-400/15 rounded-3xl blur-2xl animate-pulse" />
                 <div className="relative w-36 h-36 rounded-3xl bg-gradient-to-br from-amber-600 via-yellow-700 to-amber-950 border-4 border-yellow-400 shadow-[0_10px_30px_rgba(250,204,21,0.3)] flex flex-col items-center justify-center p-3 text-center transition-transform hover:scale-105 cursor-pointer">
-                  <Package className="w-16 h-16 text-yellow-200 drop-shadow-md animate-bounce" />
+                  <GcSpriteIcon name="icon-package" className="w-16 h-16 text-yellow-200 drop-shadow-md animate-bounce"  />
                   <span className="text-[10px] font-black font-bungee text-yellow-200 mt-1 uppercase tracking-wider">
                     PACK DE 3 DADOS
                   </span>
@@ -145,12 +133,12 @@ export const CrateOpeningModal: React.FC<CrateOpeningModalProps> = ({
               >
                 {boxCost === 0 ? (
                   <>
-                    <Gift className="w-5 h-5 text-black" />
+                    <GcSpriteIcon name="icon-gift" className="w-5 h-5 text-black"  />
                     <span>¡ABRIR CAJA INICIAL GRATUITA!</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-5 h-5 text-black" />
+                    <GcSpriteIcon name="icon-spark" className="w-5 h-5 text-black"  />
                     <span>ABRIR CAJA DE 3 (100 🪙)</span>
                   </>
                 )}
@@ -164,7 +152,7 @@ export const CrateOpeningModal: React.FC<CrateOpeningModalProps> = ({
           {openingStage === 'SHAKING' && (
             <div className="space-y-4 my-auto">
               <div className="w-40 h-40 mx-auto rounded-3xl bg-gradient-to-br from-amber-500 via-yellow-600 to-amber-900 border-4 border-yellow-300 shadow-[0_0_40px_rgba(250,204,21,0.6)] flex items-center justify-center animate-spin">
-                <Package className="w-20 h-20 text-yellow-200" />
+                <GcSpriteIcon name="icon-package" className="w-20 h-20 text-yellow-200"  />
               </div>
               <h4 className="text-lg font-black font-bungee text-yellow-300 animate-pulse">
                 ¡ABRIENDO CAJA DE 3 DADOS...!
@@ -181,7 +169,7 @@ export const CrateOpeningModal: React.FC<CrateOpeningModalProps> = ({
           {openingStage === 'REVEALED' && result && (
             <div className="space-y-4 w-full animate-fadeIn">
               <div className="flex items-center justify-center gap-2 text-xs font-black text-yellow-400 uppercase tracking-widest font-bungee">
-                <Sparkles className="w-4 h-4 text-yellow-400" />
+                <GcSpriteIcon name="icon-spark" className="w-4 h-4 text-yellow-400"  />
                 <span>¡3 DADOS EXTRAÍDOS DE LA CAJA!</span>
               </div>
 
@@ -259,7 +247,7 @@ export const CrateOpeningModal: React.FC<CrateOpeningModalProps> = ({
               {/* Status / Duplicate message */}
               {result.bonusCoinsEarned > 0 && (
                 <div className="bg-yellow-950/50 border border-yellow-600/40 rounded-xl p-2 text-xs text-yellow-300 flex items-center justify-center gap-2">
-                  <Coins className="w-4 h-4 text-yellow-400" />
+                  <GcSpriteIcon name="icon-coins" className="w-4 h-4 text-yellow-400"  />
                   <span>Obtuviste +{result.bonusCoinsEarned} Monedas de compensación por dados repetidos.</span>
                 </div>
               )}
@@ -271,7 +259,7 @@ export const CrateOpeningModal: React.FC<CrateOpeningModalProps> = ({
         {openingStage === 'REVEALED' && (
           <div className="border-t border-[#232c40] pt-3 mt-3 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
             <div className="text-xs text-neutral-400 flex items-center gap-1.5">
-              <Check className="w-4 h-4 text-emerald-400" />
+              <GcSpriteIcon name="icon-check" className="w-4 h-4 text-emerald-400"  />
               <span>Colección actualizada: <b>{collectionManager.getUnlockedCharacters().length}/13 dados</b></span>
             </div>
 
@@ -281,7 +269,7 @@ export const CrateOpeningModal: React.FC<CrateOpeningModalProps> = ({
                   onClick={handleOpenAnother}
                   className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-[#1e2535] hover:bg-[#283248] border border-[#3b4760] text-yellow-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
-                  <RotateCw className="w-3.5 h-3.5" />
+                  <GcSpriteIcon name="icon-refresh" className="w-3.5 h-3.5"  />
                   <span>ABRIR OTRA (100 🪙)</span>
                 </button>
               )}
@@ -291,7 +279,7 @@ export const CrateOpeningModal: React.FC<CrateOpeningModalProps> = ({
                 className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 hover:brightness-110 active:scale-95 text-black font-black text-xs sm:text-sm font-bungee tracking-wide shadow-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <span>¡LISTO, IR A COMBATIR!</span>
-                <ArrowRight className="w-4 h-4" />
+                <GcSpriteIcon name="icon-arrow-right" className="w-4 h-4"  />
               </button>
             </div>
           </div>

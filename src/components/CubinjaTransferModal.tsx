@@ -1,7 +1,6 @@
 import React from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CharacterType, GameCard, PlayerState, getMaxHandSize } from '../types/game';
-import { Hand, Send } from 'lucide-react';
-
 interface CubinjaTransferModalProps {
   actor: PlayerState;
   card: GameCard;
@@ -26,7 +25,7 @@ export const CubinjaTransferModal: React.FC<CubinjaTransferModalProps> = ({ acto
           {targets.map(target => (
             <button key={target.id} onClick={() => onConfirm(target.id)} className="flex w-full items-center justify-between rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-3 text-left hover:bg-cyan-900/40">
               <span><b className="block text-xs">{target.name}</b><span className="text-[10px] text-neutral-400">{target.hand.length}/{getMaxHandSize(target)} cartas</span></span>
-              <Send className="h-4 w-4 text-cyan-300"/>
+              <GcSpriteIcon name="icon-arrow-right" className="h-4 w-4 text-cyan-300" />
             </button>
           ))}
           {targets.length === 0 && <p className="rounded-xl bg-slate-900 p-3 text-xs text-neutral-400">No hay jugadores con espacio disponible para recibir la carta.</p>}

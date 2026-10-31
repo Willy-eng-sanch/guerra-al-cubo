@@ -1,32 +1,11 @@
 import React, { useState } from 'react';
+import { GcSpriteCard, GcSpriteIcon } from '../ui/SpriteUI';
 import { createPortal } from 'react-dom';
 import { PlayerState, CharacterType } from '../types/game';
 import { CHARACTERS } from '../data/characters';
 import { DiceCharacterSprite } from './DiceCharacterSprite';
 import { collectionManager } from '../data/collectionManager';
 import { AuraShopModal } from './AuraShopModal';
-import {
-  Trophy,
-  Swords,
-  ShieldAlert,
-  Layers,
-  RotateCw,
-  LogOut,
-  Eye,
-  Crown,
-  Flame,
-  Award,
-  Sparkles,
-  Skull,
-  Heart,
-  Package,
-  Zap,
-  FileText,
-  Save,
-  AlertTriangle,
-  CheckCircle2
-} from 'lucide-react';
-
 interface PostMatchStatsModalProps {
   players: PlayerState[];
   winner: PlayerState | null;
@@ -108,7 +87,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
         <div className="flex items-center justify-between border-b border-[#242d40] pb-3 mb-4">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-yellow-400/20 border border-yellow-400 flex items-center justify-center shadow-md">
-              <Trophy className="w-5 h-5 text-yellow-400" />
+              <GcSpriteIcon name="icon-trophy" className="w-5 h-5 text-yellow-400"  />
             </div>
             <div>
               <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-yellow-400">
@@ -136,7 +115,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
               title="Inspeccionar mesa de combate"
               className="px-3 py-1.5 rounded-xl bg-[#1c2333] hover:bg-[#283248] border border-[#2e3a55] text-xs font-bold text-neutral-300 flex items-center gap-1.5 transition-colors"
             >
-              <Eye className="w-3.5 h-3.5 text-cyan-400" />
+              <GcSpriteIcon name="icon-eye" className="w-3.5 h-3.5 text-cyan-400"  />
               <span className="hidden sm:inline">Ver Tablero</span>
             </button>
           )}
@@ -147,7 +126,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
         <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-cyan-500/20 border border-yellow-400/50 flex flex-wrap items-center justify-between gap-3 shadow-lg">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-yellow-400/20 border border-yellow-400 flex items-center justify-center text-yellow-300">
-              <Zap className="w-5 h-5 text-yellow-400 animate-bounce" />
+              <GcSpriteIcon name="icon-zap" className="w-5 h-5 text-yellow-400 animate-bounce"  />
             </div>
             <div>
               <div className="text-xs font-black text-yellow-300 flex items-center gap-1.5">
@@ -172,7 +151,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
             onClick={() => setShowAuraShop(true)}
             className="px-3.5 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-black font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer transform active:scale-95"
           >
-            <Package className="w-4 h-4 text-black" />
+            <GcSpriteIcon name="icon-package" className="w-4 h-4 text-black"  />
             <span>ABRIR CAJAS ({unopenedBoxes})</span>
           </button>
         </div>
@@ -193,7 +172,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
                 </div>
                 {winner?.teamId === 1 && (
                   <span className="text-[10px] font-black uppercase text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-md border border-yellow-400/40 flex items-center gap-1">
-                    <Crown className="w-3 h-3 text-yellow-400" />
+                    <GcSpriteIcon name="icon-crown" className="w-3 h-3 text-yellow-400"  />
                     Ganador
                   </span>
                 )}
@@ -201,19 +180,19 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
               <div className="grid grid-cols-3 gap-1 text-center bg-black/30 p-2 rounded-xl">
                 <div>
                   <div className="text-[10px] text-neutral-400 flex items-center justify-center gap-1">
-                    <Swords className="w-2.5 h-2.5 text-red-400" /> Daño
+                    <GcSpriteIcon name="icon-swords" className="w-2.5 h-2.5 text-red-400"  /> Daño
                   </div>
                   <div className="text-sm sm:text-base font-black text-red-400 font-bungee">{teamBlueDamage}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-neutral-400 flex items-center justify-center gap-1">
-                    <ShieldAlert className="w-2.5 h-2.5 text-cyan-400" /> Bloqueos
+                    <GcSpriteIcon name="icon-shield" className="w-2.5 h-2.5 text-cyan-400"  /> Bloqueos
                   </div>
                   <div className="text-sm sm:text-base font-black text-cyan-400 font-bungee">{teamBlueBlocks}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-neutral-400 flex items-center justify-center gap-1">
-                    <Layers className="w-2.5 h-2.5 text-yellow-400" /> Cartas
+                    <GcSpriteIcon name="icon-cards" className="w-2.5 h-2.5 text-yellow-400"  /> Cartas
                   </div>
                   <div className="text-sm sm:text-base font-black text-yellow-400 font-bungee">{teamBlueCards}</div>
                 </div>
@@ -233,7 +212,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
                 </div>
                 {winner?.teamId === 2 && (
                   <span className="text-[10px] font-black uppercase text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-md border border-yellow-400/40 flex items-center gap-1">
-                    <Crown className="w-3 h-3 text-yellow-400" />
+                    <GcSpriteIcon name="icon-crown" className="w-3 h-3 text-yellow-400"  />
                     Ganador
                   </span>
                 )}
@@ -241,19 +220,19 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
               <div className="grid grid-cols-3 gap-1 text-center bg-black/30 p-2 rounded-xl">
                 <div>
                   <div className="text-[10px] text-neutral-400 flex items-center justify-center gap-1">
-                    <Swords className="w-2.5 h-2.5 text-red-400" /> Daño
+                    <GcSpriteIcon name="icon-swords" className="w-2.5 h-2.5 text-red-400"  /> Daño
                   </div>
                   <div className="text-sm sm:text-base font-black text-red-400 font-bungee">{teamRedDamage}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-neutral-400 flex items-center justify-center gap-1">
-                    <ShieldAlert className="w-2.5 h-2.5 text-cyan-400" /> Bloqueos
+                    <GcSpriteIcon name="icon-shield" className="w-2.5 h-2.5 text-cyan-400"  /> Bloqueos
                   </div>
                   <div className="text-sm sm:text-base font-black text-cyan-400 font-bungee">{teamRedBlocks}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-neutral-400 flex items-center justify-center gap-1">
-                    <Layers className="w-2.5 h-2.5 text-yellow-400" /> Cartas
+                    <GcSpriteIcon name="icon-cards" className="w-2.5 h-2.5 text-yellow-400"  /> Cartas
                   </div>
                   <div className="text-sm sm:text-base font-black text-yellow-400 font-bungee">{teamRedCards}</div>
                 </div>
@@ -315,9 +294,9 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
             const isRed = player.teamId === 2;
 
             return (
-              <div
+              <GcSpriteCard
                 key={`post-match-player-${player.id}`}
-                className={`p-3 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                className={`gc-sprite-card--post-match-player p-3 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
                   isMvp
                     ? 'bg-gradient-to-r from-yellow-950/40 via-[#1a2233] to-[#181d29] border-yellow-400/70 shadow-md ring-1 ring-yellow-400/30'
                     : isBlue
@@ -365,12 +344,12 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
                       <span className="text-neutral-600">·</span>
                       {isAlive ? (
                         <span className="text-emerald-400 font-bold flex items-center gap-1">
-                          <Heart className="w-3 h-3 fill-emerald-400" />
+                          <GcSpriteIcon name="icon-heart" className="w-3 h-3 fill-emerald-400"  />
                           {player.hp}/{player.maxHp} HP
                         </span>
                       ) : (
                         <span className="text-red-400 font-bold flex items-center gap-1">
-                          <Skull className="w-3 h-3" />
+                          <GcSpriteIcon name="icon-skull" className="w-3 h-3"  />
                           K.O. Eliminado
                         </span>
                       )}
@@ -383,7 +362,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
                   {/* Metric 1: Daño Infligido */}
                   <div className="min-w-[65px]">
                     <div className="text-[10px] text-neutral-400 flex items-center justify-center gap-1">
-                      <Swords className="w-3 h-3 text-red-400" />
+                      <GcSpriteIcon name="icon-swords" className="w-3 h-3 text-red-400"  />
                       <span>Daño</span>
                     </div>
                     <div className="text-base sm:text-lg font-black text-red-400 font-bungee">
@@ -399,7 +378,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
                   {/* Metric 2: Bloqueos Perfectos */}
                   <div className="min-w-[65px]">
                     <div className="text-[10px] text-neutral-400 flex items-center justify-center gap-1">
-                      <ShieldAlert className="w-3 h-3 text-cyan-400" />
+                      <GcSpriteIcon name="icon-shield" className="w-3 h-3 text-cyan-400"  />
                       <span>Bloqueos</span>
                     </div>
                     <div className="text-base sm:text-lg font-black text-cyan-400 font-bungee">
@@ -415,7 +394,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
                   {/* Metric 3: Cartas Robadas */}
                   <div className="min-w-[65px]">
                     <div className="text-[10px] text-neutral-400 flex items-center justify-center gap-1">
-                      <Layers className="w-3 h-3 text-yellow-400" />
+                      <GcSpriteIcon name="icon-cards" className="w-3 h-3 text-yellow-400"  />
                       <span>Cartas</span>
                     </div>
                     <div className="text-base sm:text-lg font-black text-yellow-400 font-bungee">
@@ -428,7 +407,7 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
                     )}
                   </div>
                 </div>
-              </div>
+              </GcSpriteCard>
             );
           })}
         </div>
@@ -439,13 +418,13 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
         <div className="gc-modal-actions mt-3 shrink-0 border-t border-[#242d40] bg-[#121620] px-0 pt-3">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="text-[11px] text-neutral-400 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <GcSpriteIcon name="icon-spark" className="w-4 h-4 text-yellow-400"  />
               <span>Combate concluido bajo las reglas de la Guerra Cúbita.</span>
             </div>
             <div className="flex items-center gap-1.5 text-[10px] font-bold">
               {replaySaveStatus === 'SAVING' && <span className="text-amber-300">Guardando partida…</span>}
-              {replaySaveStatus === 'SAVED' && <span className="inline-flex items-center gap-1 text-emerald-300"><CheckCircle2 className="h-3.5 w-3.5" /> Partida guardada</span>}
-              {replaySaveStatus === 'ERROR' && <span className="inline-flex items-center gap-1 text-rose-300"><AlertTriangle className="h-3.5 w-3.5" /> No se pudo guardar</span>}
+              {replaySaveStatus === 'SAVED' && <span className="inline-flex items-center gap-1 text-emerald-300"><GcSpriteIcon name="icon-check" className="h-3.5 w-3.5"  /> Partida guardada</span>}
+              {replaySaveStatus === 'ERROR' && <span className="inline-flex items-center gap-1 text-rose-300"><GcSpriteIcon name="icon-warning" className="h-3.5 w-3.5"  /> No se pudo guardar</span>}
               {replaySaveStatus === 'ERROR' && onRetrySaveReplay && (
                 <button onClick={onRetrySaveReplay} className="rounded-md border border-rose-400/40 px-2 py-1 text-rose-200 hover:bg-rose-950/50">Reintentar</button>
               )}
@@ -461,21 +440,21 @@ export const PostMatchStatsModal: React.FC<PostMatchStatsModalProps> = ({
               disabled={!onExportReplayLog}
               className="min-h-11 rounded-xl border border-emerald-500/50 bg-emerald-950/50 px-3 py-3 text-xs font-black text-emerald-200 hover:bg-emerald-900/70 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-40"
             >
-              <FileText className="h-4 w-4" />
+              <GcSpriteIcon name="icon-file" className="h-4 w-4"  />
               EXPORTAR LOG PARA ANÁLISIS
             </button>}
             <button
               onClick={onRestartMatch}
               className="min-h-11 rounded-xl bg-[#ff1744] px-3 py-3 text-white font-black text-xs tracking-wider shadow-lg flex items-center justify-center gap-2 hover:bg-[#d50000] active:scale-[0.98] font-bungee"
             >
-              <RotateCw className="w-4 h-4" />
+              <GcSpriteIcon name="icon-refresh" className="w-4 h-4"  />
               <span>JUGAR DE NUEVO</span>
             </button>
             <button
               onClick={onExitBattle}
               className="min-h-11 rounded-xl border border-[#2b354b] bg-[#1e2535] px-3 py-3 text-neutral-200 hover:bg-[#283248] font-black text-xs flex items-center justify-center gap-2 active:scale-[0.98]"
             >
-              <LogOut className="w-4 h-4" />
+              <GcSpriteIcon name="icon-exit" className="w-4 h-4"  />
               <span>MENÚ PRINCIPAL</span>
             </button>
           </div>

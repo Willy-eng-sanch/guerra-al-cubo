@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CharacterType, GameCard, getMaxHandSizeForLoadout } from '../types/game';
-import { Backpack, CheckCircle2, Shield, Sparkles } from 'lucide-react';
-
 export interface MorphInventorySelection {
   hand: number[];
   weapons: number[];
@@ -85,7 +84,7 @@ export const MorphInventoryChoiceModal: React.FC<MorphInventoryChoiceModalProps>
                 (blocked ? ' opacity-35' : ' hover:border-violet-400/70')}>
               <span className={'flex h-5 w-5 shrink-0 items-center justify-center rounded border ' +
                 (checked ? 'border-violet-300 bg-violet-400 text-violet-950' : 'border-slate-600 text-transparent')}>
-                {checked ? <CheckCircle2 className="h-3.5 w-3.5" /> : '·'}
+                {checked ? <GcSpriteIcon name="icon-check" className="h-3.5 w-3.5"  /> : '·'}
               </span>
               <span className="min-w-0 flex-1">
                 <b className="block truncate text-[11px]">{card.name}</b>
@@ -104,14 +103,14 @@ export const MorphInventoryChoiceModal: React.FC<MorphInventoryChoiceModalProps>
     <div className="gc-modal-overlay fixed inset-0 z-[121] flex items-center justify-center bg-black/90 p-3 backdrop-blur-md">
       <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border-2 border-violet-400/70 bg-gradient-to-b from-[#1b1628] to-[#10121c] p-5 text-white shadow-2xl">
         <div className="text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-500/10 px-3 py-1 text-[10px] font-black tracking-widest text-violet-200"><Sparkles className="h-4 w-4" /> MIMETISMO · INVENTARIO</span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-500/10 px-3 py-1 text-[10px] font-black tracking-widest text-violet-200"><GcSpriteIcon name="icon-spark" className="h-4 w-4"  /> MIMETISMO · INVENTARIO</span>
           <h2 className="mt-3 text-xl font-black">Adapta tu inventario</h2>
           <p className="mt-1 text-xs text-neutral-300">{playerName} adopta {formName}. Elige qué conservar dentro de los nuevos límites.</p>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          {renderSection('hand', 'Mano', <Backpack className="h-4 w-4 text-amber-300" />, hand, activeHandLimit)}
-          {renderSection('weapons', 'Equipables', <Shield className="h-4 w-4 text-cyan-300" />, weapons, weaponLimit)}
-          {renderSection('stances', 'Activables preparados', <Sparkles className="h-4 w-4 text-pink-300" />, stances, stanceLimit)}
+          {renderSection('hand', 'Mano', <GcSpriteIcon name="icon-package" className="h-4 w-4 text-amber-300"  />, hand, activeHandLimit)}
+          {renderSection('weapons', 'Equipables', <GcSpriteIcon name="icon-shield" className="h-4 w-4 text-cyan-300"  />, weapons, weaponLimit)}
+          {renderSection('stances', 'Activables preparados', <GcSpriteIcon name="icon-spark" className="h-4 w-4 text-pink-300"  />, stances, stanceLimit)}
         </div>
         <button onClick={() => onConfirm(selection)} className="mt-4 w-full rounded-xl bg-violet-400 py-3 text-xs font-black text-violet-950 hover:bg-violet-300">CONFIRMAR NUEVO INVENTARIO</button>
       </div>

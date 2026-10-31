@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactNode } from 'react';
 
 export type GcSpriteName =
   | 'icon-dice' | 'icon-swords' | 'icon-shield' | 'icon-history' | 'icon-trophy'
@@ -7,7 +7,14 @@ export type GcSpriteName =
   | 'icon-spark' | 'icon-volume' | 'icon-settings' | 'icon-delete' | 'icon-download'
   | 'icon-info' | 'icon-warning' | 'icon-chevron' | 'icon-folder' | 'icon-lock' | 'icon-map'
   | 'icon-flame' | 'icon-zap' | 'icon-help' | 'icon-arrow-right' | 'icon-plus'
-  | 'icon-search' | 'icon-star';
+  | 'icon-search' | 'icon-star' | 'icon-chart' | 'icon-wifi' | 'icon-copy'
+  | 'icon-message' | 'icon-radio' | 'icon-package' | 'icon-coins' | 'icon-gift'
+  | 'icon-refresh' | 'icon-crown' | 'icon-exit' | 'icon-fast-forward'
+  | 'icon-eye' | 'icon-award' | 'icon-skull' | 'icon-heart' | 'icon-file'
+  | 'icon-frost' | 'icon-phone' | 'icon-external-link' | 'icon-terminal' | 'icon-share'
+  | 'icon-clock' | 'icon-trend' | 'icon-shield-off' | 'icon-cube' | 'icon-sliders'
+  | 'icon-music' | 'icon-volume-off' | 'icon-mic' | 'icon-mic-off' | 'icon-pause'
+  | 'icon-disc' | 'icon-target' | 'icon-hand';
 
 const SPRITE_ATLAS = '/assets/ui/gc-ui-atlas.svg';
 
@@ -16,13 +23,15 @@ export interface GcSpriteIconProps {
   size?: number;
   className?: string;
   label?: string;
+  style?: CSSProperties;
 }
 
 /** A single reusable vector sprite reference. Artwork stays in the external atlas. */
-export function GcSpriteIcon({ name, size = 24, className, label }: GcSpriteIconProps) {
+export function GcSpriteIcon({ name, size = 24, className, label, style }: GcSpriteIconProps) {
   return (
     <svg
       className={className}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 48 48"

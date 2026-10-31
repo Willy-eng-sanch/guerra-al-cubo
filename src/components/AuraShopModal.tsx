@@ -1,27 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { collectionManager, BoxOpeningResult, AuraRankInfo } from '../data/collectionManager';
 import { Cube3DCanvas } from './Cube3DCanvas';
 import { sound } from '../audio/soundManager';
 import confetti from 'canvas-confetti';
-import {
-  Sparkles,
-  Package,
-  Coins,
-  Shield,
-  Zap,
-  Flame,
-  Crown,
-  Heart,
-  Gift,
-  Check,
-  X,
-  ArrowRight,
-  TrendingUp,
-  Award,
-  Coffee,
-  HelpCircle
-} from 'lucide-react';
-
 interface AuraShopModalProps {
   onClose: () => void;
   onSquadUpdated?: () => void;
@@ -123,7 +105,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
         <div className="flex flex-wrap items-center justify-between border-b border-[#222b3d] pb-3 mb-3 gap-2 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-yellow-400/20 border border-yellow-400 flex items-center justify-center shadow">
-              <Crown className="w-5 h-5 text-yellow-400" />
+              <GcSpriteIcon name="icon-crown" className="w-5 h-5 text-yellow-400"  />
             </div>
             <div className="text-left">
               <div className="flex items-center gap-2">
@@ -132,7 +114,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
                 </span>
                 {isPatron && (
                   <span className="text-[9px] font-black uppercase tracking-widest bg-red-950 text-red-300 px-2 py-0.5 rounded-full border border-red-500 flex items-center gap-1">
-                    <Heart className="w-2.5 h-2.5 fill-current text-red-400" /> MECENAS
+                    <GcSpriteIcon name="icon-heart" className="w-2.5 h-2.5 fill-current text-red-400"  /> MECENAS
                   </span>
                 )}
               </div>
@@ -144,18 +126,18 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
 
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-[#182030] px-2.5 py-1 rounded-xl border border-yellow-500/40 text-yellow-300 text-xs font-mono font-bold">
-              <Package className="w-3.5 h-3.5 text-yellow-400" />
+              <GcSpriteIcon name="icon-package" className="w-3.5 h-3.5 text-yellow-400"  />
               <span>{unopenedBoxes} Cajas</span>
             </div>
             <div className="flex items-center gap-1 bg-[#182030] px-2.5 py-1 rounded-xl border border-cyan-500/40 text-cyan-300 text-xs font-mono font-bold">
-              <Zap className="w-3.5 h-3.5 text-cyan-400" />
+              <GcSpriteIcon name="icon-zap" className="w-3.5 h-3.5 text-cyan-400"  />
               <span>{auraInfo.currentAura} Aura</span>
             </div>
             <button
               onClick={onClose}
               className="p-1.5 rounded-xl bg-[#1b2232] hover:bg-[#283248] text-neutral-400 hover:text-white border border-[#2f3b52] transition-colors cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <GcSpriteIcon name="icon-close" className="w-4 h-4"  />
             </button>
           </div>
         </div>
@@ -170,7 +152,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
-            <TrendingUp className="w-3.5 h-3.5" />
+            <GcSpriteIcon name="icon-trend" className="w-3.5 h-3.5"  />
             <span>Nivel de Aura</span>
           </button>
 
@@ -185,7 +167,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
-            <Package className="w-3.5 h-3.5" />
+            <GcSpriteIcon name="icon-package" className="w-3.5 h-3.5"  />
             <span>Abrir Cajas</span>
             {unopenedBoxes > 0 && (
               <span className="w-4 h-4 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center ml-0.5">
@@ -202,7 +184,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
-            <Heart className="w-3.5 h-3.5 text-pink-400" />
+            <GcSpriteIcon name="icon-heart" className="w-3.5 h-3.5 text-pink-400"  />
             <span>Paga lo que Quieras</span>
           </button>
         </div>
@@ -229,7 +211,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
                     boxShadow: `0 0 20px ${auraInfo.auraGlowCss}`
                   }}
                 >
-                  <Zap className="w-8 h-8" style={{ color: auraInfo.colorHex }} />
+                  <GcSpriteIcon name="icon-zap" className="w-8 h-8" style={{ color: auraInfo.colorHex }}  />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -289,7 +271,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="bg-[#141a27] p-3.5 rounded-2xl border border-[#25324c] space-y-1.5">
                 <div className="flex items-center gap-2 text-yellow-400 font-bold text-xs">
-                  <Award className="w-4 h-4" />
+                  <GcSpriteIcon name="icon-award" className="w-4 h-4"  />
                   <span>¿Cómo ganar Aura y Cajas?</span>
                 </div>
                 <ul className="text-[11px] text-neutral-300 space-y-1">
@@ -301,7 +283,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
 
               <div className="bg-[#141a27] p-3.5 rounded-2xl border border-[#25324c] space-y-1.5">
                 <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs">
-                  <Package className="w-4 h-4" />
+                  <GcSpriteIcon name="icon-package" className="w-4 h-4"  />
                   <span>Cajas de Botín Disponibles</span>
                 </div>
                 <p className="text-[11px] text-neutral-300">
@@ -334,7 +316,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
                     onClick={handleOpenCrate}
                     className="relative w-32 h-32 rounded-3xl bg-gradient-to-br from-amber-600 via-yellow-700 to-amber-950 border-4 border-yellow-400 shadow-[0_10px_30px_rgba(250,204,21,0.3)] flex flex-col items-center justify-center p-3 text-center transition-transform hover:scale-105 active:scale-95 cursor-pointer"
                   >
-                    <Package className="w-14 h-14 text-yellow-200 drop-shadow-md animate-bounce" />
+                    <GcSpriteIcon name="icon-package" className="w-14 h-14 text-yellow-200 drop-shadow-md animate-bounce"  />
                     <span className="text-[9px] font-black font-bungee text-yellow-200 mt-1 uppercase tracking-wider">
                       PACK 3 DADOS
                     </span>
@@ -363,7 +345,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
                       : 'bg-neutral-800 text-neutral-500 border border-neutral-700 cursor-not-allowed'
                   }`}
                 >
-                  <Package className="w-5 h-5" />
+                  <GcSpriteIcon name="icon-package" className="w-5 h-5"  />
                   <span>
                     {unopenedBoxes > 0
                       ? 'ABRIR CAJA GANADA (GRATIS)'
@@ -376,7 +358,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
             {openingStage === 'SHAKING' && (
               <div className="space-y-4 my-auto text-center animate-pulse">
                 <div className="w-32 h-32 mx-auto rounded-3xl bg-yellow-500/20 border-4 border-yellow-400 flex items-center justify-center animate-cup-shake shadow-2xl">
-                  <Package className="w-16 h-16 text-yellow-300 animate-spin" />
+                  <GcSpriteIcon name="icon-package" className="w-16 h-16 text-yellow-300 animate-spin"  />
                 </div>
                 <h4 className="text-lg font-black font-bungee text-yellow-300">
                   ¡AGITANDO EL VASO DE LA SUERTE...!
@@ -390,11 +372,11 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
             {openingStage === 'REVEALED' && boxResult && (
               <div className="space-y-4 my-auto w-full max-w-xl text-center animate-fadeIn">
                 <div className="flex items-center justify-center gap-2 text-yellow-400">
-                  <Sparkles className="w-5 h-5 animate-spin" />
+                  <GcSpriteIcon name="icon-spark" className="w-5 h-5 animate-spin"  />
                   <h4 className="text-lg font-black font-bungee text-white">
                     ¡3 DADOS DESBLOQUEADOS!
                   </h4>
-                  <Sparkles className="w-5 h-5 animate-spin" />
+                  <GcSpriteIcon name="icon-spark" className="w-5 h-5 animate-spin"  />
                 </div>
 
                 {/* 3 Revealed Character Dice */}
@@ -462,7 +444,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
           <div className="flex-1 overflow-y-auto pr-1 space-y-4 text-left py-1">
             <div className="bg-gradient-to-r from-pink-950/40 via-[#181f2f] to-purple-950/40 p-4 rounded-3xl border-2 border-pink-500/50 space-y-2">
               <div className="flex items-center gap-2">
-                <Heart className="w-5 h-5 text-pink-400 fill-current" />
+                <GcSpriteIcon name="icon-heart" className="w-5 h-5 text-pink-400 fill-current"  />
                 <h4 className="text-base font-black font-bungee text-white">
                   MODELO "PAGA LO QUE QUIERAS" · BETA 1.0
                 </h4>
@@ -477,7 +459,7 @@ export const AuraShopModal: React.FC<AuraShopModalProps> = ({
 
             {patronSuccessMsg && (
               <div className="bg-emerald-950/80 border border-emerald-400 text-emerald-200 text-xs p-3 rounded-2xl flex items-center gap-2 animate-fadeIn">
-                <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+                <GcSpriteIcon name="icon-check" className="w-5 h-5 text-emerald-400 shrink-0"  />
                 <span>{patronSuccessMsg}</span>
               </div>
             )}

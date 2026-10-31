@@ -1,25 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { dailyMissionsManager, DailyMission, DayStreakReward } from '../data/dailyMissionsManager';
 import { sound } from '../audio/soundManager';
 import confetti from 'canvas-confetti';
-import {
-  Trophy,
-  Swords,
-  Shield,
-  Layers,
-  Zap,
-  Flame,
-  Calendar,
-  Gift,
-  CheckCircle2,
-  Lock,
-  Sparkles,
-  X,
-  Coins,
-  Package,
-  Clock
-} from 'lucide-react';
-
 interface DailyMissionsModalProps {
   onClose: () => void;
 }
@@ -67,15 +50,15 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
   const getMissionIcon = (iconName: string) => {
     switch (iconName) {
       case 'Trophy':
-        return <Trophy className="w-5 h-5 text-yellow-400" />;
+        return <GcSpriteIcon name="icon-trophy" className="w-5 h-5 text-yellow-400"  />;
       case 'Swords':
-        return <Swords className="w-5 h-5 text-red-400" />;
+        return <GcSpriteIcon name="icon-swords" className="w-5 h-5 text-red-400"  />;
       case 'Shield':
-        return <Shield className="w-5 h-5 text-cyan-400" />;
+        return <GcSpriteIcon name="icon-shield" className="w-5 h-5 text-cyan-400"  />;
       case 'Layers':
-        return <Layers className="w-5 h-5 text-emerald-400" />;
+        return <GcSpriteIcon name="icon-cards" className="w-5 h-5 text-emerald-400"  />;
       default:
-        return <Zap className="w-5 h-5 text-amber-400" />;
+        return <GcSpriteIcon name="icon-zap" className="w-5 h-5 text-amber-400"  />;
     }
   };
 
@@ -90,7 +73,7 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
         <div className="flex items-center justify-between border-b border-[#222a3a] pb-3 mb-4">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-yellow-400/20 border border-yellow-400 flex items-center justify-center text-yellow-400">
-              <Calendar className="w-5 h-5" />
+              <GcSpriteIcon name="icon-calendar" className="w-5 h-5"  />
             </div>
             <div>
               <div className="text-[10px] font-black uppercase text-yellow-400 tracking-wider">
@@ -106,7 +89,7 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
             onClick={onClose}
             className="p-1.5 rounded-xl bg-[#1b2230] hover:bg-[#263145] text-neutral-400 hover:text-white transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <GcSpriteIcon name="icon-close" className="w-5 h-5"  />
           </button>
         </div>
 
@@ -120,7 +103,7 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
                 : 'bg-[#181f2c] text-neutral-400 hover:text-neutral-200'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
+            <GcSpriteIcon name="icon-spark" className="w-4 h-4"  />
             <span>MISIONES DE HOY</span>
             {missions.filter(m => m.isCompleted && !m.isClaimed).length > 0 && (
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
@@ -135,7 +118,7 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
                 : 'bg-[#181f2c] text-neutral-400 hover:text-neutral-200'
             }`}
           >
-            <Flame className="w-4 h-4" />
+            <GcSpriteIcon name="icon-flame" className="w-4 h-4"  />
             <span>RACHA DE 7 DÍAS</span>
             {canClaimStreak && (
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
@@ -148,7 +131,7 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
           <div className="space-y-3 overflow-y-auto pr-1">
             <div className="p-3 rounded-2xl bg-gradient-to-r from-blue-950/60 to-purple-950/60 border border-blue-500/30 flex items-center justify-between text-xs text-neutral-300">
               <span className="flex items-center gap-1.5 font-bold">
-                <Clock className="w-4 h-4 text-cyan-400" />
+                <GcSpriteIcon name="icon-clock" className="w-4 h-4 text-cyan-400"  />
                 Se reinician diariamente a la medianoche
               </span>
               <span className="text-yellow-400 font-bold font-mono">
@@ -188,9 +171,9 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
                     {/* Reward Badge */}
                     <div className="shrink-0 text-right">
                       <div className="text-[10px] font-black uppercase text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-lg border border-yellow-400/30 flex items-center gap-1">
-                        {mission.rewardType === 'COINS' && <Coins className="w-3 h-3 text-yellow-400" />}
-                        {mission.rewardType === 'AURA' && <Zap className="w-3 h-3 text-yellow-400" />}
-                        {mission.rewardType === 'BOX' && <Package className="w-3 h-3 text-yellow-400" />}
+                        {mission.rewardType === 'COINS' && <GcSpriteIcon name="icon-coins" className="w-3 h-3 text-yellow-400"  />}
+                        {mission.rewardType === 'AURA' && <GcSpriteIcon name="icon-zap" className="w-3 h-3 text-yellow-400"  />}
+                        {mission.rewardType === 'BOX' && <GcSpriteIcon name="icon-package" className="w-3 h-3 text-yellow-400"  />}
                         <span>+{mission.rewardAmount} {mission.rewardType === 'BOX' ? 'Caja' : mission.rewardType}</span>
                       </div>
                     </div>
@@ -214,7 +197,7 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
                     <div>
                       {mission.isClaimed ? (
                         <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-bold px-3 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <GcSpriteIcon name="icon-check" className="w-3.5 h-3.5"  />
                           <span>Reclamada</span>
                         </div>
                       ) : mission.isCompleted ? (
@@ -244,7 +227,7 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
               <div>
                 <span className="text-[10px] font-black uppercase text-yellow-300">Racha Actual</span>
                 <div className="text-base sm:text-lg font-black font-bungee text-white flex items-center gap-1.5">
-                  <Flame className="w-5 h-5 text-orange-500 fill-orange-500 animate-bounce" />
+                  <GcSpriteIcon name="icon-flame" className="w-5 h-5 text-orange-500 fill-orange-500 animate-bounce"  />
                   <span>DÍA {currentStreak} DE 7</span>
                 </div>
               </div>
@@ -258,7 +241,7 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
                 </button>
               ) : (
                 <div className="text-xs text-neutral-400 bg-black/40 px-3 py-1.5 rounded-xl border border-neutral-700 flex items-center gap-1.5 font-bold">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <GcSpriteIcon name="icon-check" className="w-4 h-4 text-emerald-400"  />
                   <span>¡Reclamado hoy! Vuelve mañana</span>
                 </div>
               )}
@@ -291,9 +274,9 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
 
                       <div className="w-10 h-10 mx-auto rounded-xl bg-black/40 border border-neutral-700 flex items-center justify-center my-1">
                         {reward.boxes > 0 ? (
-                          <Package className="w-6 h-6 text-yellow-400 animate-bounce" />
+                          <GcSpriteIcon name="icon-package" className="w-6 h-6 text-yellow-400 animate-bounce"  />
                         ) : (
-                          <Coins className="w-5 h-5 text-amber-400" />
+                          <GcSpriteIcon name="icon-coins" className="w-5 h-5 text-amber-400"  />
                         )}
                       </div>
 
@@ -309,7 +292,7 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
                     <div className="mt-2 pt-1 border-t border-white/10">
                       {isClaimed ? (
                         <span className="text-[10px] text-emerald-400 font-black flex items-center justify-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Reclamado
+                          <GcSpriteIcon name="icon-check" className="w-3 h-3"  /> Reclamado
                         </span>
                       ) : isToday ? (
                         <span className="text-[10px] text-yellow-400 font-black animate-pulse">
@@ -317,7 +300,7 @@ export const DailyMissionsModal: React.FC<DailyMissionsModalProps> = ({ onClose 
                         </span>
                       ) : (
                         <span className="text-[10px] text-neutral-500 flex items-center justify-center gap-1 font-bold">
-                          <Lock className="w-3 h-3" /> Bloqueado
+                          <GcSpriteIcon name="icon-lock" className="w-3 h-3"  /> Bloqueado
                         </span>
                       )}
                     </div>

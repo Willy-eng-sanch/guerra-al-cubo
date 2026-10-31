@@ -5,9 +5,9 @@ export const GC_SPRITE_CATALOG = {
     purpose: 'one cached vector file for reusable interface icons'
   },
   frames: {
-    buttonPrimary: { file: '/assets/ui/sprites/button-primary.svg', viewBox: '0 0 96 96', slice: 28, role: 'primary action' },
-    buttonSecondary: { file: '/assets/ui/sprites/button-secondary.svg', viewBox: '0 0 96 96', slice: 28, role: 'secondary action' },
-    buttonDanger: { file: '/assets/ui/sprites/button-danger.svg', viewBox: '0 0 96 96', slice: 28, role: 'destructive action' },
+    buttonPrimary: { file: '/assets/ui/sprites/button-primary.svg', viewBox: '0 0 96 96', slice: 26, role: 'primary action' },
+    buttonSecondary: { file: '/assets/ui/sprites/button-secondary.svg', viewBox: '0 0 96 96', slice: 26, role: 'secondary action' },
+    buttonDanger: { file: '/assets/ui/sprites/button-danger.svg', viewBox: '0 0 96 96', slice: 26, role: 'destructive action' },
     panel: { file: '/assets/ui/sprites/panel-frame.svg', viewBox: '0 0 180 180', slice: 34, role: 'dialog and content panel' },
     card: { file: '/assets/ui/sprites/card-frame.svg', viewBox: '0 0 160 200', slice: 32, role: 'character, card and archive tile' },
     tab: { file: '/assets/ui/sprites/tab-frame.svg', viewBox: '0 0 128 72', slice: 24, role: 'tab and filter' },
@@ -34,7 +34,7 @@ export const GC_SPRITE_CATALOG = {
     'icon-back', 'icon-close', 'icon-check', 'icon-store', 'icon-calendar',
     'icon-spark', 'icon-volume', 'icon-settings', 'icon-delete', 'icon-download',
     'icon-info', 'icon-warning', 'icon-chevron', 'icon-folder', 'icon-lock', 'icon-map',
-    'icon-flame', 'icon-zap', 'icon-help', 'icon-arrow-right', 'icon-plus', 'icon-search', 'icon-star'
+    'icon-flame', 'icon-zap', 'icon-help', 'icon-arrow-right', 'icon-plus', 'icon-search', 'icon-star', 'icon-chart', 'icon-wifi', 'icon-copy', 'icon-message', 'icon-radio', 'icon-package', 'icon-coins', 'icon-gift', 'icon-refresh', 'icon-crown', 'icon-exit', 'icon-fast-forward', 'icon-eye', 'icon-award', 'icon-skull', 'icon-heart', 'icon-file', 'icon-frost', 'icon-phone', 'icon-external-link', 'icon-terminal', 'icon-share', 'icon-clock', 'icon-trend', 'icon-shield-off', 'icon-cube', 'icon-sliders', 'icon-music', 'icon-volume-off', 'icon-mic', 'icon-mic-off', 'icon-pause', 'icon-disc', 'icon-target', 'icon-hand'
   ]
 } as const;
 

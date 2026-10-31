@@ -1,8 +1,7 @@
 import React from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { ActiveDiceRoll } from '../types/game';
 import { Dice3DVisual } from './Dice3DVisual';
-import { ShieldCheck, Sword, Zap, X, Dices } from 'lucide-react';
-
 interface DiceRollModalProps {
   roll: ActiveDiceRoll;
   isRolling: boolean;
@@ -29,12 +28,12 @@ export const DiceRollModal: React.FC<DiceRollModalProps> = ({
           onClick={onDismiss}
           className="absolute top-3 right-3 text-neutral-400 hover:text-white p-1.5 rounded-xl bg-black/40 hover:bg-black/60 border border-white/10 z-10 transition-all cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <GcSpriteIcon name="icon-close" className="w-5 h-5"  />
         </button>
 
         <div className="relative z-10">
           <h3 className="text-lg md:text-xl font-black text-white tracking-wider flex items-center justify-center gap-2 font-bungee">
-            <Dices className="w-5 h-5 text-[#ff1744]" />
+            <GcSpriteIcon name="icon-dice" className="w-5 h-5 text-[#ff1744]"  />
             <span>LANZAMIENTO DE DADOS 3D</span>
           </h3>
           <p className="text-xs text-neutral-300 mt-0.5">
@@ -93,7 +92,7 @@ export const DiceRollModal: React.FC<DiceRollModalProps> = ({
             {roll.isCubinjaCardBlock ? (
               <div className="bg-amber-950/80 border-amber-400 text-amber-100 p-3.5 rounded-xl border-2 shadow-[0_0_20px_rgba(251,191,36,0.25)]">
                 <div className="flex items-center justify-center gap-2 text-base font-black">
-                  <ShieldCheck className="w-6 h-6 text-amber-300" />
+                  <GcSpriteIcon name="icon-shield" className="w-6 h-6 text-amber-300"  />
                   <span>¡AVARICIA: COINCIDENCIA!</span>
                 </div>
                 <p className="text-xs text-white font-bold mt-1.5 leading-relaxed">
@@ -104,7 +103,7 @@ export const DiceRollModal: React.FC<DiceRollModalProps> = ({
             ) : roll.isPerfectBlock ? (
               <div className="bg-cyan-950/80 border-cyan-400 text-cyan-200 p-3.5 rounded-xl border-2 shadow-[0_0_20px_rgba(0,229,255,0.3)]">
                 <div className="flex items-center justify-center gap-2 text-base font-black">
-                  <ShieldCheck className="w-6 h-6 text-cyan-300 animate-bounce" />
+                  <GcSpriteIcon name="icon-shield" className="w-6 h-6 text-cyan-300 animate-bounce"  />
                   <span>¡SUPER-BLOQUEO HEROICO!</span>
                 </div>
                 <p className="text-xs text-white font-bold mt-1.5 leading-relaxed">
@@ -115,7 +114,7 @@ export const DiceRollModal: React.FC<DiceRollModalProps> = ({
             ) : (
               <div className="bg-red-950/70 border-red-500 text-red-200 p-3 rounded-xl border">
                 <div className="flex items-center justify-center gap-2 text-base font-black">
-                  <Zap className="w-5 h-5 text-red-400 animate-pulse" />
+                  <GcSpriteIcon name="icon-zap" className="w-5 h-5 text-red-400 animate-pulse"  />
                   <span>¡GOLPE EFECTIVO!</span>
                 </div>
                 <p className="text-xs text-red-100 mt-1 font-bold">
@@ -137,7 +136,7 @@ export const DiceRollModal: React.FC<DiceRollModalProps> = ({
           >
             {roll.isPerfectBlock ? (
               <>
-                <ShieldCheck className="w-4 h-4 text-black" />
+                <GcSpriteIcon name="icon-shield" className="w-4 h-4 text-black"  />
                 <span>CONTINUAR Y REACCIONAR (EQUIPAR / TRUCO)</span>
               </>
             ) : (

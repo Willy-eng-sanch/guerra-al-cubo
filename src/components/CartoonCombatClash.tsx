@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CharacterType } from '../types/game';
 import { DiceCharacterSprite } from './DiceCharacterSprite';
 import { Dice3DVisual } from './Dice3DVisual';
 import { sound } from '../audio/soundManager';
-import { Shield, Sparkles, Sword } from 'lucide-react';
-
 export interface CombatClashData {
   attackerId: number;
   defenderId: number;
@@ -205,12 +204,12 @@ export const CartoonCombatClash: React.FC<CartoonCombatClashProps> = ({ clash })
           <div className="mb-4 animate-bounce">
             {clash.isPerfectBlock ? (
               <div className="bg-cyan-500 text-black font-black font-bungee text-sm md:text-base px-5 py-2 rounded-2xl border-3 border-black shadow-[4px_4px_0px_#000] flex items-center gap-2">
-                <Shield className="w-5 h-5 text-black animate-pulse" />
+                <GcSpriteIcon name="icon-shield" className="w-5 h-5 text-black animate-pulse"  />
                 <span>¡SUPER-BLOQUEO HEROICO! (IGUALÓ EL DADO)</span>
               </div>
             ) : clash.damageDealt > 0 ? (
               <div className="bg-red-500 text-white font-black font-bungee text-sm md:text-base px-5 py-2 rounded-2xl border-3 border-black shadow-[4px_4px_0px_#000] flex items-center gap-2">
-                <Sword className="w-5 h-5 text-yellow-300" />
+                <GcSpriteIcon name="icon-swords" className="w-5 h-5 text-yellow-300"  />
                 <span>¡IMPACTO CRÍTICO! -{clash.damageDealt} HP</span>
               </div>
             ) : (

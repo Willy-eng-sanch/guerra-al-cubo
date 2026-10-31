@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { GcSpriteCard, GcSpriteIcon, GcSpritePanel } from '../ui/SpriteUI';
 import { CharacterType, CATEGORY_INFO } from '../types/game';
 import { CHARACTER_LIST, CHARACTERS } from '../data/characters';
 import { Cube3DCanvas } from '../components/Cube3DCanvas';
@@ -9,33 +10,6 @@ import { CrateOpeningModal } from '../components/CrateOpeningModal';
 import { AuraShopModal } from '../components/AuraShopModal';
 import { DailyMissionsModal } from '../components/DailyMissionsModal';
 import { sound } from '../audio/soundManager';
-import {
-  ArrowLeft,
-  Wifi,
-  Users,
-  Copy,
-  Check,
-  Play,
-  Sparkles,
-  MessageSquare,
-  Shield,
-  Zap,
-  Swords,
-  Radio,
-  Lock,
-  Unlock,
-  Package,
-  Coins,
-  Dices,
-  AlertTriangle,
-  Gift,
-  HelpCircle,
-  RefreshCw,
-  Crown,
-  Calendar,
-  Flame
-} from 'lucide-react';
-
 interface OnlineLobbyScreenProps {
   onBack: () => void;
   onStartOnlineMatch: (playerTeam: CharacterType[], rivalTeam: CharacterType[], rivalName: string) => void;
@@ -251,13 +225,13 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
           }}
           className="p-2 sm:px-3 rounded-xl bg-[#161b26] hover:bg-[#202738] border border-[#2c374d] text-neutral-300 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <GcSpriteIcon name="icon-back" className="w-4 h-4"  />
           <span>Volver al Menú</span>
         </button>
 
         <div className="text-center">
           <h2 className="text-sm sm:text-xl font-black tracking-wide text-white font-bungee flex items-center justify-center gap-2">
-            <Radio className="w-4 sm:w-5 h-4 sm:h-5 text-cyan-400 animate-pulse" />
+            <GcSpriteIcon name="icon-radio" className="w-4 sm:w-5 h-4 sm:h-5 text-cyan-400 animate-pulse"  />
             <span>MODO ONLINE // DUELOS DE ESCUADRAS 3 VS 3</span>
           </h2>
           <p className="text-[10px] sm:text-xs text-yellow-400 font-bold">
@@ -284,7 +258,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
 
           {/* Street Coins pill */}
           <div className="flex items-center gap-1.5 bg-[#141923] border border-amber-500/50 px-3 py-1.5 rounded-xl text-amber-300 font-black text-xs shadow">
-            <Coins className="w-4 h-4 text-amber-400 animate-bounce" />
+            <GcSpriteIcon name="icon-coins" className="w-4 h-4 text-amber-400 animate-bounce"  />
             <span>{coins}</span>
             <span className="text-[10px] text-amber-400/80 font-normal">Monedas</span>
           </div>
@@ -298,7 +272,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
             className="px-3 py-1.5 rounded-xl border border-yellow-300 font-black text-xs flex items-center gap-1.5 transition-all shadow-lg cursor-pointer bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500 text-black hover:brightness-110 active:scale-95"
             title="Abrir Cajas de 3 dados o apoyar el juego con 'Paga lo que quieras'"
           >
-            <Package className="w-4 h-4 text-black animate-pulse" />
+            <GcSpriteIcon name="icon-package" className="w-4 h-4 text-black animate-pulse"  />
             <span>Cajas: {unopenedBoxes}</span>
             <span className="text-[9px] bg-black/20 text-black px-1.5 py-0.5 rounded font-black uppercase">
               Tienda
@@ -314,7 +288,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
             className="px-2.5 py-1.5 rounded-xl border border-yellow-400/50 bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 text-yellow-300 font-black text-xs flex items-center gap-1.5 transition-all shadow cursor-pointer"
             title="Misiones Diarias y Racha de 7 Días"
           >
-            <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400 animate-bounce" />
+            <GcSpriteIcon name="icon-flame" className="w-3.5 h-3.5 text-orange-400 fill-orange-400 animate-bounce"  />
             <span>Misiones</span>
             {(canClaimStreak || unclaimedMissions > 0) && (
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
@@ -323,7 +297,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
 
           {/* Latency */}
           <div className="hidden sm:flex items-center gap-1.5 bg-[#121620] px-2.5 py-1.5 rounded-xl border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold">
-            <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+            <GcSpriteIcon name="icon-wifi" className="w-3.5 h-3.5 text-emerald-400"  />
             <span>{networkState.pingMs}ms</span>
           </div>
         </div>
@@ -340,7 +314,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
             {!hasMinimumSquad && (
               <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-red-950/90 via-amber-950/80 to-red-950/90 border-2 border-red-500/80 shadow-[0_0_30px_rgba(239,68,68,0.3)] text-center space-y-3">
                 <div className="flex items-center justify-center gap-2 text-yellow-400">
-                  <AlertTriangle className="w-6 h-6 animate-bounce" />
+                  <GcSpriteIcon name="icon-warning" className="w-6 h-6 animate-bounce"  />
                   <h3 className="text-base sm:text-lg font-black font-bungee tracking-wide">
                     ¡ESCUADRÓN INCOMPLETO PARA PARTIDAS CLASIFICATORIAS!
                   </h3>
@@ -357,7 +331,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                     }}
                     className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-black font-black font-bungee text-xs sm:text-sm tracking-wider shadow-[0_0_20px_rgba(251,191,36,0.5)] transform hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Gift className="w-4 h-4 text-black animate-pulse" />
+                    <GcSpriteIcon name="icon-gift" className="w-4 h-4 text-black animate-pulse"  />
                     <span>¡ABRIR PRIMERA CAJA DE 3 DADOS GRATIS!</span>
                   </button>
 
@@ -365,7 +339,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                     onClick={handlePlayDemoRandomSquad}
                     className="px-5 py-2.5 rounded-2xl bg-[#004d40] hover:bg-[#00695c] border-2 border-emerald-400/80 text-emerald-200 font-black font-bungee text-xs sm:text-sm tracking-wider shadow-lg transform hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Zap className="w-4 h-4 text-emerald-300 animate-bounce" />
+                    <GcSpriteIcon name="icon-zap" className="w-4 h-4 text-emerald-300 animate-bounce"  />
                     <span>ENTRAR A LA DEMO CON DADOS DE PRUEBA</span>
                   </button>
                 </div>
@@ -393,7 +367,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                     disabled={!hasMinimumSquad}
                     className="px-2.5 py-1 rounded-xl bg-[#1c2433] hover:bg-[#253044] disabled:opacity-30 border border-neutral-700 text-neutral-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" />
+                    <GcSpriteIcon name="icon-refresh" className="w-3.5 h-3.5"  />
                     <span>Aleatorizar</span>
                   </button>
                 </div>
@@ -461,7 +435,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                         </>
                       ) : (
                         <div className="my-6 flex flex-col items-center justify-center text-neutral-500 space-y-1">
-                          <HelpCircle className="w-8 h-8 stroke-1 text-neutral-600" />
+                          <GcSpriteIcon name="icon-help" className="w-8 h-8 stroke-1 text-neutral-600"  />
                           <span className="text-xs font-bold">Ranura vacía</span>
                           <span className="text-[10px]">Toca un dado abajo</span>
                         </div>
@@ -488,7 +462,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                 <div className="absolute top-2 right-2 bg-yellow-400 text-black text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow">
                   DEMO GRATIS
                 </div>
-                <Zap className="w-8 h-8 text-yellow-300 group-hover:scale-110 transition-transform animate-pulse" />
+                <GcSpriteIcon name="icon-zap" className="w-8 h-8 text-yellow-300 group-hover:scale-110 transition-transform animate-pulse"  />
                 <span className="font-black font-bungee text-sm text-yellow-300">
                   DEMO: DUELO RÁPIDO ALEATORIO
                 </span>
@@ -505,7 +479,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                 disabled={!hasMinimumSquad || selectedSquad.length < 3}
                 className="p-4 rounded-2xl bg-gradient-to-br from-blue-600/20 to-cyan-700/30 hover:from-blue-600/30 hover:to-cyan-700/40 border-2 border-cyan-400/60 disabled:opacity-40 disabled:pointer-events-none shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer"
               >
-                <Users className="w-8 h-8 text-cyan-300 group-hover:scale-110 transition-transform" />
+                <GcSpriteIcon name="icon-players" className="w-8 h-8 text-cyan-300 group-hover:scale-110 transition-transform"  />
                 <span className="font-black font-bungee text-sm text-cyan-300">
                   CREAR SALA PRIVADA
                 </span>
@@ -542,7 +516,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#212b3d] pb-2">
                 <div>
                   <h4 className="text-sm sm:text-base font-black font-bungee text-white flex items-center gap-2">
-                    <Dices className="w-4 h-4 text-yellow-400" />
+                    <GcSpriteIcon name="icon-dice" className="w-4 h-4 text-yellow-400"  />
                     <span>COLECCIÓN DE DADOS ({unlockedHeroes.length} / {CHARACTER_LIST.length} DESBLOQUEADOS)</span>
                   </h4>
                   <p className="text-[11px] text-neutral-400">
@@ -557,7 +531,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                   }}
                   className="px-3 py-1.5 rounded-xl bg-yellow-400/20 hover:bg-yellow-400/30 border border-yellow-400/60 text-yellow-300 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer self-start sm:self-auto"
                 >
-                  <Package className="w-3.5 h-3.5" />
+                  <GcSpriteIcon name="icon-package" className="w-3.5 h-3.5"  />
                   <span>Comprar Caja de 3 Dados</span>
                 </button>
               </div>
@@ -570,7 +544,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                   const isInSquad = squadSlot !== -1;
 
                   return (
-                    <div
+                    <GcSpriteCard
                       key={char.type}
                       onClick={() => {
                         if (isUnlocked) {
@@ -597,12 +571,12 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                             </span>
                           ) : (
                             <span className="text-emerald-400 flex items-center gap-0.5 text-[8px]">
-                              <Check className="w-2.5 h-2.5" /> Disponible
+                              <GcSpriteIcon name="icon-check" className="w-2.5 h-2.5"  /> Disponible
                             </span>
                           )
                         ) : (
                           <span className="text-amber-400 flex items-center gap-0.5 text-[8px] font-black">
-                            <Lock className="w-2.5 h-2.5" /> En Cajas
+                            <GcSpriteIcon name="icon-lock" className="w-2.5 h-2.5"  /> En Cajas
                           </span>
                         )}
                         <span className="text-[8px] font-mono text-neutral-400">
@@ -645,7 +619,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                       {/* Overlay when locked */}
                       {!isUnlocked && (
                         <div className="absolute inset-0 bg-black/60 rounded-2xl flex flex-col items-center justify-center p-2 text-center backdrop-blur-[1px]">
-                          <Lock className="w-5 h-5 text-amber-400 mb-0.5" />
+                          <GcSpriteIcon name="icon-lock" className="w-5 h-5 text-amber-400 mb-0.5"  />
                           <span className="text-[9px] font-black uppercase text-amber-300">
                             Bloqueado
                           </span>
@@ -654,7 +628,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                           </span>
                         </div>
                       )}
-                    </div>
+                    </GcSpriteCard>
                   );
                 })}
               </div>
@@ -666,9 +640,9 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
             STATE B: SEARCHING MATCHMAKING
            ========================================================================= */}
         {networkState.status === 'SEARCHING_MATCHMAKING' && (
-          <div className="w-full max-w-md bg-[#121622]/95 border-2 border-yellow-400/60 rounded-3xl p-6 text-center shadow-2xl space-y-5 animate-pulse">
+          <GcSpritePanel tone="default" className="w-full max-w-md p-6 text-center space-y-5 animate-pulse">
             <div className="w-16 h-16 rounded-full border-4 border-dashed border-yellow-400 animate-spin mx-auto flex items-center justify-center">
-              <Zap className="w-7 h-7 text-yellow-300" />
+              <GcSpriteIcon name="icon-zap" className="w-7 h-7 text-yellow-300"  />
             </div>
 
             <div>
@@ -696,14 +670,14 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
             >
               Cancelar Búsqueda
             </button>
-          </div>
+          </GcSpritePanel>
         )}
 
         {/* =========================================================================
             STATE C: IN ROOM LOBBY / WAITING FOR OPPONENT (3 VS 3 SQUADS READY)
            ========================================================================= */}
         {(networkState.status === 'WAITING_FOR_OPPONENT' || networkState.status === 'ROOM_LOBBY') && (
-          <div className="w-full max-w-5xl bg-[#121622]/95 border-2 border-[#2b3850] rounded-3xl p-4 sm:p-6 shadow-2xl backdrop-blur-md space-y-4 animate-fadeIn">
+          <GcSpritePanel tone="default" className="w-full max-w-5xl p-4 sm:p-6 space-y-4 animate-fadeIn">
             {/* Room Code & Share Banner */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-[#0a0d14] rounded-2xl border border-yellow-400/40">
               <div className="flex items-center gap-2">
@@ -720,7 +694,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                   onClick={copyRoomCode}
                   className="px-3 py-1.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow cursor-pointer"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <GcSpriteIcon name="icon-check" className="w-3.5 h-3.5"  /> : <GcSpriteIcon name="icon-copy" className="w-3.5 h-3.5"  />}
                   <span>{copied ? '¡Copiado!' : 'Copiar Código'}</span>
                 </button>
 
@@ -826,7 +800,7 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
             {/* Quick Taunts / Emotes Bar */}
             <div className="p-3 bg-[#0a0d14] rounded-2xl border border-neutral-800 space-y-2">
               <span className="text-[10px] font-black uppercase text-neutral-400 flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5 text-yellow-400" />
+                <GcSpriteIcon name="icon-message" className="w-3.5 h-3.5 text-yellow-400"  />
                 <span>FRASES TÁCTICAS CALLEJERAS (ENVÍO RÁPIDO)</span>
               </span>
               <div className="flex gap-1.5 flex-wrap">
@@ -860,11 +834,11 @@ export const OnlineLobbyScreen: React.FC<OnlineLobbyScreenProps> = ({
                 disabled={!networkState.remotePlayer}
                 className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 disabled:opacity-40 text-black font-black font-bungee text-sm tracking-wider shadow-[0_0_20px_rgba(251,191,36,0.5)] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Swords className="w-5 h-5 text-black" />
+                <GcSpriteIcon name="icon-swords" className="w-5 h-5 text-black"  />
                 <span>¡INICIAR COMBATE 3 VS 3!</span>
               </button>
             </div>
-          </div>
+          </GcSpritePanel>
         )}
       </main>
 
