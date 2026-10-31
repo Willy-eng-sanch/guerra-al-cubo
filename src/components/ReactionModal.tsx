@@ -1,7 +1,6 @@
 import React from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CardType, CharacterType, GameCard, PlayerState, TrickTiming } from '../types/game';
-import { ShieldCheck, Sword, Shield, Sparkles, X, Check } from 'lucide-react';
-
 interface ReactionModalProps {
   player: PlayerState;
   onEquipReaction: (cardId: number) => void;
@@ -26,7 +25,7 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
         <div className="flex items-center justify-between border-b border-[#252f44] pb-3">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center border border-cyan-400 shadow-[0_0_12px_rgba(0,229,255,0.4)]">
-              <ShieldCheck className="w-6 h-6 animate-bounce" />
+              <GcSpriteIcon name="icon-shield" className="w-6 h-6 animate-bounce"  />
             </div>
             <div>
               <span className="text-[10px] font-black tracking-widest text-cyan-400 uppercase">
@@ -43,7 +42,7 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
             className="p-1 rounded-lg text-neutral-400 hover:text-white"
             title="Saltar reacción"
           >
-            <X className="w-5 h-5" />
+            <GcSpriteIcon name="icon-close" className="w-5 h-5"  />
           </button>
         </div>
 
@@ -103,11 +102,11 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
                       </div>
                       <h4 className="text-xs font-extrabold text-white flex items-center gap-1">
                         {isWeapon ? (
-                          <Sword className="w-3.5 h-3.5 text-amber-400" />
+                          <GcSpriteIcon name="icon-swords" className="w-3.5 h-3.5 text-amber-400"  />
                         ) : isStance ? (
-                          <Shield className="w-3.5 h-3.5 text-cyan-400" />
+                          <GcSpriteIcon name="icon-shield" className="w-3.5 h-3.5 text-cyan-400"  />
                         ) : (
-                          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                          <GcSpriteIcon name="icon-spark" className="w-3.5 h-3.5 text-purple-400"  />
                         )}
                         <span>{card.name}</span>
                       </h4>
@@ -122,7 +121,7 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
                           onClick={() => onEquipReaction(card.id)}
                           className="w-full py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs rounded-lg tracking-wider transition-all flex items-center justify-center gap-1 shadow"
                         >
-                          <Check className="w-3.5 h-3.5" />
+                          <GcSpriteIcon name="icon-check" className="w-3.5 h-3.5"  />
                           <span>EQUIPAR DE INMEDIATO</span>
                         </button>
                       ) : isCubinja ? (
@@ -137,7 +136,7 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
                           onClick={() => onPrepareReaction(card.id)}
                           className="w-full py-1.5 bg-cyan-400 hover:bg-cyan-300 text-black font-black text-xs rounded-lg tracking-wider transition-all flex items-center justify-center gap-1 shadow"
                         >
-                          <Check className="w-3.5 h-3.5" />
+                          <GcSpriteIcon name="icon-check" className="w-3.5 h-3.5"  />
                           <span>PREPARAR POSTURA</span>
                         </button>
                       ) : (
@@ -145,7 +144,7 @@ export const ReactionModal: React.FC<ReactionModalProps> = ({
                           onClick={() => onActivateReaction(card.id)}
                           className="w-full py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-black text-xs rounded-lg tracking-wider transition-all flex items-center justify-center gap-1 shadow"
                         >
-                          <Check className="w-3.5 h-3.5" />
+                          <GcSpriteIcon name="icon-check" className="w-3.5 h-3.5"  />
                           <span>ACTIVAR EFECTO</span>
                         </button>
                       )}
