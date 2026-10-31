@@ -151,7 +151,8 @@ test('el ejecutor se detiene en el primer checkpoint divergente', async () => {
     () => execution.run(),
     error => error instanceof ReplayExecutionError &&
       error.kind === 'CHECKPOINT_MISMATCH' &&
-      error.sequence === 2
+      error.sequence === 2 &&
+      error.details.firstDifference?.path === '$.marker'
   );
   assert.equal(execution.getProgress().status, 'FAILED');
   assert.equal(execution.getProgress().consumedEvents, 2);
@@ -175,5 +176,56 @@ test('el ejecutor no finaliza si quedan resultados aleatorios sin consumir', asy
     () => execution.run(),
     error => error instanceof ReplayExecutionError &&
       error.kind === 'COMMAND_EXECUTION_FAILED'
+  );
+});
+
+
+test('el ejecutor verifica también los eventos derivados del comando', async () => {
+  const replay = createMatchReplay({ seed: 10, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, { marker: 0 });
+  appendReplayEvent(replay, 'MATCH_STARTED', {});
+  appendReplayEvent(replay, 'PLAYER_ACTION', { kind: 'SET_MARKER', value: 1 });
+  appendReplayEvent(replay, 'GAME_LOG', { message: 'marker set', actorName: 'Jugador' });
+
+  const observed = [];
+  const execution = new ReplayExecutionController(replay, {
+    executeCommand: command => {
+      observed.push({ type: 'PLAYER_ACTION', payload: command });
+      observed.push({ type: 'GAME_LOG', payload: { message: 'marker set', actorName: 'Jugador' } });
+    },
+    verifyEvent: event => {
+      if (event.type === 'MATCH_STARTED') return;
+      const actual = observed.shift();
+      assert.deepEqual(actual, { type: event.type, payload: event.payload });
+    }
+  });
+  const result = await execution.run();
+  assert.equal(result.status, 'FINISHED');
+  assert.deepEqual(observed, []);
+});
+
+test('el ejecutor detecta el primer campo divergente de un evento', async () => {
+  const replay = createMatchReplay({ seed: 11, mode: 'QUICK_BATTLE' });
+  setReplayInitialState(replay, { marker: 0 });
+  appendReplayEvent(replay, 'MATCH_STARTED', {});
+  appendReplayEvent(replay, 'PLAYER_ACTION', { kind: 'SET_MARKER', value: 1 });
+  appendReplayEvent(replay, 'GAME_LOG', { message: 'expected message' });
+
+  const execution = new ReplayExecutionController(replay, {
+    executeCommand: () => {},
+    verifyEvent: event => {
+      if (event.type === 'GAME_LOG') {
+        const difference = { path: '$.payload.message', expected: event.payload.message, actual: 'different message' };
+        throw new ReplayExecutionError('event mismatch', {
+          kind: 'EVENT_MISMATCH', sequence: event.sequence, firstDifference: difference
+        });
+      }
+    }
+  });
+  await assert.rejects(
+    () => execution.run(),
+    error => error instanceof ReplayExecutionError &&
+      error.kind === 'EVENT_MISMATCH' &&
+      error.details.firstDifference.path === '$.payload.message'
   );
 });
