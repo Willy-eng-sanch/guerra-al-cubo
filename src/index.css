@@ -601,3 +601,97 @@ button:disabled {
     animation: none;
   }
 }
+
+
+.gc-sprite-button.gc-sprite-button--primary,
+.gc-screen button.gc-sprite-button--primary,
+.gc-modal-overlay button.gc-sprite-button--primary {
+  border-image-source: url('/assets/ui/sprites/button-primary.svg') !important;
+}
+
+.gc-sprite-button.gc-sprite-button--danger,
+.gc-screen button.gc-sprite-button--danger,
+.gc-modal-overlay button.gc-sprite-button--danger {
+  border-image-source: url('/assets/ui/sprites/button-danger.svg') !important;
+}
+
+.gc-modal-shell {
+  border: 16px solid transparent;
+  border-image-source: url('/assets/ui/sprites/modal-frame.svg');
+  border-image-slice: 34 fill;
+  border-image-width: 16px;
+  border-image-repeat: stretch;
+  background-color: #121b2b;
+}
+
+.gc-sprite-title-banner {
+  box-sizing: border-box;
+  border: 12px solid transparent;
+  border-image-source: url('/assets/ui/sprites/title-banner.svg');
+  border-image-slice: 26 fill;
+  border-image-width: 12px;
+  border-image-repeat: stretch;
+  text-align: center;
+}
+
+.gc-sprite-portrait {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  border: 16px solid transparent;
+  border-image-source: url('/assets/ui/sprites/portrait-frame.svg');
+  border-image-slice: 30 fill;
+  border-image-width: 16px;
+  border-image-repeat: stretch;
+  background-color: #17293e;
+  overflow: hidden;
+}
+
+.gc-sprite-slot {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  border: 12px solid transparent;
+  border-image-source: url('/assets/ui/sprites/slot-frame.svg');
+  border-image-slice: 28 fill;
+  border-image-width: 12px;
+  border-image-repeat: stretch;
+  background-color: #152337;
+}
+
+.gc-sprite-progress {
+  width: 100%;
+  height: 24px;
+  padding: 4px;
+  border: 7px solid transparent;
+  border-image-source: url('/assets/ui/sprites/progress-track.svg');
+  border-image-slice: 20 fill;
+  border-image-width: 7px;
+  border-image-repeat: stretch;
+  background: transparent;
+}
+
+.gc-sprite-progress__fill {
+  height: 100%;
+  min-width: 0;
+  border: 5px solid transparent;
+  border-image-source: url('/assets/ui/sprites/progress-fill.svg');
+  border-image-slice: 20 fill;
+  border-image-width: 5px;
+  border-image-repeat: stretch;
+  transition: width 180ms ease-out;
+}
+
+@media (max-width: 640px) {
+  .gc-modal-shell {
+    border-width: 12px;
+    border-image-width: 12px;
+  }
+  .gc-sprite-portrait {
+    border-width: 12px;
+    border-image-width: 12px;
+  }
+}
+
