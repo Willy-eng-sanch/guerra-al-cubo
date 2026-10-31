@@ -1,5 +1,5 @@
 import React from 'react';
-import { GcSpriteIcon } from '../ui/SpriteUI';
+import { GcSpriteCard, GcSpriteIcon } from '../ui/SpriteUI';
 import { CardCategory, CharacterDef, CharacterType, CATEGORY_INFO } from '../types/game';
 import { Dice3DVisual } from './Dice3DVisual';
 interface HeroDiceCardProps {
@@ -47,20 +47,20 @@ export const HeroDiceCard: React.FC<HeroDiceCardProps> = ({
   };
 
   return (
-    <div
+    <GcSpriteCard
       draggable={canPick && !isTaken}
       onDragStart={handleDragStart}
       onClick={handleClick}
-      className={`relative rounded-2xl border-2 p-2.5 transition-all select-none cursor-pointer flex flex-col justify-between ${
+      className={`gc-sprite-card--hero relative rounded-2xl p-2.5 transition-all select-none cursor-pointer flex flex-col justify-between ${
         isPickedByPlayer
-          ? 'bg-[#182337] border-cyan-400 ring-2 ring-cyan-400/40 opacity-90 cursor-default'
+          ? 'bg-[#182337] ring-2 ring-cyan-400/40 opacity-90 cursor-default'
           : isPickedByRival
-          ? 'bg-[#29171c] border-red-500/80 opacity-60 cursor-not-allowed'
+          ? 'bg-[#29171c] opacity-60 cursor-not-allowed'
           : isInspected
-          ? 'bg-[#1e2536] border-yellow-400 ring-4 ring-yellow-400/50 scale-[1.03] shadow-[0_0_20px_rgba(250,204,21,0.4)] z-20'
+          ? 'bg-[#1e2536] ring-4 ring-yellow-400/50 scale-[1.03] shadow-[0_0_20px_rgba(250,204,21,0.4)] z-20'
           : canPick
-          ? 'bg-[#131722] border-[#29344c] hover:border-yellow-400/70 hover:scale-[1.01] hover:bg-[#181d2c]'
-          : 'bg-[#0f1219] border-[#1e2536] opacity-40 cursor-not-allowed'
+          ? 'bg-[#131722] hover:border-yellow-400/70 hover:scale-[1.01] hover:bg-[#181d2c]'
+          : 'bg-[#0f1219] opacity-40 cursor-not-allowed'
       }`}
     >
       {/* Status Badges (Player, Rival, or 2nd-click CTA) */}
@@ -170,6 +170,6 @@ export const HeroDiceCard: React.FC<HeroDiceCardProps> = ({
           </button>
         </div>
       )}
-    </div>
+    </GcSpriteCard>
   );
 };
