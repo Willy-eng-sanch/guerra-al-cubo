@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
 import { deleteSavedReplay, downloadReplayLog, downloadStoredReplay, getSavedReplay, listSavedReplays } from '../gameplay/replay-storage.js';
 import { GcSpriteCard, GcSpriteIcon } from '../ui/SpriteUI';
 
@@ -103,7 +102,7 @@ export const ReplayArchiveScreen: React.FC<ReplayArchiveScreenProps> = ({ onBack
             </div>
           </div>
           <button onClick={() => void refresh()} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-slate-800 disabled:opacity-50">
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <GcSpriteIcon name="icon-history" size={16} className={loading ? 'animate-spin' : ''} />
             Actualizar
           </button>
         </header>
