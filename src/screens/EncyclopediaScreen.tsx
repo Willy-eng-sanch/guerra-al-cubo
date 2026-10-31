@@ -221,7 +221,7 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
                     {card.description}
                   </p>
 
-                  {/* Hero Synergy Box (PvZ Heroes Style) */}
+                  {/* Hero Synergy Box */}
                   {card.synergyEffect && (
                     <div
                       style={{
