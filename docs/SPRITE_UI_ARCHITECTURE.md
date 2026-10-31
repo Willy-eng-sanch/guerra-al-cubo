@@ -141,11 +141,13 @@ Implementado en esta rama:
 - Skin base aplicada a botones de pantallas y diálogos.
 - Skin de tarjetas en la biblioteca de repeticiones.
 - Banner de título en el menú principal.
+- Iconografía migrada al atlas en Setup, Draft, Campaña, Pase y juega, Roster y Enciclopedia.
+- Componentes compartidos `DiceCupShaker` y `HeroDiceCard` consumen símbolos del atlas en lugar de Lucide.
 - Fondo seamless animado aplicado a las pantallas principales.
 - Importación externa de replay fuera de la navegación pública.
 
 Trabajo pendiente:
-- Reemplazar progresivamente los iconos Lucide restantes de Arena, tienda, misiones y diálogos por IDs del atlas.
+- Migrar iconos Lucide restantes de Arena, lobby online, tienda, misiones, componentes de combate y diálogos por IDs del atlas.
 - Migrar tarjetas de personaje/carta y paneles de Arena a `GcSpriteCard`, `GcSpritePanel` y `GcSpritePortrait` con sus datos actuales.
 - Añadir arte final original de los personajes, fondos y estados.
 - Crear pantallas de carga usando los sprites de progreso.
