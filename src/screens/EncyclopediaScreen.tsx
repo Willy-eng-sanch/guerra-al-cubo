@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { ALL_CARDS } from '../data/cards';
 import { CardCategory, CardRarity, CardType, CATEGORY_INFO, TrickTiming } from '../types/game';
-import { ArrowLeft, Shield, Sword, Sparkles, Search, Zap, Star } from 'lucide-react';
-
 interface EncyclopediaScreenProps {
   onBack: () => void;
 }
@@ -34,7 +33,7 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
       case CardRarity.LEGENDARIA:
         return (
           <span className="flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/30 to-purple-500/30 text-amber-300 border border-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.4)]">
-            <Star className="w-2.5 h-2.5 fill-amber-300" />
+            <GcSpriteIcon name="icon-star" className="w-2.5 h-2.5 text-amber-300"  />
             <span>Legendaria</span>
           </span>
         );
@@ -68,7 +67,7 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
           onClick={onBack}
           className="p-2 rounded-xl bg-[#171c26] hover:bg-[#202736] border border-[#2c374d] text-neutral-300 transition-all flex items-center gap-1.5 text-xs font-bold"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <GcSpriteIcon name="icon-back" className="w-4 h-4"  />
           <span>Volver</span>
         </button>
 
@@ -95,7 +94,7 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
       <div className="my-3 space-y-2">
         {/* Search */}
         <div className="relative">
-          <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <GcSpriteIcon name="icon-search" className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2"  />
           <input
             type="text"
             placeholder="Buscar por nombre, efecto o sinergia..."
@@ -208,11 +207,11 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
                   {/* Card Title */}
                   <h4 className="text-sm font-extrabold text-white flex items-center gap-1.5">
                     {isWeapon ? (
-                      <Sword className="w-3.5 h-3.5 text-amber-400" />
+                      <GcSpriteIcon name="icon-swords" className="w-3.5 h-3.5 text-amber-400"  />
                     ) : isStance ? (
-                      <Shield className="w-3.5 h-3.5 text-cyan-400" />
+                      <GcSpriteIcon name="icon-shield" className="w-3.5 h-3.5 text-cyan-400"  />
                     ) : (
-                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                      <GcSpriteIcon name="icon-spark" className="w-3.5 h-3.5 text-purple-400"  />
                     )}
                     <span>{card.name}</span>
                   </h4>
@@ -235,7 +234,7 @@ export const EncyclopediaScreen: React.FC<EncyclopediaScreenProps> = ({ onBack }
                         style={{ color: catInfo.color }}
                         className="font-black flex items-center gap-1 text-[10px] mb-0.5 uppercase tracking-wide"
                       >
-                        <Zap className="w-3 h-3" />
+                        <GcSpriteIcon name="icon-zap" className="w-3 h-3"  />
                         <span>Sinergia Heroica ({catInfo.name.split('/')[0]}):</span>
                       </div>
                       <span className="leading-snug block">{card.synergyEffect}</span>
