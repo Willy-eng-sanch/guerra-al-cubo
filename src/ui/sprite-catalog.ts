@@ -34,7 +34,7 @@ export const GC_SPRITE_CATALOG = {
     'icon-back', 'icon-close', 'icon-check', 'icon-store', 'icon-calendar',
     'icon-spark', 'icon-volume', 'icon-settings', 'icon-delete', 'icon-download',
     'icon-info', 'icon-warning', 'icon-chevron', 'icon-folder', 'icon-lock', 'icon-map',
-    'icon-flame', 'icon-zap', 'icon-help', 'icon-arrow-right', 'icon-plus', 'icon-search', 'icon-star'
+    'icon-flame', 'icon-zap', 'icon-help', 'icon-arrow-right', 'icon-plus', 'icon-search', 'icon-star', 'icon-chart', 'icon-wifi', 'icon-copy', 'icon-message', 'icon-radio', 'icon-package', 'icon-coins', 'icon-gift', 'icon-refresh', 'icon-crown', 'icon-exit', 'icon-fast-forward', 'icon-eye', 'icon-award', 'icon-skull', 'icon-heart', 'icon-file'
   ]
 } as const;
 
