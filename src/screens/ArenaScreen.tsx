@@ -688,7 +688,7 @@ export const ArenaScreen: React.FC<ArenaScreenProps> = ({
 
       {/* 5. Full Combat Log Modal */}
       {showLogModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+        <div className="gc-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
           <div className="relative w-full max-w-lg max-h-[75vh] bg-[#141823] border border-[#2b354b] rounded-2xl p-5 flex flex-col">
             <div className="flex items-center justify-between border-b border-[#252f44] pb-2.5 mb-3">
               <h3 className="text-base font-black text-white flex items-center gap-2">
