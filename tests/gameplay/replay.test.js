@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GameplayRandomController, ReplayRandomMismatchError } from '../../src/gameplay/random.js';
-import { ReplayExecutionController, ReplayExecutionError } from '../../src/gameplay/replay-engine.js';
+import { findFirstReplayDifference, ReplayExecutionController, ReplayExecutionError } from '../../src/gameplay/replay-engine.js';
 import {
   appendReplayCheckpoint, appendReplayEvent, createMatchReplay, getReplayRandomResults,
   getReplayCommands, hashReplayState, parseMatchReplay, serializeMatchReplay, setReplayFinalResult, setReplayInitialState, validateMatchReplay
@@ -215,7 +215,10 @@ test('el ejecutor detecta el primer campo divergente de un evento', async () => 
     executeCommand: () => {},
     verifyEvent: event => {
       if (event.type === 'GAME_LOG') {
-        const difference = { path: '$.payload.message', expected: event.payload.message, actual: 'different message' };
+        const difference = findFirstReplayDifference(
+          event.payload,
+          { message: 'different message' }
+        );
         throw new ReplayExecutionError('event mismatch', {
           kind: 'EVENT_MISMATCH', sequence: event.sequence, firstDifference: difference
         });
@@ -226,6 +229,6 @@ test('el ejecutor detecta el primer campo divergente de un evento', async () => 
     () => execution.run(),
     error => error instanceof ReplayExecutionError &&
       error.kind === 'EVENT_MISMATCH' &&
-      error.details.firstDifference.path === '$.payload.message'
+      error.details.firstDifference.path === 'root.message'
   );
 });
