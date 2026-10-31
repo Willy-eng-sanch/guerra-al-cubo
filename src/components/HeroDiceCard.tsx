@@ -1,8 +1,7 @@
 import React from 'react';
+import { GcSpriteIcon } from '../ui/SpriteUI';
 import { CardCategory, CharacterDef, CharacterType, CATEGORY_INFO } from '../types/game';
 import { Dice3DVisual } from './Dice3DVisual';
-import { Sparkles, ArrowRight, Shield, Check, Lock, Info, Plus } from 'lucide-react';
-
 interface HeroDiceCardProps {
   char: CharacterDef;
   isInspected: boolean;
@@ -67,20 +66,20 @@ export const HeroDiceCard: React.FC<HeroDiceCardProps> = ({
       {/* Status Badges (Player, Rival, or 2nd-click CTA) */}
       {isPickedByPlayer && (
         <span className="absolute top-2 right-2 bg-cyan-500 text-black text-[8px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-          <Check className="w-2.5 h-2.5" />
+          <GcSpriteIcon name="icon-check" className="w-2.5 h-2.5"  />
           <span>EN TU VASO</span>
         </span>
       )}
       {isPickedByRival && (
         <span className="absolute top-2 right-2 bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-          <Lock className="w-2.5 h-2.5" />
+          <GcSpriteIcon name="icon-lock" className="w-2.5 h-2.5"  />
           <span>RIVAL</span>
         </span>
       )}
       {!isTaken && isInspected && (
         <span className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-yellow-300 text-black text-[8px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse shadow">
           <span>¡2º CLIC PARA VASO!</span>
-          <ArrowRight className="w-2.5 h-2.5" />
+          <GcSpriteIcon name="icon-arrow-right" className="w-2.5 h-2.5"  />
         </span>
       )}
 
@@ -136,7 +135,7 @@ export const HeroDiceCard: React.FC<HeroDiceCardProps> = ({
         <div className="mt-2 p-2 rounded-xl bg-black/60 border border-yellow-500/50 space-y-1.5 animate-fadeIn">
           <div>
             <span className="text-[9px] font-black uppercase text-amber-300 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
+              <GcSpriteIcon name="icon-spark" className="w-3 h-3"  />
               Habilidad de Dado: {char.abilityName}
             </span>
             <p className="text-[9px] text-neutral-200 leading-tight mt-0.5">
@@ -166,7 +165,7 @@ export const HeroDiceCard: React.FC<HeroDiceCardProps> = ({
             }}
             className="w-full mt-1.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-black font-black text-[10px] flex items-center justify-center gap-1 shadow-md cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <GcSpriteIcon name="icon-plus" className="w-3.5 h-3.5"  />
             <span>LLEVAR AL VASO DE DADOS</span>
           </button>
         </div>
