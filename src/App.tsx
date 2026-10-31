@@ -184,8 +184,10 @@ export default function App() {
       round: 1,
       turnIndex: 0,
       cardUidCounter: getCardUidCounter(),
+      selectedTargetId: initialPlayers.find(player => player.teamId === 2)?.id ?? initialPlayers[1]?.id ?? null,
       players: initialPlayers,
       deck: initialDeck,
+      discardPile: [],
       deckOrder,
       ...additional
     });
@@ -554,7 +556,6 @@ export default function App() {
       });
     }
 
-    captureMatchInitialState(GameMode.QUICK_BATTLE, newPlayers, currentDeck, { matchType: 'DRAFT_3V3' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -562,6 +563,7 @@ export default function App() {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
     });
+    captureMatchInitialState(GameMode.QUICK_BATTLE, newPlayers, currentDeck, { matchType: 'DRAFT_3V3' });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -648,7 +650,6 @@ export default function App() {
       });
     }
 
-    captureMatchInitialState(GameMode.QUICK_BATTLE, newPlayers, currentDeck, { matchType: 'QUICK_BATTLE' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -656,6 +657,7 @@ export default function App() {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
     });
+    captureMatchInitialState(GameMode.QUICK_BATTLE, newPlayers, currentDeck, { matchType: 'QUICK_BATTLE' });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -765,7 +767,6 @@ export default function App() {
       });
     });
 
-    captureMatchInitialState(GameMode.STREET_CAMPAIGN, newPlayers, currentDeck, { matchType: 'STREET_CAMPAIGN' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -773,6 +774,7 @@ export default function App() {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
     });
+    captureMatchInitialState(GameMode.STREET_CAMPAIGN, newPlayers, currentDeck, { matchType: 'STREET_CAMPAIGN' });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -831,7 +833,6 @@ export default function App() {
       });
     }
 
-    captureMatchInitialState(GameMode.PASS_AND_PLAY, newPlayers, currentDeck, { matchType: 'PASS_AND_PLAY' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -839,6 +840,7 @@ export default function App() {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
     });
+    captureMatchInitialState(GameMode.PASS_AND_PLAY, newPlayers, currentDeck, { matchType: 'PASS_AND_PLAY' });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
@@ -946,7 +948,6 @@ export default function App() {
       });
     }
 
-    captureMatchInitialState(GameMode.ONLINE_PVP, newPlayers, currentDeck, { matchType: 'ONLINE_PVP' });
     setDeck(currentDeck);
     setDiscardPile([]);
     eliminatedInventoryReturnedRef.current.clear();
@@ -954,6 +955,7 @@ export default function App() {
       if (player.characterType === CharacterType.CUBOGRO) player.cubogroAbilityCharges = 1;
       if (player.characterType === CharacterType.CAMBIAFORMAS) player.morphFormsUsed = [];
     });
+    captureMatchInitialState(GameMode.ONLINE_PVP, newPlayers, currentDeck, { matchType: 'ONLINE_PVP' });
     setPlayers(newPlayers);
     setRound(1);
     setTurnIndex(0);
