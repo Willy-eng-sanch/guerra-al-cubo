@@ -3291,6 +3291,7 @@ export default function App() {
       }
 
       setReplayFailure(null);
+      replayExecutionRef.current = null;
       setReplayProgress({ status: 'RESTORING', consumedEvents: 0, totalEvents: replay.events.length });
       replayRecorderRef.current = null;
       replayObservedEventsRef.current = [];
@@ -3319,7 +3320,10 @@ export default function App() {
       setActiveClash(null);
       setActiveDiceRoll(null);
       setIsRollingAnimation(false);
+      setIsFastSpeed(false);
       setLog([]);
+      setSpecialSixChoice(null);
+      setSpecialSixQueue([]);
       setSupplyMagicOffer(null);
       setTramcubosoCardChoices([]);
       setCubinarcaOrderOffer(null);
