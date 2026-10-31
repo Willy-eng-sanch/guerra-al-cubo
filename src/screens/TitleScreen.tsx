@@ -201,6 +201,26 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <span>ELEGIR MIS 3 PERSONAJES</span>
         </button>
 
+        <div className="gc-menu-section-label">OTROS MODOS</div>
+        {/* Campaign & Pass and Play */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <button
+            onClick={onCampaignClick}
+            className="py-3 bg-[#1e2746] hover:bg-[#283561] active:scale-[0.98] text-cyan-300 border border-cyan-500/40 font-bold text-xs md:text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+          >
+            <Trophy className="w-4 h-4 text-yellow-400" />
+            <span>CAMPAÑA</span>
+          </button>
+
+          <button
+            onClick={onPassAndPlayClick}
+            className="py-3 bg-[#004d40] hover:bg-[#00695c] active:scale-[0.98] text-emerald-300 border border-emerald-500/40 font-bold text-xs md:text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+          >
+            <Users className="w-4 h-4 text-emerald-300" />
+            <span>PASE Y JUEGA</span>
+          </button>
+        </div>
+
         <div className="gc-menu-section-label">TUS PARTIDAS</div>
         <button
           onClick={onReplayArchiveClick}
@@ -220,25 +240,6 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <BookOpen className="w-4 h-4 text-yellow-400" />
           <span>Manual Táctico (50 Cartas & Clases)</span>
         </button>
-
-        {/* Campaign & Pass and Play */}
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            onClick={onCampaignClick}
-            className="py-3 bg-[#1e2746] hover:bg-[#283561] active:scale-[0.98] text-cyan-300 border border-cyan-500/40 font-bold text-xs md:text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
-          >
-            <Trophy className="w-4 h-4 text-yellow-400" />
-            <span>CAMPAÑA</span>
-          </button>
-
-          <button
-            onClick={onPassAndPlayClick}
-            className="py-3 bg-[#004d40] hover:bg-[#00695c] active:scale-[0.98] text-emerald-300 border border-emerald-500/40 font-bold text-xs md:text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
-          >
-            <Users className="w-4 h-4 text-emerald-300" />
-            <span>PASE Y JUEGA</span>
-          </button>
-        </div>
 
         {/* Roster & Encyclopedia */}
         <div className="grid grid-cols-2 gap-2.5">
