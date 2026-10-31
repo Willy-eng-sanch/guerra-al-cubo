@@ -33,6 +33,7 @@ import { advanceTurnState, getMatchOutcome, resolveCubiculaTransfer, shouldAward
 import { createMatchSeed, gameplayRandomInt, gameplayRandomPick, gameplayShuffle, getGameplayRandomSession, startGameplayRandomRecording, startGameplayRandomReplay, stopGameplayRandomSession } from './gameplay/random.js';
 import { appendReplayCheckpoint, appendReplayEvent, createMatchReplay, downloadMatchReplay, getReplayRandomResults, hashReplayState, parseMatchReplay, setReplayFinalResult, setReplayInitialState } from './gameplay/replay.js';
 import { findFirstReplayDifference, ReplayExecutionController } from './gameplay/replay-engine.js';
+import { downloadReplayLog, saveCompletedReplay } from './gameplay/replay-storage.js';
 
 import { TitleScreen } from './screens/TitleScreen';
 import { SetupScreen } from './screens/SetupScreen';
@@ -43,6 +44,7 @@ import { EncyclopediaScreen } from './screens/EncyclopediaScreen';
 import { ArenaScreen } from './screens/ArenaScreen';
 import { DraftScreen } from './screens/DraftScreen';
 import { OnlineLobbyScreen } from './screens/OnlineLobbyScreen';
+import { ReplayArchiveScreen } from './screens/ReplayArchiveScreen';
 import { DiceSpecialChoiceModal } from './components/DiceSpecialChoiceModal';
 import { TramcubosoCardChoiceModal } from './components/TramcubosoCardChoiceModal';
 import { TramcubosoRerollModal } from './components/TramcubosoRerollModal';
@@ -164,6 +166,10 @@ export default function App() {
   const replayStateSnapshotRef = useRef<any>(null);
   const replayObservedEventsRef = useRef<Array<{ type: string; payload: any }>>([]);
   const replayPlaybackActiveRef = useRef(false);
+  const persistedReplayMatchIdsRef = useRef<Set<string>>(new Set());
+  const matchFinalizedRef = useRef(false);
+  const [replaySaveStatus, setReplaySaveStatus] = useState<'IDLE' | 'SAVING' | 'SAVED' | 'ERROR'>('IDLE');
+  const [replaySaveError, setReplaySaveError] = useState<string | null>(null);
   const [isReplayPlayback, setIsReplayPlayback] = useState(false);
   const [replayProgress, setReplayProgress] = useState<any>(null);
   const [replayFailure, setReplayFailure] = useState<string | null>(null);
@@ -180,6 +186,9 @@ export default function App() {
   };
 
   const beginMatchRecording = (mode: string, metadata: Record<string, unknown> = {}) => {
+    matchFinalizedRef.current = false;
+    setReplaySaveStatus('IDLE');
+    setReplaySaveError(null);
     const seed = createMatchSeed();
     const replay = createMatchReplay({ seed, mode, metadata, engineVersion: '1.0.0' });
     replayRecorderRef.current = replay;
@@ -232,6 +241,33 @@ export default function App() {
     if (!replay || !replay.initialState) return;
     appendReplayEvent(replay, 'REPLAY_EXPORTED', { eventCount: replay.events.length });
     downloadMatchReplay(replay);
+  };
+
+  const persistCompletedMatchReplay = async (replay: any) => {
+    const matchId = replay?.metadata?.matchId;
+    if (!replay?.finalResult || !matchId || persistedReplayMatchIdsRef.current.has(matchId)) return;
+    persistedReplayMatchIdsRef.current.add(matchId);
+    setReplaySaveStatus('SAVING');
+    setReplaySaveError(null);
+    try {
+      await saveCompletedReplay(replay);
+      setReplaySaveStatus('SAVED');
+    } catch (error: any) {
+      persistedReplayMatchIdsRef.current.delete(matchId);
+      setReplaySaveStatus('ERROR');
+      setReplaySaveError(error?.message || 'No se pudo guardar la partida en este dispositivo.');
+    }
+  };
+
+  const retrySaveCompletedMatchReplay = () => {
+    const replay = replayRecorderRef.current;
+    if (replay?.finalResult) void persistCompletedMatchReplay(replay);
+  };
+
+  const exportCompletedMatchLog = () => {
+    const replay = replayRecorderRef.current;
+    if (!replay?.finalResult) return;
+    downloadReplayLog(replay);
   };
 
   const nextReplayUiEventId = () => {
@@ -1262,6 +1298,7 @@ export default function App() {
     diceOverride?: CombatDiceOverride,
     isCubogroAbility: boolean = false
   ) => {
+    if (matchFinalizedRef.current) return;
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || attacker.isFrozen) return;
     const intendedTarget = players.find(p => p.id === targetId);
@@ -2294,6 +2331,7 @@ export default function App() {
 
   // Equip Weapon
   const handleEquipWeapon = (cardId: number, cardUid?: string) => {
+    if (matchFinalizedRef.current) return;
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0) return;
     const card = attacker.hand.find(c => c.id === cardId && c.type === CardType.WEAPON && (!cardUid || c.uid === cardUid));
@@ -2338,6 +2376,7 @@ export default function App() {
 
   // Prepare Stance
   const handlePrepareStance = (cardId: number, cardUid?: string) => {
+    if (matchFinalizedRef.current) return;
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || isCubinjaHero(attacker)) return;
     const card = attacker.hand.find(
@@ -2369,6 +2408,7 @@ export default function App() {
 
   // Play Action Trick
   const handlePlayActionTrick = (cardId: number, targetId?: number, cardUid?: string) => {
+    if (matchFinalizedRef.current) return;
     const attacker = currentTurnPlayer;
     if (!attacker || attacker.actionPoints <= 0 || getMaxHandSize(attacker) === 0 || isCubinjaHero(attacker)) return;
     const card = attacker.hand.find(
@@ -2448,6 +2488,7 @@ export default function App() {
 
   // Hero Ability
   const handleUseHeroAbility = (targetId?: number, extraOption?: number, cubiculaMode?: CubiculaMode) => {
+    if (matchFinalizedRef.current) return;
     const actor = currentTurnPlayer;
     if (!actor || actor.abilityCooldownRemaining > 0) return;
     const hero = actor.activeMorphCharacter || actor.characterType;
@@ -2815,6 +2856,7 @@ export default function App() {
 
   // End Turn
   const handleEndTurn = () => {
+    if (matchFinalizedRef.current) return;
     recordPlayerAction('END_TURN', { playerId: players[turnIndex]?.id ?? null });
     const turnPlayers = playersRef.current.length > 0 ? playersRef.current : players;
     if (turnPlayers.length === 0) return;
@@ -2884,11 +2926,18 @@ export default function App() {
   // Check Victory (Squad Team vs Team or Free-For-All)
   const checkVictory = (playersList: PlayerState[] = players) => {
     const outcome = getMatchOutcome(playersList);
-    if (!outcome) return;
-    if (replayRecorderRef.current && !replayRecorderRef.current.finalResult) {
+    if (!outcome || matchFinalizedRef.current) return;
+    matchFinalizedRef.current = true;
+
+    // Finalize after all outcome messages have been recorded. MATCH_FINISHED must
+    // be the last event, and delayed bot callbacks must not resolve the match twice.
+    const finalizeReplayCapture = () => {
+      const replay = replayRecorderRef.current;
+      if (!replay || replay.finalResult) return;
       recordReplayCheckpoint('match-finished', { players: playersList, winnerId: outcome.winner?.id ?? null, kind: outcome.kind });
-      setReplayFinalResult(replayRecorderRef.current, { kind: outcome.kind, winningTeamId: outcome.winningTeamId ?? null, winnerId: outcome.winner?.id ?? null, finalPlayers: playersList });
-    }
+      setReplayFinalResult(replay, { kind: outcome.kind, winningTeamId: outcome.winningTeamId ?? null, winnerId: outcome.winner?.id ?? null, finalPlayers: playersList });
+      void persistCompletedMatchReplay(replay);
+    };
 
     if (outcome.kind === 'TEAM' && outcome.winningTeamId === 2) {
       const winnerPlayer = outcome.winner;
@@ -2905,6 +2954,7 @@ export default function App() {
         if (!replayPlaybackActiveRef.current) collectionManager.addCoins(25);
         addFloatingText(playersList[0]?.id || 1, "+25 Cubi-Monedas de Consuelo", "#fbbf24");
       }
+      finalizeReplayCapture();
       return;
     }
 
@@ -2924,12 +2974,14 @@ export default function App() {
         if (!replayPlaybackActiveRef.current) collectionManager.addCoins(60);
         addFloatingText(playersList[0]?.id || 1, "¡+60 Cubi-Monedas de Victoria!", "#ffd600");
       }
+      finalizeReplayCapture();
       return;
     }
 
     if (outcome.kind === 'DRAW') {
       setWinner(null);
       setPhase(MatchPhase.MATCH_OVER);
+      finalizeReplayCapture();
       return;
     }
 
@@ -2959,6 +3011,7 @@ export default function App() {
         }
       }
     }
+    finalizeReplayCapture();
   };
     const finalizeMorphForm = (
     playerId: number,
@@ -3293,6 +3346,7 @@ export default function App() {
       setReplayFailure(null);
       replayExecutionRef.current = null;
       setReplayProgress({ status: 'RESTORING', consumedEvents: 0, totalEvents: replay.events.length });
+      matchFinalizedRef.current = false;
       replayRecorderRef.current = null;
       replayObservedEventsRef.current = [];
       replayPlaybackActiveRef.current = true;
@@ -3515,7 +3569,7 @@ export default function App() {
       setMorphInventoryOffer(null);
       return;
     }
-    if (isReplayPlayback || winner || isMatchIntroPlaying || players.length === 0 || morphSelectionPlayerId !== null || morphInventoryOffer) return;
+    if (isReplayPlayback || winner || phase === MatchPhase.MATCH_OVER || isMatchIntroPlaying || players.length === 0 || morphSelectionPlayerId !== null || morphInventoryOffer) return;
     const morph = players.find(player =>
       player.characterType === CharacterType.CAMBIAFORMAS && !player.isEliminated && player.hp > 0 &&
       player.activeMorphRound !== round && !player.morphExhausted
@@ -3548,11 +3602,11 @@ export default function App() {
       const chosen = priority || gameplayRandomPick(available, 'cambiaformas.random-form');
       applyMorphForm(morph.id, chosen.type);
     } else setMorphSelectionPlayerId(morph.id);
-  }, [currentScreen, winner, isMatchIntroPlaying, players, round, morphSelectionPlayerId, morphInventoryOffer]);
+  }, [currentScreen, winner, phase, isMatchIntroPlaying, players, round, morphSelectionPlayerId, morphInventoryOffer]);
 
 // Auto-skip turn if current active player is eliminated or dead (CRITICAL FIX FOR STUCK 'PENSANDO')
   useEffect(() => {
-    if (isReplayPlayback || currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
+    if (isReplayPlayback || currentScreen !== CurrentScreen.ARENA || winner || phase === MatchPhase.MATCH_OVER || isMatchIntroPlaying) return;
     const currentP = players[turnIndex];
     if (currentP && (currentP.isEliminated || currentP.hp <= 0)) {
       const skipTimer = setTimeout(() => {
@@ -3560,11 +3614,11 @@ export default function App() {
       }, 300 * speedMultiplier);
       return () => clearTimeout(skipTimer);
     }
-  }, [turnIndex, players, currentScreen, winner, isMatchIntroPlaying, speedMultiplier]);
+  }, [turnIndex, players, currentScreen, winner, phase, isMatchIntroPlaying, speedMultiplier]);
 
   // Bot AI Turn execution
   useEffect(() => {
-    if (isReplayPlayback || currentScreen !== CurrentScreen.ARENA || winner || isMatchIntroPlaying) return;
+    if (isReplayPlayback || currentScreen !== CurrentScreen.ARENA || winner || phase === MatchPhase.MATCH_OVER || isMatchIntroPlaying) return;
     const activePlayer = players[turnIndex];
     if (!activePlayer || !activePlayer.isBot || activePlayer.isEliminated || activePlayer.hp <= 0) return;
 
@@ -3761,7 +3815,7 @@ export default function App() {
     }, 700 * speedMultiplier);
 
     return () => clearTimeout(timer);
-  }, [turnIndex, players, currentScreen, winner, isMatchIntroPlaying, speedMultiplier]);
+  }, [turnIndex, players, currentScreen, winner, phase, isMatchIntroPlaying, speedMultiplier]);
 
   return (
     <div className="w-full min-h-screen bg-[#0f1116] text-white">
@@ -3839,6 +3893,14 @@ export default function App() {
           onCardsClick={() => setCurrentScreen(CurrentScreen.ENCYCLOPEDIA)}
           onOnlineClick={() => setCurrentScreen(CurrentScreen.ONLINE_LOBBY)}
           onReplayFile={handleReplayFile}
+          onReplayArchiveClick={() => setCurrentScreen(CurrentScreen.REPLAY_ARCHIVE)}
+        />
+      )}
+
+      {currentScreen === CurrentScreen.REPLAY_ARCHIVE && (
+        <ReplayArchiveScreen
+          onBack={() => setCurrentScreen(CurrentScreen.TITLE)}
+          onReplay={replay => { void startReplayPlayback(replay); }}
         />
       )}
 
@@ -3944,6 +4006,10 @@ export default function App() {
           onPrepareReaction={handlePrepareReaction}
           onSkipReaction={handleSkipReaction}
           onExportReplay={exportMatchReplay}
+          onExportReplayLog={exportCompletedMatchLog}
+          replaySaveStatus={replaySaveStatus}
+          replaySaveError={replaySaveError}
+          onRetrySaveReplay={retrySaveCompletedMatchReplay}
         />
       )}
 

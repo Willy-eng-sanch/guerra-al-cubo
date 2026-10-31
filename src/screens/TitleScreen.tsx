@@ -19,6 +19,7 @@ interface TitleScreenProps {
   onCardsClick: () => void;
   onOnlineClick: () => void;
   onReplayFile: (file: File) => void;
+  onReplayArchiveClick: () => void;
 }
 
 export const TitleScreen: React.FC<TitleScreenProps> = ({
@@ -29,7 +30,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   onRosterClick,
   onCardsClick,
   onOnlineClick,
-  onReplayFile
+  onReplayFile,
+  onReplayArchiveClick
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showDownloadApk, setShowDownloadApk] = useState(false);
@@ -243,6 +245,14 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             }}
           />
         </label>
+
+        <button
+          onClick={onReplayArchiveClick}
+          className="w-full py-2.5 bg-[#151b2a] hover:bg-[#202b40] active:scale-[0.98] text-cyan-200 font-black text-xs md:text-sm rounded-xl border border-cyan-500/50 flex items-center justify-center gap-2 transition-all cursor-pointer"
+        >
+          <History className="w-4 h-4 text-cyan-300" />
+          <span>ARCHIVO DE PARTIDAS JUGADAS</span>
+        </button>
 
         {/* Tutorial & Manual Táctico */}
         <button
