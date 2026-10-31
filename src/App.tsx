@@ -3332,6 +3332,22 @@ export default function App() {
           if (!replayCommandDispatcherRef.current) throw new Error('El dispatcher de comandos de replay no está disponible.');
           await replayCommandDispatcherRef.current(payload, event);
         },
+        applyRuleEffect: async (payload: any) => {
+          if (payload.kind !== 'MORPH_EXHAUSTED') {
+            throw new Error('Efecto de regla de replay no soportado: ' + String(payload.kind));
+          }
+          const player = replayStateSnapshotRef.current?.players?.find(
+            (candidate: PlayerState) => candidate.id === payload.playerId
+          );
+          if (!player || !player.morphFormsUsed || player.morphFormsUsed.length < 12) {
+            throw new Error('Cambiaformas no tiene agotadas las 12 formas como indica la repetición.');
+          }
+          setPlayers(previous => previous.map(candidate => candidate.id === player.id
+            ? { ...candidate, activeMorphRound: payload.round, morphExhausted: true }
+            : candidate
+          ));
+          addLog(player.name + " ha agotado sus 12 formas y conservará la última hasta terminar la partida.", true, player.name);
+        },
         verifyBotDecision: async (payload: any, event: any) => {
           const matchStarted = replay.events.find((candidate: any) => candidate.type === 'MATCH_STARTED');
           const isPreMatchDecision = matchStarted && event.sequence < matchStarted.sequence;
@@ -3503,6 +3519,7 @@ export default function App() {
       character.type !== CharacterType.CAMBIAFORMAS && !used.includes(character.type)
     );
     if (available.length === 0) {
+      recordReplayEvent('RULE_EFFECT', { kind: 'MORPH_EXHAUSTED', playerId: morph.id, round });
       setPlayers(previous => previous.map(player => player.id === morph.id
         ? { ...player, activeMorphRound: round, morphExhausted: true }
         : player
