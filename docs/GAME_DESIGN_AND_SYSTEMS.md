@@ -107,3 +107,34 @@ El replay debe ser una fuente de casos reproducibles:
 - evitar que reproducir partidas altere progresión o inventarios persistentes.
 
 La exportación de logs/replays es una herramienta técnica. La experiencia normal del jugador debe seguir siendo abrir Mis partidas y reproducir sus partidas guardadas.
+
+
+## 8. Propuestas de diseño previamente planteadas — backlog, no implementado
+
+Las siguientes ideas forman parte de la dirección de diseño discutida para el proyecto. Se registran como propuestas pendientes de auditoría de compatibilidad con el código, no como funcionalidades existentes.
+
+### Modelo híbrido de afinidades
+- Diseñar relaciones entre cartas y sistemas, no limitarse a una tabla de debilidades entre personajes.
+- Distinguir sinergias, anti-sinergias, habilidades activas de clase, pasivas de clase y rasgos pasivos.
+- Evaluar campaña y colección como ámbitos de progresión.
+- Evitar ventajas automáticas rígidas: cada interacción debe tener contrajuego y condiciones claras.
+
+### Encadenamiento y cargas
+- Explorar cadenas de cartas que conecten, mejoren o infundan habilidades en otras cartas.
+- Evaluar cubitos adicionales y cargas de habilidad como recursos con límites explícitos.
+- La referencia de diseño es la experiencia de conectar y mejorar cartas en juegos de mesa; la implementación y presentación deben ser originales.
+- La mano objetivo propuesta es de cuatro cartas; revisar impacto en ritmo, probabilidad de robo y economía antes de cambiar el límite actual.
+
+### Roles propuestos
+- **Hada al Cubo:** explorar robo de cartas y préstamo de cargas de habilidad, con variantes de préstamo que puedan beneficiar tanto a la propia Hada como a aliados. Debe definirse si la carga se presta temporalmente, se transfiere o se duplica, y cómo se devuelve/consume.
+- **Cubinja:** explorar encadenamiento de armas y potenciadores de dados. La limitación de encadenamiento debe compensarse con números/estadísticas inferiores, evitando que la restricción resulte una desventaja neta.
+- **Recuperación de mano:** se propuso un modelo mixto; falta definir disparadores, frecuencia, límites por turno y condiciones para evitar bucles de robo.
+
+### Puerta de entrada a implementación
+Cada propuesta debe tener:
+1. especificación de reglas con ejemplos;
+2. revisión del modelo de datos y del inventario actual;
+3. análisis de compatibilidad con bots y replay determinista;
+4. pruebas de abuso, bucles y casos límite;
+5. prototipo aislado;
+6. decisión de diseño y balance antes de integrarla al modo principal.
