@@ -1,26 +1,31 @@
 # Hoja de ruta comunitaria
 
-La hoja de ruta expresa prioridades, no fechas garantizadas. Cada fase se considera completada solo cuando cumple sus criterios de salida.
+La hoja de ruta expresa prioridades, no fechas garantizadas. La primera publicación elegida es un **prototipo público experimental**. Cada fase se considera completada solo cuando cumple sus criterios de salida.
 
 ## Fase 0 — Fundamentos públicos
 - [x] Confirmar repositorio y rama principal.
 - [x] Documentar stack y scripts.
 - [x] Documentar hitos fusionados #39–#43.
 - [x] Registrar riesgos y bugs conocidos.
-- [ ] Confirmar nombre público definitivo.
-- [ ] Elegir y publicar licencia.
-- [ ] Publicar código de conducta, contribución y seguridad.
-- [ ] Configurar Discussions y etiquetas.
+- [x] Confirmar nombre público: Guerra al Cubo — Guerra Cúbita.
+- [x] Elegir canales: GitHub + Discord + Facebook.
+- [ ] Crear/configurar Discord y publicar invitación oficial.
+- [ ] Confirmar página o grupo oficial de Facebook y enlazarlo.
+- [ ] Elegir y publicar licencia tras revisar distribución.
+- [ ] Configurar GitHub Discussions y etiquetas.
+- [ ] Publicar código de conducta, contribución y seguridad en canales comunitarios.
 
-## Fase 1 — Estabilidad jugable
+## Fase 1 — Preparación del prototipo público experimental
 - [ ] Reproducir y resolver issues P1 #31, #32 y #33.
 - [ ] Ejecutar partida completa desde configuración hasta resultado.
 - [ ] Probar bots y casos de turnos/estados.
 - [ ] Validar archivo local, reproducción y exportación diagnóstica.
 - [ ] Crear matriz de pruebas manuales y dispositivos.
+- [ ] Preparar build identificada por commit y fecha.
+- [ ] Publicar advertencias de estado experimental, limitaciones y problemas conocidos.
 - [ ] Mantener CI verde en cada PR.
 
-**Criterio de salida:** no quedan P1 confirmados en el flujo principal y existe evidencia de pruebas end-to-end.
+**Criterio de salida:** no quedan P1 confirmados en el flujo que se anuncia para probar; hay build reproducible, notas de versión, instrucciones de reporte y evidencia de pruebas end-to-end.
 
 ## Fase 2 — Documentación de juego
 - [ ] Catálogo completo de personajes.
@@ -42,7 +47,7 @@ La hoja de ruta expresa prioridades, no fechas garantizadas. Cada fase se consid
 **Criterio de salida:** flujos principales utilizables en móvil y escritorio, sin bloqueos visuales críticos.
 
 ## Fase 4 — Pruebas comunitarias y balance
-- [ ] Publicar formulario/plantilla de feedback.
+- [ ] Publicar plantilla de feedback.
 - [ ] Abrir sesiones de playtest con versión identificada.
 - [ ] Recopilar partidas voluntarias y logs anonimizados.
 - [ ] Publicar notas de balance con evidencia.
