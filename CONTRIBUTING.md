@@ -1,12 +1,16 @@
 # Guía para contribuir
 
-¡Gracias por interesarte en Guerra al Cubo! Puedes ayudar con código, diseño, pruebas, documentación, traducción, arte original o análisis de balance.
+¡Gracias por interesarte en Guerra al Cubo — Guerra Cúbita! Puedes ayudar con código, diseño, pruebas, documentación, traducción, arte original o análisis de balance.
+
+## Estado y derechos
+
+La primera publicación prevista es un **prototipo público experimental**. Las reglas y sistemas pueden cambiar y pueden existir errores. La licencia del proyecto está pendiente de decisión; la visibilidad pública del repositorio no concede permiso general para reutilizar o redistribuir su contenido. Hasta que se publique una licencia y política de contribuciones, consulta al mantenedor antes de enviar contenido que requiera derechos de redistribución.
 
 ## Antes de empezar
 
 1. Lee el README y la documentación de `docs/`.
 2. Busca Issues y Pull Requests existentes para evitar duplicados.
-3. Para cambios grandes, abre primero una Discussion o Issue de propuesta.
+3. Para cambios grandes, abre primero una propuesta.
 4. No trabajes directamente sobre `main`.
 5. No subas contenido de terceros sin autorización y licencia verificables.
 
@@ -84,4 +88,4 @@ npm run build
 
 ## Licencia y contribuciones
 
-La licencia del repositorio debe definirse antes de abrir la aceptación formal de contribuciones externas. Hasta entonces, consulta al mantenedor antes de asumir que una contribución puede redistribuirse o reutilizarse bajo una licencia abierta.
+La licencia y el acuerdo de contribución deben definirse antes de aceptar formalmente contribuciones externas que vayan a incorporarse y redistribuirse. Hasta entonces, consulta al mantenedor antes de asumir que una contribución puede reutilizarse o redistribuirse bajo una licencia abierta.
