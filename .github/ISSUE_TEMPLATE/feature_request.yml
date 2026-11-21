@@ -1,0 +1,50 @@
+name: Proponer una mejora o mecánica
+description: Presenta una idea para gameplay, cartas, personajes, balance o experiencia.
+title: "[PROPUESTA] "
+labels: ["enhancement", "needs-discussion"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área
+      options:
+        - Mecánica o regla
+        - Personaje o habilidad
+        - Carta, arma o inventario
+        - Balance competitivo
+        - Interfaz y accesibilidad
+        - Arte y presentación
+        - Comunidad y documentación
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema u oportunidad
+      description: ¿Qué experiencia o problema quieres mejorar?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+      description: Explica el funcionamiento con reglas concretas.
+    validations:
+      required: true
+  - type: textarea
+    id: interactions
+    attributes:
+      label: Interacciones y riesgos
+      description: ¿Qué sistemas afecta? ¿Qué exploits o efectos secundarios podría crear?
+  - type: textarea
+    id: tests
+    attributes:
+      label: Cómo probarla
+      description: Escenarios y criterios que permitirían evaluar la propuesta.
+  - type: checkboxes
+    id: original
+    attributes:
+      label: Originalidad
+      options:
+        - label: La propuesta describe una implementación propia y no solicita copiar código, arte o recursos de terceros.
+          required: true

@@ -1,0 +1,52 @@
+name: Reportar un error
+description: Informa de un defecto reproducible en el juego.
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Versión o commit
+      description: Indica la versión, rama o SHA que probaste.
+      placeholder: main / SHA / versión publicada
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Pasos para reproducir
+      description: Describe los pasos numerados.
+      placeholder: "1. Iniciar...\n2. Seleccionar...\n3. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Resultado observado
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Dispositivo y navegador
+      placeholder: Android / Chrome / Windows / etc.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidencia
+      description: Adjunta capturas, replay o log solo si no contienen datos privados.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Comprobaciones
+      options:
+        - label: He buscado si ya existe un reporte similar.
+          required: true
+        - label: No he incluido contraseñas, tokens ni datos personales.
+          required: true
